@@ -23,7 +23,8 @@ export interface UserBook {
   updated_at?: string;
   start_date?: string;
   end_date?: string;
-  
+  dateRead?: string;
+
   // Fields from schema.sql
   one_line_review?: string;
   motivation?: string;
@@ -49,4 +50,4 @@ export interface BookWithReview extends Book {
   review?: Partial<UserBook>;
 }
 
-export type View = 'search' | 'bookshelf' | 'stats' | 'chat';
+export type View = "search" | "bookshelf" | "stats" | "chat";
