@@ -1,0 +1,5 @@
+{
+  "name": "notion-applied",
+  "description": "A smart reading journal to discover, track, and review your books. Search for any title, log your reading progress, write detailed reviews, and visualize your reading habits with insightful statistics, all powered by Gemini.",
+  "requestFramePermissions": []
+}
