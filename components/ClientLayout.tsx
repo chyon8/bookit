@@ -82,7 +82,7 @@ const ClientLayout: React.FC<{ children: React.ReactNode }> = ({
           },
         }}
       />
-      <header className="bg-white dark:bg-dark-card p-4 border-b border-border dark:border-dark-border sticky top-0 z-20">
+      <header className="bg-white dark:bg-dark-card p-2 border-b border-border dark:border-dark-border sticky top-0 z-20">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div className="flex items-center">
             <SparklesIcon className="w-8 h-8 text-primary" />
