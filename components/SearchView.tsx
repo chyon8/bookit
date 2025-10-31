@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Book, BookWithReview, ReadingStatus } from "../types";
-import { SearchIcon, StarIcon } from "./Icons";
+import { SearchIcon, StarIcon, XMarkIcon } from "./Icons";
 import { useAppContext } from "../context/AppContext";
 
 const BookCard = ({ book, onSelect }) => {
@@ -134,12 +134,22 @@ const SearchView = ({ onSelectBook }) => {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="책 제목이나 저자로 검색..."
-          className="w-full pl-12 pr-4 py-3 bg-white dark:bg-dark-card text-text-heading dark:text-dark-text-heading border border-border dark:border-dark-border rounded-lg focus:ring-2 focus:ring-primary focus:outline-none transition-shadow"
+          className="w-full pl-12 pr-10 py-3 bg-white dark:bg-dark-card text-text-heading dark:text-dark-text-heading border border-border dark:border-dark-border rounded-lg focus:ring-2 focus:ring-primary focus:outline-none transition-shadow"
           autoFocus
         />
         <div className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted">
           <SearchIcon className="w-6 h-6" />
         </div>
+        {query && (
+          <button
+            type="button"
+            onClick={() => setQuery("")}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-heading dark:hover:text-dark-text-heading"
+            aria-label="검색어 지우기"
+          >
+            <XMarkIcon className="w-6 h-6" />
+          </button>
+        )}
       </form>
 
       <div className="space-y-4">

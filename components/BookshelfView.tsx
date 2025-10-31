@@ -265,6 +265,25 @@ const BookshelfView: React.FC = () => {
     category_asc: '카테고리 (가나다순)'
   };
 
+    const groupedBooks = useMemo(() => {
+        if (statusFilter !== 'All') {
+          return null;
+        }
+
+        const groups: { [key in ReadingStatus]?: BookWithReview[] } = {};
+
+        for (const book of sortedAndFilteredBooks) {
+          const status = book.review?.status;
+          if (status) {
+            if (!groups[status]) {
+              groups[status] = [];
+            }
+            groups[status].push(book);
+          }
+        }
+        return groups;
+      }, [sortedAndFilteredBooks, statusFilter]);
+
   if (!books || books.length === 0) {
     return (
       <div className="text-center py-20">
@@ -273,6 +292,21 @@ const BookshelfView: React.FC = () => {
       </div>
     );
   }
+
+  const renderBookSection = (title: string, booksToRender?: BookWithReview[]) => {
+    if (!booksToRender || booksToRender.length === 0) return null;
+
+    return (
+      <div className="space-y-4">
+        <h2 className="text-xl font-bold text-text-heading dark:text-dark-text-heading">{title}</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-4 gap-y-8">
+          {booksToRender.map((book) => (
+            <BookshelfCard key={book.id} book={book} onSelect={onSelectBook} onDelete={handleRequestDelete} />
+          ))}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -335,10 +369,21 @@ const BookshelfView: React.FC = () => {
         </div>
       
         {sortedAndFilteredBooks.length > 0 ? (
-             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-4 gap-y-8">
-                {sortedAndFilteredBooks.map((book) => (
-                    <BookshelfCard key={book.id} book={book} onSelect={onSelectBook} onDelete={handleRequestDelete} />
-                ))}
+            <div className="space-y-8">
+                {statusFilter === 'All' && groupedBooks ? (
+                    <>
+                        {renderBookSection('읽는 중', groupedBooks[ReadingStatus.Reading])}
+                        {renderBookSection('읽고 싶은', groupedBooks[ReadingStatus.WantToRead])}
+                        {renderBookSection('완독', groupedBooks[ReadingStatus.Finished])}
+                        {renderBookSection('중단', groupedBooks[ReadingStatus.Dropped])}
+                    </>
+                ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-4 gap-y-8">
+                        {sortedAndFilteredBooks.map((book) => (
+                            <BookshelfCard key={book.id} book={book} onSelect={onSelectBook} onDelete={handleRequestDelete} />
+                        ))}
+                    </div>
+                )}
             </div>
         ) : (
             <div className="text-center py-10">
