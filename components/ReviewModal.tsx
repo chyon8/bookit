@@ -170,6 +170,28 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
     const { name, value, type } = e.target;
     const isCheckbox = type === "checkbox";
     const checked = (e.target as HTMLInputElement).checked;
+
+    if (name === "end_date" && review.start_date) {
+      if (new Date(value) < new Date(review.start_date)) {
+        alert("완독일은 시작일보다 먼저일 수 없습니다.");
+        return;
+      }
+    }
+
+    if (name === "status") {
+      if (
+        value === ReadingStatus.Reading ||
+        value === ReadingStatus.WantToRead
+      ) {
+        setReview((prev) => ({
+          ...prev,
+          status: value as ReadingStatus,
+          end_date: undefined,
+        }));
+        return;
+      }
+    }
+
     setReview((prev) => ({ ...prev, [name]: isCheckbox ? checked : value }));
   };
 
@@ -300,6 +322,10 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
                 name="end_date"
                 value={review.end_date || ""}
                 onChange={handleInputChange}
+                disabled={
+                  review.status !== ReadingStatus.Finished &&
+                  review.status !== ReadingStatus.Dropped
+                }
               />
             </FormRow>
           </div>
