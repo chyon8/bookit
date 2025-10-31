@@ -35,7 +35,7 @@ const BookshelfCard: React.FC<BookshelfCardProps> = ({ book, onSelect, onDelete 
         <div className="bg-white dark:bg-dark-card p-3 rounded-b-md flex-grow flex flex-col justify-between">
             <div>
                 <h3 className="text-md font-bold text-text-heading dark:text-dark-text-heading line-clamp-2">{book.title}</h3>
-                <p className="text-sm text-text-body dark:text-dark-text-body mt-1 line-clamp-2">{book.author}</p>
+                <p className="text-sm text-text-body dark:text-dark-text-body mt-1 line-clamp-2">{book.author.split('(지은이')[0].trim()}</p>
             </div>
             {book.review?.rating && book.review.rating > 0 ? (
                 <div className="flex items-center justify-start mt-2">
@@ -115,7 +115,7 @@ const BookshelfView: React.FC = () => {
                         className="border-t border-black/10 dark:border-white/10 mt-6 pt-4 w-full text-left p-2 -m-2 rounded-md hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
                     >
                         <p className="font-bold text-text-heading dark:text-dark-text-heading">{book.title}</p>
-                        <p className="text-sm text-text-body dark:text-dark-text-body">저자: {book.author}</p>
+                        <p className="text-sm text-text-body dark:text-dark-text-body">저자: {book.author.split('(지은이')[0].trim()}</p>
                          <p className="text-xs text-primary font-semibold mt-1">자세히 보기 →</p>
                     </button>
     

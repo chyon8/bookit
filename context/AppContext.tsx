@@ -120,11 +120,13 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
         const { review, ...bookData } = reviewedBook;
 
+        const cleanedAuthor = bookData.author.split('(지은이')[0].trim();
+
         const { data: upsertedBook, error: bookError } = await supabase
             .from('books')
             .upsert({
                 title: bookData.title,
-                author: bookData.author,
+                author: cleanedAuthor,
                 cover_image_url: bookData.coverImageUrl,
                 category: bookData.category,
             }, { onConflict: 'title,author' })
