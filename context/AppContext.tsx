@@ -115,59 +115,88 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setSelectedBook(null);
   }, []);
 
-  const handleSaveReview = async (reviewedBook: BookWithReview) => {
-    const savePromise = async () => {
-        if (!user) throw new Error("User not authenticated.");
-
-        const { review, ...bookData } = reviewedBook;
-
-        const cleanedAuthor = bookData.author.split('(지은이')[0].trim();
-
-        const { data: upsertedBook, error: bookError } = await supabase
-            .from('books')
-            .upsert({
+    const handleSaveReview = async (reviewedBook: BookWithReview) => {
+        const savePromise = async () => {
+            if (!user) throw new Error("User not authenticated.");
+    
+            const { review, ...bookData } = reviewedBook;
+            const cleanedAuthor = bookData.author.split('(지은이')[0].trim();
+    
+            const bookRecord = {
                 title: bookData.title,
                 author: cleanedAuthor,
                 cover_image_url: bookData.coverImageUrl,
                 category: bookData.category,
                 isbn13: bookData.isbn13,
-            }, { onConflict: 'isbn13' })
-            .select()
-            .single();
+            };
 
-        if (bookError) throw bookError;
-        if (!upsertedBook) throw new Error("Book saving failed.");
+            let finalBookData: any;
 
-        const reviewData = { ...review, user_id: user.id, book_id: upsertedBook.id };
-        const { data: upsertedReview, error: reviewError } = await supabase
-            .from('user_books')
-            .upsert(reviewData, { onConflict: 'user_id,book_id' })
-            .select()
-            .single();
+            if (bookData.id && bookData.id.length > 15) { // DB id is a uuid, aladin id is shorter.
+                // Existing book: update using its primary key.
+                const { data, error } = await supabase
+                    .from('books')
+                    .update(bookRecord)
+                    .eq('id', bookData.id)
+                    .select()
+                    .single();
 
-        if (reviewError) throw reviewError;
-
-        const finalBook: BookWithReview = { ...bookData, id: upsertedBook.id, coverImageUrl: upsertedBook.cover_image_url, review: upsertedReview as UserBook };
-        setBooks(currentBooks => {
-            const existingIndex = currentBooks.findIndex(b => b.id === finalBook.id);
-            if (existingIndex > -1) {
-                const newBooks = [...currentBooks];
-                newBooks[existingIndex] = finalBook;
-                return newBooks;
+                if (error) throw error;
+                finalBookData = data;
             } else {
-                return [...currentBooks, finalBook];
+                // New book from search: upsert on isbn13 to avoid duplicates.
+                const { data, error } = await supabase
+                    .from('books')
+                    .upsert(bookRecord, {
+                        onConflict: 'isbn13',
+                        ignoreDuplicates: false,
+                    })
+                    .select()
+                    .single();
+                
+                if (error) throw error;
+                finalBookData = data;
             }
+
+            if (!finalBookData) throw new Error("Book saving failed.");
+
+            const reviewData = { ...review, user_id: user.id, book_id: finalBookData.id };
+            const { data: upsertedReview, error: reviewError } = await supabase
+                .from('user_books')
+                .upsert(reviewData, { onConflict: 'user_id,book_id' })
+                .select()
+                .single();
+    
+            if (reviewError) throw reviewError;
+    
+            const finalBook: BookWithReview = { 
+                ...bookData, 
+                id: finalBookData.id, 
+                coverImageUrl: finalBookData.cover_image_url, 
+                review: upsertedReview as UserBook 
+            };
+
+            setBooks(currentBooks => {
+                const existingIndex = currentBooks.findIndex(b => b.id === finalBook.id);
+                if (existingIndex > -1) {
+                    const newBooks = [...currentBooks];
+                    newBooks[existingIndex] = finalBook;
+                    return newBooks;
+                } else {
+                    const newBooks = currentBooks.filter(b => b.review.book_id !== finalBook.review.book_id);
+                    return [...newBooks, finalBook];
+                }
+            });
+        };
+    
+        await toast.promise(savePromise(), {
+            loading: 'Saving to bookshelf...',
+            success: 'Saved successfully!',
+            error: (err) => `Save failed: ${err.message}`,
         });
+    
+        handleCloseReview();
     };
-
-    await toast.promise(savePromise(), {
-        loading: 'Saving to bookshelf...',
-        success: 'Saved successfully!',
-        error: (err) => `Save failed: ${err.message}`,
-    });
-
-    handleCloseReview();
-  };
 
   const handleDeleteBook = async (bookId: string) => {
     const deletePromise = async () => {
