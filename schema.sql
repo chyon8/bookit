@@ -46,6 +46,13 @@ ON books
 FOR SELECT
 USING (true);
 
+-- 인증된 사용자가 books 테이블에 책을 추가하고 수정할 수 있도록 허용하는 정책
+CREATE POLICY "Allow authenticated users to insert and update books"
+ON books
+FOR ALL
+USING (auth.role() = 'authenticated')
+WITH CHECK (auth.role() = 'authenticated');
+
 -- 사용자가 자신의 user_books 데이터만 다룰 수 있도록 하는 정책
 CREATE POLICY "Allow users to manage their own books"
 ON user_books
