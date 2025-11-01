@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createClient } from "@/utils/supabase/server";
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
@@ -11,9 +12,7 @@ export async function GET(request) {
     );
   }
 
-  // .env.local 파일에 설정한 API 키를 가져옵니다.
   const apiKey = process.env.NEXT_PUBLIC_ALADIN_API_KEY;
-
   if (!apiKey) {
     console.error("알라딘 API 키가 설정되지 않았습니다.");
     return NextResponse.json(
@@ -22,7 +21,6 @@ export async function GET(request) {
     );
   }
 
-  // 알라딘 상품 검색 API URL
   const url = `http://www.aladin.co.kr/ttb/api/ItemSearch.aspx?ttbkey=${apiKey}&Query=${encodeURIComponent(
     query
   )}&QueryType=Keyword&MaxResults=20&start=1&SearchTarget=Book&output=js&Version=20131101`;
@@ -38,6 +36,62 @@ export async function GET(request) {
     }
 
     const data = await aladinResponse.json();
+
+    if (data.item) {
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      let userBookIsbns = new Set();
+      let userBookLegacy = new Set(); // For books without isbn13
+
+      const isbnToReviewMap = new Map();
+      const legacyToReviewMap = new Map();
+      const cleanAuthor = (author) => author.replace(/\s*\(.*\)/g, "");
+
+      if (user) {
+        const { data: userBooks, error: booksError } = await supabase
+          .from("user_books")
+          .select("*, books(*)") // Fetch all columns
+          .eq("user_id", user.id);
+
+        if (booksError) {
+          console.error("Supabase error:", booksError);
+        } else if (userBooks) {
+          userBooks.forEach((userBook) => {
+            const { books, ...reviewData } = userBook;
+            if (books && books.isbn13) {
+              isbnToReviewMap.set(books.isbn13, reviewData);
+            } else if (books) {
+              legacyToReviewMap.set(`${books.title}|${cleanAuthor(books.author)}`, reviewData);
+            }
+          });
+        }
+      }
+
+      const searchResults = data.item.map((item) => {
+        const authorName = cleanAuthor(item.author);
+        const legacyKey = `${item.title}|${authorName}`;
+        
+        const review = isbnToReviewMap.get(item.isbn13) || legacyToReviewMap.get(legacyKey) || null;
+        const isInBookshelf = !!review;
+
+        return {
+          id: item.isbn13 || item.itemId.toString(),
+          isbn13: item.isbn13 || item.itemId.toString(),
+          title: item.title,
+          author: item.author,
+          description: item.description,
+          coverImageUrl: item.cover.replace("coversum", "cover200"),
+          category: item.categoryName.split(">")[1] || item.categoryName,
+          isInBookshelf,
+          review,
+        };
+      });
+
+      return NextResponse.json({ item: searchResults });
+    }
 
     return NextResponse.json(data);
   } catch (error) {

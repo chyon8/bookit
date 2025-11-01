@@ -1,0 +1,2 @@
+ALTER TABLE books ADD COLUMN isbn13 TEXT;
+ALTER TABLE books ADD CONSTRAINT unique_isbn13 UNIQUE (isbn13);

@@ -7,8 +7,9 @@ CREATE TABLE books (
     category text,
     genre text,
     cover_image_url text,
+    isbn13 text,
     -- 여러 사용자가 같은 책을 추가할 수 있으므로, 책 정보는 고유해야 합니다.
-    CONSTRAINT unique_book UNIQUE (title, author)
+    CONSTRAINT unique_book UNIQUE (isbn13)
 );
 
 -- user_books 테이블 생성

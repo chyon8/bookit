@@ -6,7 +6,8 @@ export enum ReadingStatus {
 }
 
 export interface Book {
-  id: string;
+  id: string; // Database UUID
+  isbn13?: string; // Aladin search result ID
   title: string;
   author: string;
   category: string;
@@ -48,6 +49,7 @@ export interface UserBook {
 
 export interface BookWithReview extends Book {
   review?: Partial<UserBook>;
+  isInBookshelf?: boolean;
 }
 
 export type View = "search" | "bookshelf" | "stats" | "chat";

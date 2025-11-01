@@ -71,6 +71,7 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           const { books: bookData, ...reviewData } = ub;
           return {
               id: bookData.id,
+              isbn13: bookData.isbn13,
               title: bookData.title,
               author: bookData.author,
               category: bookData.category,
@@ -129,7 +130,8 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ ch
                 author: cleanedAuthor,
                 cover_image_url: bookData.coverImageUrl,
                 category: bookData.category,
-            }, { onConflict: 'title,author' })
+                isbn13: bookData.isbn13,
+            }, { onConflict: 'isbn13' })
             .select()
             .single();
 

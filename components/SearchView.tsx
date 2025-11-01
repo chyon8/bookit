@@ -33,7 +33,7 @@ const BookCard = ({ book, onSelect }) => {
               저자: {book.author}
             </p>
           </div>
-          {book.review && (
+          {book.isInBookshelf && (
             <div className="flex-shrink-0 ml-4">
                 <span className="bg-primary/10 text-primary text-xs font-bold px-2 py-1 rounded-full">내 서재에 있음</span>
             </div>
@@ -58,7 +58,7 @@ const BookCard = ({ book, onSelect }) => {
 const SearchView = ({ onSelectBook }) => {
   const { books } = useAppContext();
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState([]);
+  const [results, setResults] = useState<BookWithReview[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchPerformed, setSearchPerformed] = useState(false);
 
@@ -94,22 +94,7 @@ const SearchView = ({ onSelectBook }) => {
       const data = await response.json();
 
       if (data.item) {
-        const webResults = data.item.map((item) => ({
-          id: item.isbn13 || item.itemId.toString(),
-          title: item.title,
-          author: item.author,
-          description: item.description,
-          coverImageUrl: item.cover.replace("coversum", "cover200"),
-          category: item.categoryName.split(">")[1] || item.categoryName,
-          review: null,
-        }));
-
-        const enrichedResults = webResults.map(searchResult => {
-            const existingBook = books.find(shelfBook => shelfBook.title === searchResult.title && shelfBook.author === searchResult.author);
-            return existingBook ? { ...searchResult, ...existingBook } : searchResult;
-        });
-
-        setResults(enrichedResults);
+        setResults(data.item);
       } else {
         setResults([]);
       }
