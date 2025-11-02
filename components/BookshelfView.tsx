@@ -135,6 +135,31 @@ const BookshelfView: React.FC = () => {
 
   const sortDropdownRef = useRef<HTMLDivElement>(null);
 
+  const statusCounts = useMemo(() => {
+    if (!books) {
+      return {
+        All: 0,
+        [ReadingStatus.Reading]: 0,
+        [ReadingStatus.Finished]: 0,
+        [ReadingStatus.Dropped]: 0,
+        [ReadingStatus.WantToRead]: 0,
+      };
+    }
+    const counts: { [key in ReadingStatus | "All"]: number } = {
+      All: books.length,
+      [ReadingStatus.Reading]: 0,
+      [ReadingStatus.Finished]: 0,
+      [ReadingStatus.Dropped]: 0,
+      [ReadingStatus.WantToRead]: 0,
+    };
+    for (const book of books) {
+      if (book.review?.status) {
+        counts[book.review.status]++;
+      }
+    }
+    return counts;
+  }, [books]);
+
   const handleRequestDelete = (bookId: string, bookTitle: string) => {
     setBookToDelete({ id: bookId, title: bookTitle });
     setConfirmModalOpen(true);
@@ -470,7 +495,10 @@ const BookshelfView: React.FC = () => {
       <div className="space-y-4">
         <div className="flex justify-between items-center">
           <h2 className="text-xl font-bold text-text-heading dark:text-dark-text-heading">
-            {title}
+            {title}{' '}
+            <span className="text-lg text-text-body dark:text-dark-text-body font-medium">
+              {booksToRender.length}
+            </span>
           </h2>
           {status && booksToRender.length > 10 && (
             <button
@@ -524,7 +552,11 @@ const BookshelfView: React.FC = () => {
                   readingStatusKorean[
                     status as keyof typeof readingStatusKorean
                   ]
-                }
+                }{' '}
+                <span
+                  className={statusFilter === status ? "text-white/70" : "text-black/40 dark:text-white/40"}>
+                  {statusCounts[status as keyof typeof statusCounts]}
+                </span>
               </button>
             ))}
           </div>
