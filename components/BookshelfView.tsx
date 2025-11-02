@@ -10,7 +10,7 @@ interface BookshelfCardProps {
   onDelete: (bookId: string, bookTitle: string) => void;
 }
 
-const BookshelfCard: React.FC<BookshelfCardProps> = ({ book, onSelect, onDelete }) => {
+export const BookshelfCard: React.FC<BookshelfCardProps> = ({ book, onSelect, onDelete }) => {
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onDelete(book.id, book.title);
@@ -109,7 +109,7 @@ const BookshelfView: React.FC = () => {
             <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50 p-4" onClick={onClose}>
                 <div className="relative bg-card-secondary dark:bg-dark-card p-6 rounded-lg shadow-xl w-full max-w-md" onClick={e => e.stopPropagation()}>
                     <p className="text-sm font-semibold uppercase text-text-body dark:text-dark-text-body tracking-wider">{note.title}</p>
-                    <p className="text-lg text-text-heading dark:text-dark-text-heading mt-4 whitespace-pre-wrap min-h-[100px]">{note.content}</p>
+                    <p className="text-lg text-text-heading dark:text-dark-text-heading mt-4 whitespace-pre-wrap min-h-[100px] max-h-64 overflow-y-auto">{note.content}</p>
                     <button 
                         onClick={handleViewDetails}
                         className="border-t border-black/10 dark:border-white/10 mt-6 pt-4 w-full text-left p-2 -m-2 rounded-md hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
@@ -293,15 +293,26 @@ const BookshelfView: React.FC = () => {
     );
   }
 
-  const renderBookSection = (title: string, booksToRender?: BookWithReview[]) => {
+  const renderBookSection = (title: string, booksToRender?: BookWithReview[], status?: ReadingStatus) => {
     if (!booksToRender || booksToRender.length === 0) return null;
+
+    const limitedBooks = booksToRender.slice(0, 10);
 
     return (
       <div className="space-y-4">
-        <h2 className="text-xl font-bold text-text-heading dark:text-dark-text-heading">{title}</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-4 gap-y-8">
-          {booksToRender.map((book) => (
-            <BookshelfCard key={book.id} book={book} onSelect={onSelectBook} onDelete={handleRequestDelete} />
+        <div className="flex justify-between items-center">
+          <h2 className="text-xl font-bold text-text-heading dark:text-dark-text-heading">{title}</h2>
+          {status && booksToRender.length > 10 && (
+            <button onClick={() => setStatusFilter(status)} className="text-sm font-semibold text-primary hover:underline">
+              전체보기
+            </button>
+          )}
+        </div>
+        <div className="flex overflow-x-auto space-x-4 -m-2 p-2">
+          {limitedBooks.map((book) => (
+            <div key={book.id} className="w-40 flex-shrink-0">
+              <BookshelfCard book={book} onSelect={onSelectBook} onDelete={handleRequestDelete} />
+            </div>
           ))}
         </div>
       </div>
@@ -311,39 +322,14 @@ const BookshelfView: React.FC = () => {
   return (
     <div className="space-y-6">
         <div className="bg-white dark:bg-dark-card p-4 rounded-lg shadow-sm border border-border dark:border-dark-border space-y-4">
-             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="기록 검색..."
-                  className="w-full px-4 py-2 bg-light-gray dark:bg-dark-bg text-text-heading dark:text-dark-text-heading border border-border dark:border-dark-border rounded-lg focus:ring-2 focus:ring-primary focus:outline-none sm:col-span-2"
+                  className="w-full px-4 py-2 bg-light-gray dark:bg-dark-bg text-text-heading dark:text-dark-text-heading border border-border dark:border-dark-border rounded-lg focus:ring-2 focus:ring-primary focus:outline-none"
                 />
-                <div className="relative" ref={sortDropdownRef}>
-                    <button
-                        onClick={() => setSortDropdownOpen(prev => !prev)}
-                        className="w-full h-full px-4 py-2 bg-light-gray dark:bg-dark-bg text-text-heading dark:text-dark-text-heading border border-border dark:border-dark-border rounded-lg focus:ring-2 focus:ring-primary focus:outline-none flex justify-between items-center text-left"
-                    >
-                        <span>{sortOptions[sortOption]}</span>
-                        <ChevronDownIcon className={`w-5 h-5 text-text-body dark:text-dark-text-body transition-transform ${isSortDropdownOpen ? 'rotate-180' : ''}`} />
-                    </button>
-                    {isSortDropdownOpen && (
-                        <div className="absolute top-full mt-1 w-full bg-white dark:bg-dark-card rounded-lg shadow-lg border border-border dark:border-dark-border z-10 overflow-hidden">
-                            {Object.entries(sortOptions).map(([key, label]) => (
-                                <button
-                                    key={key}
-                                    onClick={() => {
-                                        setSortOption(key);
-                                        setSortDropdownOpen(false);
-                                    }}
-                                    className={`w-full text-left px-4 py-2 text-sm hover:bg-light-gray dark:hover:bg-dark-bg ${sortOption === key ? 'font-bold text-text-heading dark:text-dark-text-heading bg-gray-100 dark:bg-dark-bg' : 'text-text-heading dark:text-dark-text-heading'}`}
-                                >
-                                    {label}
-                                </button>
-                            ))}
-                        </div>
-                    )}
-                </div>
             </div>
             <div className="flex items-center justify-between flex-wrap gap-y-2">
                 <div className="flex flex-wrap gap-2">
@@ -367,15 +353,43 @@ const BookshelfView: React.FC = () => {
                 </button>
             </div>
         </div>
+
+        <div className="flex justify-end items-center mb-4">
+            <div className="relative" ref={sortDropdownRef}>
+                <button
+                    onClick={() => setSortDropdownOpen(prev => !prev)}
+                    className="flex items-center text-sm font-semibold text-text-body dark:text-dark-text-body hover:text-text-heading dark:hover:text-dark-text-heading"
+                >
+                    <span>{sortOptions[sortOption]}</span>
+                    <ChevronDownIcon className={`w-5 h-5 ml-1 text-text-body dark:text-dark-text-body transition-transform ${isSortDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+                {isSortDropdownOpen && (
+                    <div className="absolute top-full right-0 mt-1 w-48 bg-white dark:bg-dark-card rounded-lg shadow-lg border border-border dark:border-dark-border z-10 overflow-hidden">
+                        {Object.entries(sortOptions).map(([key, label]) => (
+                            <button
+                                key={key}
+                                onClick={() => {
+                                    setSortOption(key);
+                                    setSortDropdownOpen(false);
+                                }}
+                                className={`w-full text-left px-4 py-2 text-sm hover:bg-light-gray dark:hover:bg-dark-bg ${sortOption === key ? 'font-bold text-text-heading dark:text-dark-text-heading bg-gray-100 dark:bg-dark-bg' : 'text-text-heading dark:text-dark-text-heading'}`}
+                            >
+                                {label}
+                            </button>
+                        ))}
+                    </div>
+                )}
+            </div>
+        </div>
       
         {sortedAndFilteredBooks.length > 0 ? (
             <div className="space-y-8">
                 {statusFilter === 'All' && groupedBooks ? (
                     <>
-                        {renderBookSection('읽는 중', groupedBooks[ReadingStatus.Reading])}
-                        {renderBookSection('읽고 싶은', groupedBooks[ReadingStatus.WantToRead])}
-                        {renderBookSection('완독', groupedBooks[ReadingStatus.Finished])}
-                        {renderBookSection('중단', groupedBooks[ReadingStatus.Dropped])}
+                        {renderBookSection('읽는 중', groupedBooks[ReadingStatus.Reading], ReadingStatus.Reading)}
+                        {renderBookSection('읽고 싶은', groupedBooks[ReadingStatus.WantToRead], ReadingStatus.WantToRead)}
+                        {renderBookSection('완독', groupedBooks[ReadingStatus.Finished], ReadingStatus.Finished)}
+                        {renderBookSection('중단', groupedBooks[ReadingStatus.Dropped], ReadingStatus.Dropped)}
                     </>
                 ) : (
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-4 gap-y-8">
