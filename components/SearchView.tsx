@@ -5,7 +5,7 @@ import { useAppContext } from "../context/AppContext";
 
 const BookCard = ({ book, onSelect }) => {
   const handleSelect = () => {
-    const bookToSelect = book.review ? book : { ...book, review: { status: ReadingStatus.Finished, rating: 0 } };
+    const bookToSelect = book.review ? book : { ...book, review: { status: ReadingStatus.WantToRead, rating: 0 } };
     onSelect(bookToSelect);
   };
 

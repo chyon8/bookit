@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { BookWithReview, ReadingStatus, UserBook } from "../types";
 import {
   StarIcon,
@@ -127,6 +127,13 @@ const Checkbox: React.FC<CheckboxProps> = ({ label, ...props }) => (
   </label>
 );
 
+type ConfirmationState = {
+  isOpen: boolean;
+  title: string;
+  message: React.ReactNode;
+  onConfirm: () => void;
+};
+
 // Main Refactored Component
 const ReviewModal: React.FC<ReviewModalProps> = ({
   book,
@@ -135,7 +142,6 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
   onDelete,
 }) => {
   const [review, setReview] = useState<Partial<UserBook>>(() => {
-    const today = new Date().toISOString().split("T")[0];
     const initialReview = book.review || {
       status: ReadingStatus.WantToRead,
       rating: 0,
@@ -143,23 +149,29 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
       questions_from_book: [],
     };
 
+    // Dates should be in 'yyyy-mm-dd' format for the input, or null
+    const formatDate = (date: string | undefined) =>
+      date ? new Date(date).toISOString().split("T")[0] : undefined;
+
     return {
       ...initialReview,
-      start_date: initialReview.start_date
-        ? new Date(initialReview.start_date).toISOString().split("T")[0]
-        : today,
-      end_date: initialReview.end_date
-        ? new Date(initialReview.end_date).toISOString().split("T")[0]
-        : today,
+      start_date: formatDate(initialReview.start_date),
+      end_date: formatDate(initialReview.end_date),
     };
   });
-  const [isConfirmModalOpen, setConfirmModalOpen] = useState(false);
+
+  const [confirmation, setConfirmation] = useState<ConfirmationState>({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+  });
 
   const readingStatusKorean = {
-    [ReadingStatus.WantToRead]: '읽고 싶은',
-    [ReadingStatus.Reading]: '읽는 중',
-    [ReadingStatus.Finished]: '완독',
-    [ReadingStatus.Dropped]: '중단',
+    [ReadingStatus.WantToRead]: "읽고 싶은",
+    [ReadingStatus.Reading]: "읽는 중",
+    [ReadingStatus.Finished]: "완독",
+    [ReadingStatus.Dropped]: "중단",
   };
 
   const handleInputChange = (
@@ -171,28 +183,86 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
     const isCheckbox = type === "checkbox";
     const checked = (e.target as HTMLInputElement).checked;
 
-    if (name === "end_date" && review.start_date) {
-      if (new Date(value) < new Date(review.start_date)) {
-        alert("완독일은 시작일보다 먼저일 수 없습니다.");
-        return;
-      }
-    }
-
     if (name === "status") {
-      if (
-        value === ReadingStatus.Reading ||
-        value === ReadingStatus.WantToRead
-      ) {
-        setReview((prev) => ({
-          ...prev,
-          status: value as ReadingStatus,
-          end_date: undefined,
-        }));
-        return;
-      }
+      handleStatusChange(value as ReadingStatus);
+    } else {
+      setReview((prev) => ({ ...prev, [name]: isCheckbox ? checked : value }));
+    }
+  };
+
+  const handleStatusChange = (newStatus: ReadingStatus) => {
+    const today = new Date().toISOString().split("T")[0];
+    const oldStatus = review.status;
+
+    const performStatusUpdate = (
+      updates: Partial<UserBook>,
+      newStatusToSet: ReadingStatus
+    ) => {
+      setReview((prev) => ({
+        ...prev,
+        ...updates,
+        status: newStatusToSet,
+      }));
+    };
+
+    // `읽고싶은` -> `읽는중`
+    if (
+      newStatus === ReadingStatus.Reading &&
+      oldStatus === ReadingStatus.WantToRead
+    ) {
+      performStatusUpdate(
+        { start_date: today, end_date: undefined },
+        newStatus
+      );
+      return;
     }
 
-    setReview((prev) => ({ ...prev, [name]: isCheckbox ? checked : value }));
+    // `읽는중` -> `완독`
+    if (
+      newStatus === ReadingStatus.Finished &&
+      oldStatus === ReadingStatus.Reading
+    ) {
+      performStatusUpdate({ end_date: today }, newStatus);
+      return;
+    }
+
+    // `완독` -> `읽는중`
+    if (
+      newStatus === ReadingStatus.Reading &&
+      oldStatus === ReadingStatus.Finished
+    ) {
+      setConfirmation({
+        isOpen: true,
+        title: "상태 변경 확인",
+        message: "책을 다시 읽으시겠어요? 기존의 완독일 기록이 삭제됩니다.",
+        onConfirm: () => {
+          performStatusUpdate({ end_date: undefined }, newStatus);
+          setConfirmation({ ...confirmation, isOpen: false });
+        },
+      });
+      return; // Don't change status until confirmed
+    }
+
+    // 모든 상태 -> `읽고싶은`
+    if (newStatus === ReadingStatus.WantToRead && oldStatus !== newStatus) {
+      setConfirmation({
+        isOpen: true,
+        title: "상태 변경 확인",
+        message:
+          "'읽고싶은' 상태로 변경하면 모든 독서 기록(시작일, 완독일)이 삭제됩니다. 계속하시겠어요?",
+        onConfirm: () => {
+          performStatusUpdate(
+            { start_date: undefined, end_date: undefined },
+            newStatus
+          );
+          setConfirmation({ ...confirmation, isOpen: false });
+        },
+      });
+      return; // Don't change status until confirmed
+    }
+
+    // For other cases, just update the status
+    setReview((prev) => ({ ...prev, status: newStatus }));
   };
 
   const handleRatingChange = (newRating: number) => {
@@ -227,9 +297,38 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
   };
 
   const handleSave = () => {
-    // Filter out empty strings from arrays before saving
+    const { status, start_date, end_date } = review;
+
+    // --- Validation Logic ---
+    if (status === ReadingStatus.Reading || status === ReadingStatus.Dropped) {
+      if (!start_date) {
+        alert("독서 시작일을 입력해주세요.");
+        return;
+      }
+    }
+
+    if (status === ReadingStatus.Finished) {
+      if (!start_date) {
+        alert("독서 시작일을 입력해주세요.");
+        return;
+      }
+      if (!end_date) {
+        alert("완독일을 입력해주세요.");
+        return;
+      }
+      if (new Date(end_date) < new Date(start_date)) {
+        alert("완독일은 시작일보다 빠를 수 없습니다.");
+        return;
+      }
+    }
+
+    // --- Final data preparation ---
     const finalReview = {
       ...review,
+      start_date:
+        status === ReadingStatus.WantToRead ? undefined : review.start_date,
+      end_date:
+        status === ReadingStatus.Finished ? review.end_date : undefined,
       memorable_quotes: (review.memorable_quotes || []).filter(
         (q) => q.trim() !== ""
       ),
@@ -237,13 +336,33 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
         (q) => q.trim() !== ""
       ),
     };
+
     onSave({ ...book, review: finalReview });
   };
 
-  const handleConfirmDelete = () => {
-    onDelete(book.id);
-    setConfirmModalOpen(false);
+  const handleDeleteRequest = () => {
+    setConfirmation({
+      isOpen: true,
+      title: "책 삭제",
+      message: (
+        <p>
+          정말로 <span className="font-bold">{book.title}</span> 책을 책장에서
+          삭제하시겠습니까?
+        </p>
+      ),
+      onConfirm: () => {
+        onDelete(book.id);
+        setConfirmation({ ...confirmation, isOpen: false });
+      },
+    });
   };
+
+  const showStartDate =
+    review.status === ReadingStatus.Reading ||
+    review.status === ReadingStatus.Finished ||
+    review.status === ReadingStatus.Dropped;
+
+  const showFinishDate = review.status === ReadingStatus.Finished;
 
   return (
     <div
@@ -261,7 +380,7 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
           <div className="flex items-center space-x-2">
             {book.review && book.review.id && (
               <button
-                onClick={() => setConfirmModalOpen(true)}
+                onClick={handleDeleteRequest}
                 className="p-2 rounded-full text-text-body dark:text-dark-text-body hover:bg-red-100 hover:text-red-500 dark:hover:bg-red-500/20"
                 aria-label="책 삭제"
               >
@@ -307,28 +426,30 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <FormRow label="독서 시작일">
-              <FormInput
-                type="date"
-                name="start_date"
-                value={review.start_date || ""}
-                onChange={handleInputChange}
-              />
-            </FormRow>
-            <FormRow label="완독일">
-              <FormInput
-                type="date"
-                name="end_date"
-                value={review.end_date || ""}
-                onChange={handleInputChange}
-                disabled={
-                  review.status !== ReadingStatus.Finished &&
-                  review.status !== ReadingStatus.Dropped
-                }
-              />
-            </FormRow>
-          </div>
+          {(showStartDate || showFinishDate) && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              {showStartDate && (
+                <FormRow label="독서 시작일">
+                  <FormInput
+                    type="date"
+                    name="start_date"
+                    value={review.start_date || ""}
+                    onChange={handleInputChange}
+                  />
+                </FormRow>
+              )}
+              {showFinishDate && (
+                <FormRow label="완독일">
+                  <FormInput
+                    type="date"
+                    name="end_date"
+                    value={review.end_date || ""}
+                    onChange={handleInputChange}
+                  />
+                </FormRow>
+              )}
+            </div>
+          )}
 
           {review.notes && (
             <FormRow label="Notion 기록">
@@ -503,12 +624,12 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
         </footer>
 
         <ConfirmModal
-            isOpen={isConfirmModalOpen}
-            onClose={() => setConfirmModalOpen(false)}
-            onConfirm={handleConfirmDelete}
-            title="책 삭제"
+          isOpen={confirmation.isOpen}
+          onClose={() => setConfirmation({ ...confirmation, isOpen: false })}
+          onConfirm={confirmation.onConfirm}
+          title={confirmation.title}
         >
-            <p>정말로 <span className="font-bold">{book.title}</span> 책을 책장에서 삭제하시겠습니까?</p>
+          {confirmation.message}
         </ConfirmModal>
       </div>
     </div>
