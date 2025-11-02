@@ -26,6 +26,42 @@ export const BookshelfCard: React.FC<BookshelfCardProps> = ({
     onDelete(book.id, book.title);
   };
 
+  const renderStatusInfo = () => {
+    const { review } = book;
+
+    if (review?.status === ReadingStatus.Reading && review.start_date) {
+      const startDate = new Date(review.start_date);
+      const today = new Date();
+      // Set hours to 0 to compare dates only
+      startDate.setHours(0, 0, 0, 0);
+      today.setHours(0, 0, 0, 0);
+      
+      const diffTime = today.getTime() - startDate.getTime();
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
+      return (
+        <div className="flex items-center justify-start mt-2 h-[28px]">
+          <p className="text-sm font-bold text-primary">
+            {diffDays}일째 읽는중
+          </p>
+        </div>
+      );
+    }
+
+    if (review?.rating && review.rating > 0) {
+      return (
+        <div className="flex items-center justify-start mt-2 h-[28px]">
+          <p className="font-bold text-text-heading dark:text-dark-text-heading mr-1">
+            {review.rating.toFixed(1)}
+          </p>
+          <StarIcon className="w-5 h-5 text-yellow-400" />
+        </div>
+      );
+    }
+
+    return <div className="h-[28px] mt-2" />; // Placeholder for consistent height
+  };
+
   return (
     <div
       onClick={() => onSelect(book)}
@@ -55,16 +91,7 @@ export const BookshelfCard: React.FC<BookshelfCardProps> = ({
             {book.author.split("(지은이")[0].trim()}
           </p>
         </div>
-        {book.review?.rating && book.review.rating > 0 ? (
-          <div className="flex items-center justify-start mt-2">
-            <p className="font-bold text-text-heading dark:text-dark-text-heading mr-1">
-              {book.review.rating.toFixed(1)}
-            </p>
-            <StarIcon className="w-5 h-5 text-yellow-400" />
-          </div>
-        ) : (
-          <div className="h-[28px] mt-2" /> // Placeholder for consistent height
-        )}
+        {renderStatusInfo()}
       </div>
     </div>
   );
