@@ -65,6 +65,30 @@ const ClientLayout: React.FC<{ children: React.ReactNode }> = ({
               theme={theme}
               providers={["google", "github"]}
               socialLayout="horizontal"
+              localization={{
+                variables: {
+                  sign_in: {
+                    email_label: "이메일 주소",
+                    password_label: "비밀번호",
+                    button_label: "로그인",
+                    social_provider_text: "{{provider}}로 로그인",
+                    link_text: "계정이 있으신가요? 로그인하세요",
+                  },
+                  sign_up: {
+                    email_label: "이메일 주소",
+                    password_label: "비밀번호",
+                    button_label: "가입하기",
+                    social_provider_text: "{{provider}}로 가입하기",
+                    link_text: "계정이 없으신가요? 가입하세요",
+                  },
+                  forgotten_password: {
+                    email_label: "이메일 주소",
+                    password_label: "비밀번호",
+                    button_label: "비밀번호 재설정",
+                    link_text: "비밀번호를 잊으셨나요?",
+                  },
+                },
+              }}
             />
           </div>
         </div>
