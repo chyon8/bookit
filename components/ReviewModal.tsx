@@ -490,8 +490,7 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
             <div className="space-y-2">
               {(review.memorable_quotes || []).map((quote, index) => (
                 <div key={index} className="flex items-center space-x-2">
-                  <FormInput
-                    type="text"
+                  <FormTextarea
                     value={quote}
                     onChange={(e) =>
                       handleArrayChange(
@@ -501,6 +500,7 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
                       )
                     }
                     placeholder={`구절 #${index + 1}`}
+                    rows={2}
                   />
                   <button
                     onClick={() => removeFromArray("memorable_quotes", index)}
@@ -533,8 +533,7 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
             <div className="space-y-2">
               {(review.questions_from_book || []).map((question, index) => (
                 <div key={index} className="flex items-center space-x-2">
-                  <FormInput
-                    type="text"
+                  <FormTextarea
                     value={question}
                     onChange={(e) =>
                       handleArrayChange(
@@ -544,6 +543,7 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
                       )
                     }
                     placeholder={`질문 #${index + 1}`}
+                    rows={2}
                   />
                   <button
                     onClick={() =>
