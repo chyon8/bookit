@@ -367,6 +367,9 @@ const BookshelfView: React.FC = () => {
 
       const notes: { title: string; content: string }[] = [];
 
+      if (review.one_line_review) {
+        notes.push({ title: "한줄평", content: review.one_line_review });
+      }
       if (review.summary) {
         notes.push({ title: "요약", content: review.summary });
       }
