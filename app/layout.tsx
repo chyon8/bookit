@@ -20,15 +20,11 @@ export default function RootLayout({
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <script src="https://cdn.tailwindcss.com"></script>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin="anonymous"
-        />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700&display=swap"
           rel="stylesheet"
+          as="style"
+          crossOrigin="anonymous"
+          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"
         />
         <script
           dangerouslySetInnerHTML={{
@@ -38,7 +34,7 @@ export default function RootLayout({
             theme: {
               extend: {
                 fontFamily: {
-                  sans: ['Public Sans', 'sans-serif'],
+                  sans: ['Pretendard', 'sans-serif'],
                 },
                 colors: {
                   'primary': '#4ADE80',
