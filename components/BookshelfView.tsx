@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
-import { BookWithReview, ReadingStatus } from "../types";
+import { BookWithReview, ReadingStatus, UserBook } from "../types"; // UserBook 타입을 import 합니다.
 import {
   StarIcon,
   ChevronLeftIcon,
@@ -9,6 +9,14 @@ import {
 } from "./Icons";
 import { useAppContext } from "../context/AppContext";
 import ConfirmModal from "./ConfirmModal";
+
+// memorable_quotes의 타입을 명시적으로 정의합니다.
+// ReviewModal에서 사용한 타입과 동일하게 맞춰줍니다.
+interface MemorableQuote {
+  quote: string;
+  page: string;
+  thought: string;
+}
 
 interface BookshelfCardProps {
   book: BookWithReview;
@@ -35,7 +43,7 @@ export const BookshelfCard: React.FC<BookshelfCardProps> = ({
       // Set hours to 0 to compare dates only
       startDate.setHours(0, 0, 0, 0);
       today.setHours(0, 0, 0, 0);
-      
+
       const diffTime = today.getTime() - startDate.getTime();
       const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
 
@@ -298,19 +306,25 @@ const BookshelfView: React.FC = () => {
         const {
           one_line_review,
           summary,
-          memorable_quotes,
+          memorable_quotes, // 타입이 MemorableQuote[]
           questions_from_book,
           connected_thoughts,
           overall_impression,
           reread_reason,
           notes,
         } = book.review || {};
+
+        // --- ▼ 1. 에러 수정된 부분 (검색 기능) ▼ ---
         const searchableContent = [
           title,
           author,
           one_line_review,
           summary,
-          ...(memorable_quotes || []),
+          // memorable_quotes가 객체 배열이므로, 검색 가능한 텍스트(quote, thought)를 추출합니다.
+          ...((memorable_quotes as MemorableQuote[]) || []).flatMap((q) => [
+            q.quote,
+            q.thought,
+          ]),
           ...(questions_from_book || []),
           connected_thoughts,
           overall_impression,
@@ -320,6 +334,8 @@ const BookshelfView: React.FC = () => {
           .filter(Boolean)
           .join(" ")
           .toLowerCase();
+        // --- ▲ 1. 에러 수정된 부분 (검색 기능) ▲ ---
+
         return searchableContent.includes(query);
       });
 
@@ -382,15 +398,26 @@ const BookshelfView: React.FC = () => {
           content: review.connected_thoughts,
         });
       }
+
+      // --- ▼ 2. 에러 수정된 부분 (랜덤 노트) ▼ ---
       if (review.memorable_quotes && Array.isArray(review.memorable_quotes)) {
-        review.memorable_quotes.forEach((quote, index) => {
-          if (quote)
+        // review.memorable_quotes는 MemorableQuote[] 타입입니다.
+        (review.memorable_quotes as MemorableQuote[]).forEach((quoteObj) => {
+          if (quoteObj && quoteObj.quote) {
+            // content에 문자열인 quoteObj.quote를 할당합니다.
+            let content = `"${quoteObj.quote}"`;
+            if (quoteObj.thought) {
+              content += `\n\n- 나의 생각: ${quoteObj.thought}`;
+            }
             notes.push({
-              title: `인상 깊은 구절 #${index + 1}`,
-              content: quote,
+              title: `인상 깊은 구절 (p.${quoteObj.page || "?"})`,
+              content: content,
             });
+          }
         });
       }
+      // --- ▲ 2. 에러 수정된 부분 (랜덤 노트) ▲ ---
+
       if (
         review.questions_from_book &&
         Array.isArray(review.questions_from_book)
@@ -498,7 +525,7 @@ const BookshelfView: React.FC = () => {
       <div className="space-y-4">
         <div className="flex justify-between items-center">
           <h2 className="text-xl font-bold text-text-heading dark:text-dark-text-heading">
-            {title}{' '}
+            {title}{" "}
             <span className="text-lg text-text-body dark:text-dark-text-body font-medium">
               {booksToRender.length}
             </span>
@@ -555,9 +582,14 @@ const BookshelfView: React.FC = () => {
                   readingStatusKorean[
                     status as keyof typeof readingStatusKorean
                   ]
-                }{' '}
+                }{" "}
                 <span
-                  className={statusFilter === status ? "text-white/70" : "text-black/40 dark:text-white/40"}>
+                  className={
+                    statusFilter === status
+                      ? "text-white/70"
+                      : "text-black/40 dark:text-white/40"
+                  }
+                >
                   {statusCounts[status as keyof typeof statusCounts]}
                 </span>
               </button>
