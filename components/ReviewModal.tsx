@@ -680,7 +680,7 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
                   rows={3}
                   className="text-base"
                 />
-                <div className="flex items-center space-x-2 bg-light-gray/50 dark:bg-dark-card p-2 rounded-md">
+                <div className="flex flex-wrap items-center gap-2 bg-light-gray/50 dark:bg-dark-card p-2 rounded-md">
                   <input
                     type="text"
                     name="page"
@@ -695,7 +695,7 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
                     value={newQuote.thought}
                     onChange={handleNewQuoteChange}
                     placeholder="나의 생각"
-                    className="flex-grow p-2 border border-border dark:border-dark-border rounded-md bg-white dark:bg-dark-bg text-text-heading dark:text-dark-text-heading focus:ring-2 focus:ring-primary focus:outline-none transition-shadow"
+                    className="flex-1 p-2 border border-border dark:border-dark-border rounded-md bg-white dark:bg-dark-bg text-text-heading dark:text-dark-text-heading focus:ring-2 focus:ring-primary focus:outline-none transition-shadow"
                   />
                   <button
                     onClick={addMemorableQuote}
