@@ -6,9 +6,11 @@ import {
   TrashIcon,
   ChevronDownIcon,
   PlusIcon,
+  PencilIcon,
 } from "./Icons";
 import ConfirmModal from "./ConfirmModal";
 
+// --- Props 및 타입 정의 ---
 interface ReviewModalProps {
   book: BookWithReview;
   onSave: (book: BookWithReview) => void;
@@ -20,7 +22,14 @@ interface CheckboxProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label: string;
 }
 
-// Helper components (no changes needed for these)
+// 인상 깊은 구절 객체 타입을 정의합니다.
+interface MemorableQuote {
+  quote: string;
+  page: string;
+  thought: string;
+}
+
+// --- Helper Components (기존 코드와 동일) ---
 const StarRating: React.FC<{
   rating: number;
   setRating: (rating: number) => void;
@@ -134,7 +143,120 @@ type ConfirmationState = {
   onConfirm: () => void;
 };
 
-// Main Refactored Component
+// --- 새로운 QuoteCard 컴포넌트 ---
+const QuoteCard: React.FC<{
+  quote: MemorableQuote;
+  onDelete: () => void;
+  onSave: (updatedQuote: MemorableQuote) => void;
+}> = ({ quote, onDelete, onSave }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedQuote, setEditedQuote] = useState<MemorableQuote>(quote);
+
+  useEffect(() => {
+    setEditedQuote(quote);
+  }, [quote]);
+
+  const handleSave = () => {
+    onSave(editedQuote);
+    setIsEditing(false);
+  };
+
+  const handleCancel = () => {
+    setEditedQuote(quote);
+    setIsEditing(false);
+  };
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setEditedQuote((prev) => ({ ...prev, [name]: value }));
+  };
+
+  if (isEditing) {
+    return (
+      <div className="bg-light-gray/60 dark:bg-dark-bg/80 p-4 rounded-lg border border-primary dark:border-primary space-y-3">
+        <FormTextarea
+          name="quote"
+          value={editedQuote.quote}
+          onChange={handleChange}
+          placeholder="인상 깊었던 문장"
+          rows={3}
+        />
+        <div className="flex items-center space-x-2">
+          <input
+            type="text"
+            name="page"
+            value={editedQuote.page}
+            onChange={handleChange}
+            placeholder="페이지"
+            className="w-20 p-2 border border-border dark:border-dark-border rounded-md bg-white dark:bg-dark-bg text-text-heading dark:text-dark-text-heading focus:ring-2 focus:ring-primary focus:outline-none transition-shadow"
+          />
+          <FormTextarea
+            name="thought"
+            value={editedQuote.thought}
+            onChange={handleChange}
+            placeholder="나의 생각"
+            rows={2}
+            className="flex-grow"
+          />
+        </div>
+        <div className="flex justify-end space-x-4">
+          <button
+            onClick={handleCancel}
+            className="text-sm font-semibold text-text-body dark:text-dark-text-body hover:opacity-80"
+          >
+            취소
+          </button>
+          <button
+            onClick={handleSave}
+            className="text-sm font-semibold text-primary hover:opacity-80"
+          >
+            저장
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-light-gray/60 dark:bg-dark-bg/80 p-4 rounded-lg border border-border dark:border-dark-border">
+      <div className="flex justify-between items-start">
+        <p className="text-text-body dark:text-dark-text-body whitespace-pre-wrap flex-1 pr-4">
+          "{quote.quote}"
+        </p>
+        <div className="flex space-x-1">
+          <button
+            onClick={() => setIsEditing(true)}
+            className="p-1 text-text-body/50 dark:text-dark-text-body/50 hover:text-primary dark:hover:text-primary"
+            aria-label="인용구 수정"
+          >
+            <PencilIcon className="w-5 h-5" />
+          </button>
+          <button
+            onClick={onDelete}
+            className="p-1 text-text-body/50 dark:text-dark-text-body/50 hover:text-red-500 dark:hover:text-red-500"
+            aria-label="인용구 삭제"
+          >
+            <XMarkIcon className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+      <p className="text-sm text-text-body/70 dark:text-dark-text-body/70 mt-2">
+        p. {quote.page}
+      </p>
+      {quote.thought && (
+        <div className="mt-3 pt-3 border-t border-border dark:border-dark-border/50">
+          <p className="text-text-body dark:text-dark-text-body mt-1">
+            💭 {quote.thought}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// --- Main Refactored Component ---
 const ReviewModal: React.FC<ReviewModalProps> = ({
   book,
   onSave,
@@ -149,7 +271,6 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
       questions_from_book: [],
     };
 
-    // Dates should be in 'yyyy-mm-dd' format for the input, or null
     const formatDate = (date: string | undefined) =>
       date ? new Date(date).toISOString().split("T")[0] : undefined;
 
@@ -157,7 +278,18 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
       ...initialReview,
       start_date: formatDate(initialReview.start_date),
       end_date: formatDate(initialReview.end_date),
+      // memorable_quotes가 객체 배열이 되도록 초기화합니다.
+      memorable_quotes: (initialReview.memorable_quotes || []).map((q) =>
+        typeof q === "string" ? { quote: q, page: "", thought: "" } : q
+      ),
     };
+  });
+
+  // 인상 깊은 구절 입력을 위한 별도의 state
+  const [newQuote, setNewQuote] = useState<MemorableQuote>({
+    quote: "",
+    page: "",
+    thought: "",
   });
 
   const [confirmation, setConfirmation] = useState<ConfirmationState>({
@@ -205,7 +337,6 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
       }));
     };
 
-    // `읽고싶은` -> `읽는중`
     if (
       newStatus === ReadingStatus.Reading &&
       oldStatus === ReadingStatus.WantToRead
@@ -217,7 +348,6 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
       return;
     }
 
-    // `읽는중` -> `완독`
     if (
       newStatus === ReadingStatus.Finished &&
       oldStatus === ReadingStatus.Reading
@@ -226,7 +356,6 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
       return;
     }
 
-    // `완독` -> `읽는중`
     if (
       newStatus === ReadingStatus.Reading &&
       oldStatus === ReadingStatus.Finished
@@ -240,10 +369,9 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
           setConfirmation({ ...confirmation, isOpen: false });
         },
       });
-      return; // Don't change status until confirmed
+      return;
     }
 
-    // 모든 상태 -> `읽고싶은`
     if (newStatus === ReadingStatus.WantToRead && oldStatus !== newStatus) {
       setConfirmation({
         isOpen: true,
@@ -258,10 +386,8 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
           setConfirmation({ ...confirmation, isOpen: false });
         },
       });
-      return; // Don't change status until confirmed
+      return;
     }
-
-    // For other cases, just update the status
     setReview((prev) => ({ ...prev, status: newStatus }));
   };
 
@@ -269,8 +395,54 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
     setReview((prev) => ({ ...prev, rating: newRating }));
   };
 
+  // --- '인상 깊은 구절' 관련 함수 수정 ---
+
+  // 새 구절 입력 필드 핸들러
+  const handleNewQuoteChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setNewQuote((prev) => ({ ...prev, [name]: value }));
+  };
+
+  // 구절 추가 함수
+  const addMemorableQuote = () => {
+    if (newQuote.quote.trim() === "") {
+      alert("인상 깊었던 문장을 입력해주세요.");
+      return;
+    }
+    setReview((prev) => ({
+      ...prev,
+      memorable_quotes: [...(prev.memorable_quotes || []), newQuote],
+    }));
+    // 입력 필드 초기화
+    setNewQuote({ quote: "", page: "", thought: "" });
+  };
+
+  // 구절 삭제 함수
+  const removeMemorableQuote = (index: number) => {
+    setReview((prev) => ({
+      ...prev,
+      memorable_quotes: (prev.memorable_quotes || []).filter(
+        (_, i) => i !== index
+      ),
+    }));
+  };
+
+  const updateMemorableQuote = (
+    index: number,
+    updatedQuote: MemorableQuote
+  ) => {
+    setReview((prev) => {
+      const newQuotes = [...(prev.memorable_quotes || [])];
+      newQuotes[index] = updatedQuote;
+      return { ...prev, memorable_quotes: newQuotes };
+    });
+  };
+
+  // --- '책이 던지는 질문' 관련 함수 (기존 로직 유지) ---
   const handleArrayChange = (
-    field: "memorable_quotes" | "questions_from_book",
+    field: "questions_from_book",
     index: number,
     value: string
   ) => {
@@ -282,14 +454,11 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
     });
   };
 
-  const addToArray = (field: "memorable_quotes" | "questions_from_book") => {
+  const addToArray = (field: "questions_from_book") => {
     setReview((prev) => ({ ...prev, [field]: [...(prev[field] || []), ""] }));
   };
 
-  const removeFromArray = (
-    field: "memorable_quotes" | "questions_from_book",
-    index: number
-  ) => {
+  const removeFromArray = (field: "questions_from_book", index: number) => {
     setReview((prev) => {
       const currentArray = prev[field] || [];
       return { ...prev, [field]: currentArray.filter((_, i) => i !== index) };
@@ -299,7 +468,6 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
   const handleSave = () => {
     const { status, start_date, end_date } = review;
 
-    // --- Validation Logic ---
     if (status === ReadingStatus.Reading || status === ReadingStatus.Dropped) {
       if (!start_date) {
         alert("독서 시작일을 입력해주세요.");
@@ -322,15 +490,14 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
       }
     }
 
-    // --- Final data preparation ---
     const finalReview = {
       ...review,
       start_date:
         status === ReadingStatus.WantToRead ? undefined : review.start_date,
-      end_date:
-        status === ReadingStatus.Finished ? review.end_date : undefined,
+      end_date: status === ReadingStatus.Finished ? review.end_date : undefined,
+      // 빈 문자열 필터링 로직은 그대로 유지합니다.
       memorable_quotes: (review.memorable_quotes || []).filter(
-        (q) => q.trim() !== ""
+        (q) => q.quote.trim() !== ""
       ),
       questions_from_book: (review.questions_from_book || []).filter(
         (q) => q.trim() !== ""
@@ -396,7 +563,9 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
           </div>
         </header>
 
+        {/* --- JSX Body --- */}
         <main className="p-6 space-y-6 flex-grow">
+          {/* ... (독서 상태, 별점 등 다른 FormRow들은 그대로 유지) ... */}
           <div className="flex flex-col sm:flex-row items-start space-y-4 sm:space-y-0 sm:space-x-6">
             <img
               src={book.coverImageUrl}
@@ -486,40 +655,61 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
             />
           </FormRow>
 
+          {/* --- === 수정된 '인상 깊은 구절' 섹션 === --- */}
           <FormRow label="인상 깊은 구절">
-            <div className="space-y-2">
-              {(review.memorable_quotes || []).map((quote, index) => (
-                <div key={index} className="flex items-center space-x-2">
-                  <FormTextarea
-                    value={quote}
-                    onChange={(e) =>
-                      handleArrayChange(
-                        "memorable_quotes",
-                        index,
-                        e.target.value
-                      )
-                    }
-                    placeholder={`구절 #${index + 1}`}
-                    rows={2}
+            <div className="space-y-3">
+              {/* 저장된 구절들을 카드로 표시 */}
+              {(review.memorable_quotes || []).map((q, index) => (
+                <QuoteCard
+                  key={index}
+                  quote={q}
+                  onDelete={() => removeMemorableQuote(index)}
+                  onSave={(updatedQuote) =>
+                    updateMemorableQuote(index, updatedQuote)
+                  }
+                />
+              ))}
+
+              {/* 새로운 구절 입력 UI */}
+              <div className="p-4 border border-border dark:border-dark-border rounded-lg space-y-3 bg-white dark:bg-dark-bg">
+                <FormTextarea
+                  name="quote"
+                  value={newQuote.quote}
+                  onChange={handleNewQuoteChange}
+                  placeholder="인상 깊었던 문장을 입력하세요"
+                  rows={3}
+                  className="text-base"
+                />
+                <div className="flex items-center space-x-2 bg-light-gray/50 dark:bg-dark-card p-2 rounded-md">
+                  <input
+                    type="text"
+                    name="page"
+                    value={newQuote.page}
+                    onChange={handleNewQuoteChange}
+                    placeholder="페이지"
+                    className="w-20 p-2 border border-border dark:border-dark-border rounded-md bg-white dark:bg-dark-bg text-text-heading dark:text-dark-text-heading focus:ring-2 focus:ring-primary focus:outline-none transition-shadow"
+                  />
+                  <input
+                    type="text"
+                    name="thought"
+                    value={newQuote.thought}
+                    onChange={handleNewQuoteChange}
+                    placeholder="나의 생각"
+                    className="flex-grow p-2 border border-border dark:border-dark-border rounded-md bg-white dark:bg-dark-bg text-text-heading dark:text-dark-text-heading focus:ring-2 focus:ring-primary focus:outline-none transition-shadow"
                   />
                   <button
-                    onClick={() => removeFromArray("memorable_quotes", index)}
-                    className="p-2 text-red-500 hover:bg-red-100 rounded-full"
+                    onClick={addMemorableQuote}
+                    className="p-2 bg-primary rounded-full text-white hover:opacity-90 transition-opacity flex-shrink-0"
+                    aria-label="구절 추가"
                   >
-                    <TrashIcon className="w-4 h-4" />
+                    <PlusIcon className="w-5 h-5" />
                   </button>
                 </div>
-              ))}
-              <button
-                onClick={() => addToArray("memorable_quotes")}
-                className="flex items-center space-x-2 text-sm font-semibold text-primary hover:opacity-80"
-              >
-                <PlusIcon className="w-4 h-4" />
-                <span>구절 추가</span>
-              </button>
+              </div>
             </div>
           </FormRow>
 
+          {/* ... (배운 점, 책이 던지는 질문 등 나머지 FormRow들은 그대로 유지) ... */}
           <FormRow label="배운 점">
             <FormTextarea
               name="learnings"
