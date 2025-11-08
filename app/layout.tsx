@@ -3,7 +3,7 @@ import { AppContextProvider } from "../context/AppContext";
 import ClientLayout from "../components/ClientLayout";
 
 export const metadata = {
-  title: "Bookit ",
+  title: "Bookit",
   description:
     "A smart reading journal to discover, track, and review your books.",
 };

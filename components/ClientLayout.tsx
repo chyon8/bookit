@@ -3,13 +3,13 @@
 import React, { useState, useEffect } from "react";
 import { useAppContext } from "../context/AppContext";
 import { Toaster } from "react-hot-toast";
-import { SparklesIcon, SunIcon, MoonIcon } from "./Icons";
+import { SparklesIcon, SunIcon, MoonIcon, BookOpenIcon } from "./Icons";
 import ReviewModal from "./ReviewModal";
 import Nav from "./Nav";
 import ConfirmModal from "./ConfirmModal";
 import { createClient } from "../utils/supabase/client";
 import { Auth } from "@supabase/auth-ui-react";
-import Link from 'next/link';
+import Link from "next/link";
 import { ThemeSupa } from "@supabase/auth-ui-shared";
 import type { Session } from "@supabase/supabase-js";
 
@@ -54,7 +54,7 @@ const ClientLayout: React.FC<{ children: React.ReactNode }> = ({
         <div className="w-full max-w-md mx-auto">
           <div className="bg-white dark:bg-dark-card p-8 rounded-lg shadow-lg">
             <div className="flex items-center justify-center mb-6">
-              <SparklesIcon className="w-10 h-10 text-primary" />
+              <BookOpenIcon className="w-10 h-10 text-primary" />
               <h1 className="text-2xl font-bold text-text-heading dark:text-dark-text-heading ml-2">
                 Bookit
               </h1>
@@ -110,7 +110,7 @@ const ClientLayout: React.FC<{ children: React.ReactNode }> = ({
       <header className="bg-white dark:bg-dark-card p-2 border-b border-border dark:border-dark-border sticky top-0 z-20">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <Link href="/" className="flex items-center">
-            <SparklesIcon className="w-8 h-8 text-primary" />
+            <BookOpenIcon className="w-8 h-8 text-primary" />
             <h1 className="text-xl font-bold text-text-heading dark:text-dark-text-heading ml-2">
               Bookit
             </h1>

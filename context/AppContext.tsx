@@ -8,7 +8,7 @@ import React, {
   useCallback,
 } from "react";
 import { BookWithReview, UserBook } from "../types";
-import { SparklesIcon } from "../components/Icons";
+import { BookOpenIcon, SparklesIcon } from "../components/Icons";
 import { createClient } from "../utils/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import toast from "react-hot-toast";
@@ -251,7 +251,7 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
     return (
       <div className="flex justify-center items-center min-h-screen bg-light-gray dark:bg-dark-bg">
         <div className="text-center">
-          <SparklesIcon className="w-12 h-12 text-primary mx-auto animate-pulse" />
+          <BookOpenIcon className="w-12 h-12 text-primary mx-auto animate-pulse" />
           <p className="text-text-body dark:text-dark-text-body mt-4">
             책장 불러오는 중...
           </p>
