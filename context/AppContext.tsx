@@ -165,18 +165,29 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
         if (error) throw error;
         finalBookData = data;
       } else {
-        // New book from search: upsert on isbn13 to avoid duplicates.
-        const { data, error } = await supabase
+        // New book from search: select or insert to avoid duplicates.
+        const { data: existingBook, error: selectError } = await supabase
           .from("books")
-          .upsert(bookRecord, {
-            onConflict: "isbn13",
-            ignoreDuplicates: false,
-          })
-          .select()
+          .select("id, cover_image_url")
+          .eq("isbn13", bookRecord.isbn13)
           .single();
 
-        if (error) throw error;
-        finalBookData = data;
+        if (selectError && selectError.code !== 'PGRST116') { // PGRST116: "exact one row not found"
+          throw selectError;
+        }
+
+        if (existingBook) {
+          finalBookData = { ...bookRecord, ...existingBook };
+        } else {
+          const { data: newBook, error: insertError } = await supabase
+            .from("books")
+            .insert(bookRecord)
+            .select()
+            .single();
+          
+          if (insertError) throw insertError;
+          finalBookData = newBook;
+        }
       }
 
       if (!finalBookData) throw new Error("Book saving failed.");

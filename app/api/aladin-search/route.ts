@@ -64,7 +64,10 @@ export async function GET(request) {
             if (books && books.isbn13) {
               isbnToReviewMap.set(books.isbn13, reviewData);
             } else if (books) {
-              legacyToReviewMap.set(`${books.title}|${cleanAuthor(books.author)}`, reviewData);
+              legacyToReviewMap.set(
+                `${books.title}|${cleanAuthor(books.author)}`,
+                reviewData
+              );
             }
           });
         }
@@ -73,8 +76,11 @@ export async function GET(request) {
       const searchResults = data.item.map((item) => {
         const authorName = cleanAuthor(item.author);
         const legacyKey = `${item.title}|${authorName}`;
-        
-        const review = isbnToReviewMap.get(item.isbn13) || legacyToReviewMap.get(legacyKey) || null;
+
+        const review =
+          isbnToReviewMap.get(item.isbn13) ||
+          legacyToReviewMap.get(legacyKey) ||
+          null;
         const isInBookshelf = !!review;
 
         return {
