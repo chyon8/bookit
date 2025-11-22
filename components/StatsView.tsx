@@ -43,11 +43,11 @@ const ChartContainer: React.FC<{
   </div>
 );
 
-const StatCard: React.FC<{ title: string; value: string | number; description?: string }> = ({
-  title,
-  value,
-  description,
-}) => (
+const StatCard: React.FC<{
+  title: string;
+  value: string | number;
+  description?: string;
+}> = ({ title, value, description }) => (
   <div className="bg-white dark:bg-dark-card p-4 rounded-lg text-center shadow-sm border border-border dark:border-dark-border">
     <p className="text-sm font-semibold text-text-body dark:text-dark-text-body uppercase tracking-wider">
       {title}
@@ -55,16 +55,23 @@ const StatCard: React.FC<{ title: string; value: string | number; description?: 
     <p className="text-3xl font-bold text-text-heading dark:text-dark-text-heading mt-1 truncate">
       {value}
     </p>
-    {description && <p className="text-xs text-text-muted dark:text-dark-text-muted mt-1">{description}</p>}
+    {description && (
+      <p className="text-xs text-text-muted dark:text-dark-text-muted mt-1">
+        {description}
+      </p>
+    )}
   </div>
 );
 
-const TopAuthors: React.FC<{ authorData: { name: string; count: number }[] }> = ({ authorData }) => {
-  if (!authorData || authorData.length === 0) return (
-    <p className="text-text-body dark:text-dark-text-body text-center py-10">
-      데이터가 없습니다.
-    </p>
-  );
+const TopAuthors: React.FC<{
+  authorData: { name: string; count: number }[];
+}> = ({ authorData }) => {
+  if (!authorData || authorData.length === 0)
+    return (
+      <p className="text-text-body dark:text-dark-text-body text-center py-10">
+        데이터가 없습니다.
+      </p>
+    );
 
   return (
     <div className="space-y-2">
@@ -77,7 +84,7 @@ const TopAuthors: React.FC<{ authorData: { name: string; count: number }[] }> = 
             <span className="text-text-body dark:text-dark-text-body mr-2">
               {index + 1}.
             </span>
-            {author.name.split('(지은이')[0].trim()}
+            {author.name.split("(지은이")[0].trim()}
           </p>
           <p className="font-bold text-text-heading dark:text-dark-text-heading flex-shrink-0">
             {author.count} 권
@@ -94,19 +101,31 @@ const SpeedReadCard: React.FC<{
   days: number | null;
 }> = ({ title, book, days }) => (
   <div className="bg-white dark:bg-dark-card p-4 rounded-lg shadow-sm border border-border dark:border-dark-border">
-    <p className="text-sm font-semibold text-text-body dark:text-dark-text-body uppercase tracking-wider mb-2">{title}</p>
+    <p className="text-sm font-semibold text-text-body dark:text-dark-text-body uppercase tracking-wider mb-2">
+      {title}
+    </p>
     {book && days != null ? (
       <div className="flex items-center gap-4">
-        <img src={book.coverImageUrl} alt={book.title} className="w-12 h-auto rounded-md shadow-md" />
+        <img
+          src={book.coverImageUrl}
+          alt={book.title}
+          className="w-12 h-auto rounded-md shadow-md"
+        />
         <div className="flex-grow overflow-hidden">
-          <p className="font-bold text-text-heading dark:text-dark-text-heading line-clamp-2 truncate">{book.title}</p>
-          <p className="text-sm text-text-body dark:text-dark-text-body truncate">{book.author.split('(지은이')[0].trim()}</p>
+          <p className="font-bold text-text-heading dark:text-dark-text-heading line-clamp-2 truncate">
+            {book.title}
+          </p>
+          <p className="text-sm text-text-body dark:text-dark-text-body truncate">
+            {book.author.split("(지은이")[0].trim()}
+          </p>
           <p className="text-sm font-bold text-primary mt-1">{days}일</p>
         </div>
       </div>
     ) : (
       <div className="flex justify-center items-center h-[80px]">
-        <p className="text-text-body dark:text-dark-text-body text-center">데이터 없음</p>
+        <p className="text-text-body dark:text-dark-text-body text-center">
+          데이터 없음
+        </p>
       </div>
     )}
   </div>
@@ -152,10 +171,10 @@ const StatsView: React.FC<StatsViewProps> = ({ books, theme }) => {
   const isDark = theme === "dark";
 
   const readingStatusKorean = {
-    [ReadingStatus.Reading]: '읽는 중',
-    [ReadingStatus.Finished]: '완독',
-    [ReadingStatus.Dropped]: '중단',
-    [ReadingStatus.WantToRead]: '읽고 싶은',
+    [ReadingStatus.Reading]: "읽는 중",
+    [ReadingStatus.Finished]: "완독",
+    [ReadingStatus.Dropped]: "중단",
+    [ReadingStatus.WantToRead]: "읽고 싶은",
   };
 
   const chartColors = {
@@ -181,6 +200,7 @@ const StatsView: React.FC<StatsViewProps> = ({ books, theme }) => {
       totalBooks: books?.length || 0,
       totalFinished: 0,
       currentlyReading: 0,
+      finishedThisMonth: 0,
       avgRating: "N/A",
       readingStatusData: [] as { name: string; value: number }[],
       ratingDistributionData: [] as { name: string; Count: number }[],
@@ -189,16 +209,16 @@ const StatsView: React.FC<StatsViewProps> = ({ books, theme }) => {
       authorData: [] as { name: string; count: number }[],
       readingSpeed: {
         avgDays: 0,
-        fastest: null as { book: BookWithReview, days: number } | null,
-        slowest: null as { book: BookWithReview, days: number } | null,
+        fastest: null as { book: BookWithReview; days: number } | null,
+        slowest: null as { book: BookWithReview; days: number } | null,
       },
       ownership: {
         data: [] as { name: string; value: number }[],
         ownedBooks: [] as BookWithReview[],
       },
       wishlist: {
-        categoryData: [] as { name: string, value: number }[],
-        authorData: [] as { name: string, count: number }[],
+        categoryData: [] as { name: string; value: number }[],
+        authorData: [] as { name: string; count: number }[],
       },
     };
 
@@ -221,11 +241,14 @@ const StatsView: React.FC<StatsViewProps> = ({ books, theme }) => {
 
     let totalReadingDays = 0;
     let booksWithReadingDays = 0;
-    let fastestRead: { book: BookWithReview, days: number } | null = null;
-    let slowestRead: { book: BookWithReview, days: number } | null = null;
+    let fastestRead: { book: BookWithReview; days: number } | null = null;
+    let slowestRead: { book: BookWithReview; days: number } | null = null;
     let ownedCount = 0;
     const wishlistCategoryCounts: { [key: string]: number } = {};
     const wishlistAuthorCounts: { [key: string]: number } = {};
+
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
 
     books.forEach((book) => {
       const status = book.review?.status || ReadingStatus.WantToRead;
@@ -246,9 +269,16 @@ const StatsView: React.FC<StatsViewProps> = ({ books, theme }) => {
           if (!isNaN(date.getTime())) {
             const key = new Date(date.getFullYear(), date.getMonth()).getTime();
             monthlyMap.set(key, (monthlyMap.get(key) || 0) + 1);
+
+            if (
+              date.getMonth() === currentMonth &&
+              date.getFullYear() === currentYear
+            ) {
+              stats.finishedThisMonth++;
+            }
           }
         }
-        
+
         const category = book.category || "Uncategorized";
         categoryCounts[category] = (categoryCounts[category] || 0) + 1;
         authorCounts[book.author] = (authorCounts[book.author] || 0) + 1;
@@ -257,7 +287,9 @@ const StatsView: React.FC<StatsViewProps> = ({ books, theme }) => {
           const startDate = new Date(book.review.start_date);
           const endDate = new Date(book.review.end_date);
           if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
-            const diffDays = Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+            const diffDays = Math.round(
+              (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
+            );
             if (diffDays >= 0) {
               totalReadingDays += diffDays;
               booksWithReadingDays++;
@@ -280,11 +312,13 @@ const StatsView: React.FC<StatsViewProps> = ({ books, theme }) => {
       if (status === ReadingStatus.Reading) {
         stats.currentlyReading++;
       }
-      
+
       if (status === ReadingStatus.WantToRead) {
         const category = book.category || "Uncategorized";
-        wishlistCategoryCounts[category] = (wishlistCategoryCounts[category] || 0) + 1;
-        wishlistAuthorCounts[book.author] = (wishlistAuthorCounts[book.author] || 0) + 1;
+        wishlistCategoryCounts[category] =
+          (wishlistCategoryCounts[category] || 0) + 1;
+        wishlistAuthorCounts[book.author] =
+          (wishlistAuthorCounts[book.author] || 0) + 1;
       }
     });
 
@@ -297,33 +331,58 @@ const StatsView: React.FC<StatsViewProps> = ({ books, theme }) => {
       .filter((item) => item.value > 0);
 
     stats.ratingDistributionData = Object.entries(ratingCounts)
-      .map(([rating, count]) => ({ name: `${parseFloat(rating).toFixed(1)} ★`, Count: count }))
+      .map(([rating, count]) => ({
+        name: `${parseFloat(rating).toFixed(1)} ★`,
+        Count: count,
+      }))
       .sort((a, b) => parseFloat(a.name) - parseFloat(b.name));
 
-    const sortedMonthly = Array.from(monthlyMap.entries()).sort((a, b) => a[0] - b[0]);
-    const monthlySlice = timeRange === "all" ? sortedMonthly : sortedMonthly.slice(-parseInt(timeRange));
+    const sortedMonthly = Array.from(monthlyMap.entries()).sort(
+      (a, b) => a[0] - b[0]
+    );
+    const monthlySlice =
+      timeRange === "all"
+        ? sortedMonthly
+        : sortedMonthly.slice(-parseInt(timeRange));
     stats.monthlyData = monthlySlice.map(([timestamp, count]) => ({
-      name: new Date(timestamp).toLocaleString("default", { month: "short", year: "2-digit" }),
+      name: new Date(timestamp).toLocaleString("default", {
+        month: "short",
+        year: "2-digit",
+      }),
       Books: count,
     }));
 
-    stats.categoryData = Object.entries(categoryCounts).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
-    stats.authorData = Object.entries(authorCounts).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count).slice(0, 10);
-    
+    stats.categoryData = Object.entries(categoryCounts)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+    stats.authorData = Object.entries(authorCounts)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
+
     if (booksWithReadingDays > 0) {
-      stats.readingSpeed.avgDays = Math.round(totalReadingDays / booksWithReadingDays);
+      stats.readingSpeed.avgDays = Math.round(
+        totalReadingDays / booksWithReadingDays
+      );
     }
     stats.readingSpeed.fastest = fastestRead;
     stats.readingSpeed.slowest = slowestRead;
 
     stats.ownership.data = [
-      { name: '소장', value: ownedCount },
-      { name: '비소장', value: stats.totalFinished - ownedCount }
-    ].filter(d => d.value > 0);
-    stats.ownership.ownedBooks.sort((a,b) => (b.review?.rating || 0) - (a.review?.rating || 0));
+      { name: "소장", value: ownedCount },
+      { name: "비소장", value: stats.totalFinished - ownedCount },
+    ].filter((d) => d.value > 0);
+    stats.ownership.ownedBooks.sort(
+      (a, b) => (b.review?.rating || 0) - (a.review?.rating || 0)
+    );
 
-    stats.wishlist.categoryData = Object.entries(wishlistCategoryCounts).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
-    stats.wishlist.authorData = Object.entries(wishlistAuthorCounts).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count).slice(0, 10);
+    stats.wishlist.categoryData = Object.entries(wishlistCategoryCounts)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+    stats.wishlist.authorData = Object.entries(wishlistAuthorCounts)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
 
     return stats;
   }, [books, timeRange]);
@@ -344,10 +403,14 @@ const StatsView: React.FC<StatsViewProps> = ({ books, theme }) => {
   const renderContent = () => {
     switch (activeTab) {
       case "overview":
-        const translatedReadingStatusData = processedStats.readingStatusData.map(item => ({
+        const translatedReadingStatusData =
+          processedStats.readingStatusData.map((item) => ({
             ...item,
-            name: readingStatusKorean[item.name as keyof typeof readingStatusKorean] || item.name
-        }));
+            name:
+              readingStatusKorean[
+                item.name as keyof typeof readingStatusKorean
+              ] || item.name,
+          }));
 
         return (
           <div className="space-y-6">
@@ -355,7 +418,11 @@ const StatsView: React.FC<StatsViewProps> = ({ books, theme }) => {
               <StatCard title="총 보유" value={processedStats.totalBooks} />
               <StatCard title="완독" value={processedStats.totalFinished} />
               <StatCard title="평균 별점" value={processedStats.avgRating} />
-              <StatCard title="읽는 중" value={processedStats.currentlyReading} />
+              <StatCard
+                title="이번 달"
+                value={processedStats.finishedThisMonth}
+                description={`${processedStats.currentlyReading}권 읽는 중`}
+              />
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <ChartContainer
@@ -365,11 +432,27 @@ const StatsView: React.FC<StatsViewProps> = ({ books, theme }) => {
               >
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie data={translatedReadingStatusData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={70} outerRadius={90} paddingAngle={5}>
+                    <Pie
+                      data={translatedReadingStatusData}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={70}
+                      outerRadius={90}
+                      paddingAngle={5}
+                    >
                       {processedStats.readingStatusData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={chartColors.pie[index % chartColors.pie.length]} />
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={chartColors.pie[index % chartColors.pie.length]}
+                        />
                       ))}
-                      <Label value={`${books?.length}권`} position="center" className="fill-text-heading dark:fill-dark-text-heading text-2xl font-bold" />
+                      <Label
+                        value={`${books?.length}권`}
+                        position="center"
+                        className="fill-text-heading dark:fill-dark-text-heading text-2xl font-bold"
+                      />
                     </Pie>
                     <Tooltip contentStyle={chartColors.tooltip} />
                     <Legend wrapperStyle={{ color: chartColors.textColor }} />
@@ -383,9 +466,19 @@ const StatsView: React.FC<StatsViewProps> = ({ books, theme }) => {
               >
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie data={processedStats.ownership.data} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}>
+                    <Pie
+                      data={processedStats.ownership.data}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={80}
+                    >
                       {processedStats.ownership.data.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={chartColors.pie[index % chartColors.pie.length]} />
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={chartColors.pie[index % chartColors.pie.length]}
+                        />
                       ))}
                     </Pie>
                     <Tooltip contentStyle={chartColors.tooltip} />
@@ -397,7 +490,8 @@ const StatsView: React.FC<StatsViewProps> = ({ books, theme }) => {
           </div>
         );
       case "habits":
-        const timeRangeText = timeRange === 'all' ? '전체 기간' : `최근 ${timeRange}개월`;
+        const timeRangeText =
+          timeRange === "all" ? "전체 기간" : `최근 ${timeRange}개월`;
         const chartTitle = `월별 완독 수 (${timeRangeText})`;
 
         return (
@@ -405,64 +499,178 @@ const StatsView: React.FC<StatsViewProps> = ({ books, theme }) => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="bg-white dark:bg-dark-card p-6 rounded-lg shadow-sm border border-border dark:border-dark-border">
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-bold text-text-heading dark:text-dark-text-heading">{chartTitle}</h3>
+                  <h3 className="text-lg font-bold text-text-heading dark:text-dark-text-heading">
+                    {chartTitle}
+                  </h3>
                   <div className="flex items-center space-x-2">
-                    <TimeRangeButton onClick={() => setTimeRange("6")} active={timeRange === "6"}>6개월</TimeRangeButton>
-                    <TimeRangeButton onClick={() => setTimeRange("12")} active={timeRange === "12"}>12개월</TimeRangeButton>
-                    <TimeRangeButton onClick={() => setTimeRange("all")} active={timeRange === "all"}>전체</TimeRangeButton>
+                    <TimeRangeButton
+                      onClick={() => setTimeRange("6")}
+                      active={timeRange === "6"}
+                    >
+                      6개월
+                    </TimeRangeButton>
+                    <TimeRangeButton
+                      onClick={() => setTimeRange("12")}
+                      active={timeRange === "12"}
+                    >
+                      12개월
+                    </TimeRangeButton>
+                    <TimeRangeButton
+                      onClick={() => setTimeRange("all")}
+                      active={timeRange === "all"}
+                    >
+                      전체
+                    </TimeRangeButton>
                   </div>
                 </div>
                 {processedStats.monthlyData.length === 0 ? (
-                  <p className="text-text-body dark:text-dark-text-body text-center py-10">책을 완독하여 월별 독서 기록을 시작하세요.</p>
+                  <p className="text-text-body dark:text-dark-text-body text-center py-10">
+                    책을 완독하여 월별 독서 기록을 시작하세요.
+                  </p>
                 ) : (
                   <div className="h-[300px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={processedStats.monthlyData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke={chartColors.gridColor} />
-                        <XAxis dataKey="name" tick={{ fill: chartColors.textColor }} />
-                        <YAxis allowDecimals={false} tick={{ fill: chartColors.textColor }} />
-                        <Tooltip contentStyle={chartColors.tooltip} cursor={{ fill: isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.1)"}} />
-                        <Bar dataKey="Books" fill={chartColors.bar.booksFinished} name="권" />
+                      <BarChart
+                        data={processedStats.monthlyData}
+                        margin={{ top: 5, right: 20, left: -10, bottom: 5 }}
+                      >
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          stroke={chartColors.gridColor}
+                        />
+                        <XAxis
+                          dataKey="name"
+                          tick={{ fill: chartColors.textColor }}
+                        />
+                        <YAxis
+                          allowDecimals={false}
+                          tick={{ fill: chartColors.textColor }}
+                        />
+                        <Tooltip
+                          contentStyle={chartColors.tooltip}
+                          cursor={{
+                            fill: isDark
+                              ? "rgba(255, 255, 255, 0.1)"
+                              : "rgba(0, 0, 0, 0.1)",
+                          }}
+                        />
+                        <Bar
+                          dataKey="Books"
+                          fill={chartColors.bar.booksFinished}
+                          name="권"
+                        />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
                 )}
               </div>
-              <ChartContainer title="별점 분포" empty={processedStats.ratingDistributionData.length === 0} emptyText="완독한 책의 별점을 매겨보세요.">
+              <ChartContainer
+                title="별점 분포"
+                empty={processedStats.ratingDistributionData.length === 0}
+                emptyText="완독한 책의 별점을 매겨보세요."
+              >
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={processedStats.ratingDistributionData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={chartColors.gridColor} />
-                    <XAxis dataKey="name" tick={{ fill: chartColors.textColor }} />
-                    <YAxis allowDecimals={false} tick={{ fill: chartColors.textColor }} />
-                    <Tooltip contentStyle={chartColors.tooltip} cursor={{ fill: isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.1)"}} />
-                    <Bar dataKey="Count" fill={chartColors.bar.ratingDist} name="권 수" />
+                  <BarChart
+                    data={processedStats.ratingDistributionData}
+                    margin={{ top: 5, right: 20, left: -10, bottom: 5 }}
+                  >
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke={chartColors.gridColor}
+                    />
+                    <XAxis
+                      dataKey="name"
+                      tick={{ fill: chartColors.textColor }}
+                    />
+                    <YAxis
+                      allowDecimals={false}
+                      tick={{ fill: chartColors.textColor }}
+                    />
+                    <Tooltip
+                      contentStyle={chartColors.tooltip}
+                      cursor={{
+                        fill: isDark
+                          ? "rgba(255, 255, 255, 0.1)"
+                          : "rgba(0, 0, 0, 0.1)",
+                      }}
+                    />
+                    <Bar
+                      dataKey="Count"
+                      fill={chartColors.bar.ratingDist}
+                      name="권 수"
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               </ChartContainer>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <StatCard title="평균 완독 기간" value={`${processedStats.readingSpeed.avgDays}일`} description="1권의 책을 읽는데 걸리는 평균 시간" />
-                <SpeedReadCard title="가장 빨리 읽은 책" book={processedStats.readingSpeed.fastest?.book ?? null} days={processedStats.readingSpeed.fastest?.days ?? null} />
-                <SpeedReadCard title="가장 오래 읽은 책" book={processedStats.readingSpeed.slowest?.book ?? null} days={processedStats.readingSpeed.slowest?.days ?? null} />
+              <StatCard
+                title="평균 완독 기간"
+                value={`${processedStats.readingSpeed.avgDays}일`}
+                description="1권의 책을 읽는데 걸리는 평균 시간"
+              />
+              <SpeedReadCard
+                title="가장 빨리 읽은 책"
+                book={processedStats.readingSpeed.fastest?.book ?? null}
+                days={processedStats.readingSpeed.fastest?.days ?? null}
+              />
+              <SpeedReadCard
+                title="가장 오래 읽은 책"
+                book={processedStats.readingSpeed.slowest?.book ?? null}
+                days={processedStats.readingSpeed.slowest?.days ?? null}
+              />
             </div>
           </div>
         );
       case "genres":
         return (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <ChartContainer title="완독한 책 장르" empty={processedStats.categoryData.length === 0} emptyText="다양한 장르의 책을 완독하여 차트를 채워보세요.">
+            <ChartContainer
+              title="완독한 책 장르"
+              empty={processedStats.categoryData.length === 0}
+              emptyText="다양한 장르의 책을 완독하여 차트를 채워보세요."
+            >
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={processedStats.categoryData.slice(0, 7)} layout="vertical" margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={chartColors.gridColor} />
-                  <XAxis type="number" allowDecimals={false} tick={{ fill: chartColors.textColor }} />
-                  <YAxis type="category" dataKey="name" width={100} tick={{ fill: chartColors.textColor, textAnchor: 'end' }} />
-                  <Tooltip contentStyle={chartColors.tooltip} cursor={{ fill: isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.1)"}} />
-                  <Bar dataKey="value" fill={chartColors.bar.categoryDist} name="권" />
+                <BarChart
+                  data={processedStats.categoryData.slice(0, 7)}
+                  layout="vertical"
+                  margin={{ top: 5, right: 20, left: 20, bottom: 5 }}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke={chartColors.gridColor}
+                  />
+                  <XAxis
+                    type="number"
+                    allowDecimals={false}
+                    tick={{ fill: chartColors.textColor }}
+                  />
+                  <YAxis
+                    type="category"
+                    dataKey="name"
+                    width={100}
+                    tick={{ fill: chartColors.textColor, textAnchor: "end" }}
+                  />
+                  <Tooltip
+                    contentStyle={chartColors.tooltip}
+                    cursor={{
+                      fill: isDark
+                        ? "rgba(255, 255, 255, 0.1)"
+                        : "rgba(0, 0, 0, 0.1)",
+                    }}
+                  />
+                  <Bar
+                    dataKey="value"
+                    fill={chartColors.bar.categoryDist}
+                    name="권"
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </ChartContainer>
             <div className="bg-white dark:bg-dark-card p-6 rounded-lg shadow-sm border border-border dark:border-dark-border">
-              <h3 className="text-lg font-bold text-text-heading dark:text-dark-text-heading mb-4">완독한 책 저자 Top 10</h3>
+              <h3 className="text-lg font-bold text-text-heading dark:text-dark-text-heading mb-4">
+                완독한 책 저자 Top 10
+              </h3>
               <TopAuthors authorData={processedStats.authorData} />
             </div>
           </div>
@@ -470,19 +678,52 @@ const StatsView: React.FC<StatsViewProps> = ({ books, theme }) => {
       case "wishlist":
         return (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <ChartContainer title="읽고 싶은 책 장르" empty={processedStats.wishlist.categoryData.length === 0} emptyText="읽고 싶은 책을 추가해 취향을 분석해보세요.">
+            <ChartContainer
+              title="읽고 싶은 책 장르"
+              empty={processedStats.wishlist.categoryData.length === 0}
+              emptyText="읽고 싶은 책을 추가해 취향을 분석해보세요."
+            >
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={processedStats.wishlist.categoryData.slice(0, 7)} layout="vertical" margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={chartColors.gridColor} />
-                  <XAxis type="number" allowDecimals={false} tick={{ fill: chartColors.textColor }} />
-                  <YAxis type="category" dataKey="name" width={100} tick={{ fill: chartColors.textColor, textAnchor: 'end' }} />
-                  <Tooltip contentStyle={chartColors.tooltip} cursor={{ fill: isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.1)"}} />
-                  <Bar dataKey="value" fill={chartColors.bar.wishlist} name="권" />
+                <BarChart
+                  data={processedStats.wishlist.categoryData.slice(0, 7)}
+                  layout="vertical"
+                  margin={{ top: 5, right: 20, left: 20, bottom: 5 }}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke={chartColors.gridColor}
+                  />
+                  <XAxis
+                    type="number"
+                    allowDecimals={false}
+                    tick={{ fill: chartColors.textColor }}
+                  />
+                  <YAxis
+                    type="category"
+                    dataKey="name"
+                    width={100}
+                    tick={{ fill: chartColors.textColor, textAnchor: "end" }}
+                  />
+                  <Tooltip
+                    contentStyle={chartColors.tooltip}
+                    cursor={{
+                      fill: isDark
+                        ? "rgba(255, 255, 255, 0.1)"
+                        : "rgba(0, 0, 0, 0.1)",
+                    }}
+                  />
+                  <Bar
+                    dataKey="value"
+                    fill={chartColors.bar.wishlist}
+                    name="권"
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </ChartContainer>
             <div className="bg-white dark:bg-dark-card p-6 rounded-lg shadow-sm border border-border dark:border-dark-border">
-              <h3 className="text-lg font-bold text-text-heading dark:text-dark-text-heading mb-4">읽고 싶은 책 저자 Top 10</h3>
+              <h3 className="text-lg font-bold text-text-heading dark:text-dark-text-heading mb-4">
+                읽고 싶은 책 저자 Top 10
+              </h3>
               <TopAuthors authorData={processedStats.wishlist.authorData} />
             </div>
           </div>
@@ -493,10 +734,30 @@ const StatsView: React.FC<StatsViewProps> = ({ books, theme }) => {
   return (
     <div className="space-y-6">
       <div className="bg-white dark:bg-dark-card p-2 rounded-lg shadow-sm border border-border dark:border-dark-border flex items-center space-x-2 overflow-x-auto">
-        <TabButton onClick={() => setActiveTab("overview")} active={activeTab === "overview"}>개요</TabButton>
-        <TabButton onClick={() => setActiveTab("habits")} active={activeTab === "habits"}>독서 습관</TabButton>
-        <TabButton onClick={() => setActiveTab("genres")} active={activeTab === "genres"}>장르 & 저자</TabButton>
-        <TabButton onClick={() => setActiveTab("wishlist")} active={activeTab === "wishlist"}>위시리스트</TabButton>
+        <TabButton
+          onClick={() => setActiveTab("overview")}
+          active={activeTab === "overview"}
+        >
+          개요
+        </TabButton>
+        <TabButton
+          onClick={() => setActiveTab("habits")}
+          active={activeTab === "habits"}
+        >
+          독서 습관
+        </TabButton>
+        <TabButton
+          onClick={() => setActiveTab("genres")}
+          active={activeTab === "genres"}
+        >
+          장르 & 저자
+        </TabButton>
+        <TabButton
+          onClick={() => setActiveTab("wishlist")}
+          active={activeTab === "wishlist"}
+        >
+          위시리스트
+        </TabButton>
       </div>
       <div>{renderContent()}</div>
     </div>
