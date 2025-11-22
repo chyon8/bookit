@@ -141,6 +141,10 @@ const BookshelfView: React.FC = () => {
     title: string;
   } | null>(null);
 
+  const [isAdvancedFilterOpen, setAdvancedFilterOpen] = useState(false);
+  const [rereadFilter, setRereadFilter] = useState(false);
+  const [monthFilter, setMonthFilter] = useState<string>('all');
+
   const sortDropdownRef = useRef<HTMLDivElement>(null);
 
   const statusCounts = useMemo(() => {
@@ -294,8 +298,40 @@ const BookshelfView: React.FC = () => {
     };
   }, []);
 
+  const monthOptions = useMemo(() => {
+    const months = new Set<string>();
+    const booksToFilter = statusFilter === 'All' 
+        ? books 
+        : books.filter(b => b.review?.status === statusFilter);
+
+    const dateKey = statusFilter === ReadingStatus.Finished ? 'end_date' : 'created_at';
+
+    booksToFilter.forEach(book => {
+      const dateValue = book.review?.[dateKey as keyof UserBook];
+      if (dateValue && typeof dateValue === 'string') {
+        try {
+          const date = new Date(dateValue);
+          if (!isNaN(date.getTime())) {
+            const year = date.getFullYear();
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            months.add(`${year}-${month}`);
+          }
+        } catch (e) {
+          console.error("Invalid date format:", dateValue);
+        }
+      }
+    });
+
+    return Array.from(months).sort().reverse();
+  }, [books, statusFilter]);
+  
+  const handleStatusFilterChange = (status: ReadingStatus | "All") => {
+    setStatusFilter(status);
+    setMonthFilter('all'); // Reset month filter when status changes
+  };
+
   const sortedAndFilteredBooks = useMemo(() => {
-    const filtered = (books || [])
+    let filtered = (books || [])
       .filter(
         (book) => statusFilter === "All" || book.review?.status === statusFilter
       )
@@ -306,7 +342,7 @@ const BookshelfView: React.FC = () => {
         const {
           one_line_review,
           summary,
-          memorable_quotes, // 타입이 MemorableQuote[]
+          memorable_quotes,
           questions_from_book,
           connected_thoughts,
           overall_impression,
@@ -314,13 +350,11 @@ const BookshelfView: React.FC = () => {
           notes,
         } = book.review || {};
 
-        // --- ▼ 1. 에러 수정된 부분 (검색 기능) ▼ ---
         const searchableContent = [
           title,
           author,
           one_line_review,
           summary,
-          // memorable_quotes가 객체 배열이므로, 검색 가능한 텍스트(quote, thought)를 추출합니다.
           ...((memorable_quotes as MemorableQuote[]) || []).flatMap((q) => [
             q.quote,
             q.thought,
@@ -334,9 +368,30 @@ const BookshelfView: React.FC = () => {
           .filter(Boolean)
           .join(" ")
           .toLowerCase();
-        // --- ▲ 1. 에러 수정된 부분 (검색 기능) ▲ ---
 
         return searchableContent.includes(query);
+      })
+      .filter(book => {
+        if (!rereadFilter) return true;
+        return book.review?.reread_will === true;
+      })
+      .filter(book => {
+        if (monthFilter === 'all') return true;
+        const dateKey = statusFilter === ReadingStatus.Finished ? 'end_date' : 'created_at';
+        const dateValue = book.review?.[dateKey as keyof UserBook];
+        if (dateValue && typeof dateValue === 'string') {
+          try {
+            const date = new Date(dateValue);
+             if (!isNaN(date.getTime())) {
+              const year = date.getFullYear();
+              const month = (date.getMonth() + 1).toString().padStart(2, '0');
+              return `${year}-${month}` === monthFilter;
+            }
+          } catch(e) {
+            return false;
+          }
+        }
+        return false;
       });
 
     // Sorting logic
@@ -384,7 +439,7 @@ const BookshelfView: React.FC = () => {
           return dateB - dateA;
         });
     }
-  }, [books, statusFilter, searchQuery, sortOption]);
+  }, [books, statusFilter, searchQuery, sortOption, rereadFilter, monthFilter]);
 
   const handleShowRandomNote = () => {
     const allNotes: Note[] = (books || []).flatMap((book) => {
@@ -409,12 +464,9 @@ const BookshelfView: React.FC = () => {
         });
       }
 
-      // --- ▼ 2. 에러 수정된 부분 (랜덤 노트) ▼ ---
       if (review.memorable_quotes && Array.isArray(review.memorable_quotes)) {
-        // review.memorable_quotes는 MemorableQuote[] 타입입니다.
         (review.memorable_quotes as MemorableQuote[]).forEach((quoteObj) => {
           if (quoteObj && quoteObj.quote) {
-            // content에 문자열인 quoteObj.quote를 할당합니다.
             let content = `"${quoteObj.quote}"`;
             if (quoteObj.thought) {
               content += `\n\n- 나의 생각: ${quoteObj.thought}`;
@@ -426,7 +478,6 @@ const BookshelfView: React.FC = () => {
           }
         });
       }
-      // --- ▲ 2. 에러 수정된 부분 (랜덤 노트) ▲ ---
 
       if (
         review.questions_from_book &&
@@ -542,7 +593,7 @@ const BookshelfView: React.FC = () => {
           </h2>
           {status && booksToRender.length > 10 && (
             <button
-              onClick={() => setStatusFilter(status)}
+              onClick={() => handleStatusFilterChange(status)}
               className="text-sm font-semibold text-primary hover:underline"
             >
               전체보기
@@ -581,7 +632,7 @@ const BookshelfView: React.FC = () => {
             {filterOptions.map((status) => (
               <button
                 key={status}
-                onClick={() => setStatusFilter(status)}
+                onClick={() => handleStatusFilterChange(status)}
                 className={`px-3 py-1 text-sm font-semibold rounded-full transition-colors ${
                   statusFilter === status
                     ? "bg-text-heading dark:bg-primary text-white dark:text-text-heading"
@@ -614,7 +665,18 @@ const BookshelfView: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex justify-end items-center mb-4">
+      <div className="flex justify-end items-center gap-4 mb-4">
+        <button 
+          onClick={() => setAdvancedFilterOpen(prev => !prev)} 
+          className="flex items-center text-sm font-semibold text-text-body dark:text-dark-text-body hover:text-text-heading dark:hover:text-dark-text-heading"
+        >
+          <span>상세 필터</span>
+          <ChevronDownIcon
+            className={`w-5 h-5 ml-1 text-text-body dark:text-dark-text-body transition-transform ${
+              isAdvancedFilterOpen ? "rotate-180" : ""
+            }`}
+          />
+        </button>
         <div className="relative" ref={sortDropdownRef}>
           <button
             onClick={() => setSortDropdownOpen((prev) => !prev)}
@@ -649,6 +711,42 @@ const BookshelfView: React.FC = () => {
           )}
         </div>
       </div>
+      
+      {isAdvancedFilterOpen && (
+        <div className="bg-white dark:bg-dark-card p-4 rounded-lg shadow-sm border border-border dark:border-dark-border space-y-4 md:space-y-0 md:flex md:items-center md:gap-8 mb-4">
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="reread-filter"
+              checked={rereadFilter}
+              onChange={(e) => setRereadFilter(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+            />
+            <label htmlFor="reread-filter" className="text-sm font-medium text-text-heading dark:text-dark-text-heading">
+              다시 읽고 싶은 책만
+            </label>
+          </div>
+          <div className="flex items-center gap-2">
+            <label htmlFor="month-filter" className="text-sm font-medium text-text-heading dark:text-dark-text-heading">
+              {statusFilter === ReadingStatus.Finished ? '완독한 달' : '추가한 달'}:
+            </label>
+            <select
+              id="month-filter"
+              value={monthFilter}
+              onChange={(e) => setMonthFilter(e.target.value)}
+              className="bg-light-gray dark:bg-dark-bg text-text-body dark:text-dark-text-body rounded-md border-border dark:border-dark-border py-1 px-2 text-sm focus:ring-2 focus:ring-primary focus:outline-none"
+            >
+              <option value="all">모든 달</option>
+              {monthOptions.map(month => (
+                <option key={month} value={month}>
+                  {month.replace('-', '년 ')}월
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      )}
+
 
       {sortedAndFilteredBooks.length > 0 ? (
         <div className="space-y-8">
