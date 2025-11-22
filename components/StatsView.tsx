@@ -14,6 +14,12 @@ import {
   Cell,
   Label,
 } from "recharts";
+import {
+  BookOpenIcon,
+  BookshelfIcon,
+  ChartBarIcon,
+  StarIcon,
+} from "./Icons";
 
 type Tab = "overview" | "habits" | "genres" | "wishlist";
 type Theme = "light" | "dark";
@@ -155,7 +161,7 @@ const TabButton: React.FC<{
 }> = ({ active, onClick, children }) => (
   <button
     onClick={onClick}
-    className={`px-4 py-2 text-sm font-bold rounded-md transition-colors ${
+    className={`px-4 py-2 text-sm font-bold rounded-md transition-colors whitespace-nowrap ${
       active
         ? "bg-text-heading dark:bg-primary text-white dark:text-text-heading"
         : "text-text-body dark:text-dark-text-body hover:bg-light-gray dark:hover:bg-dark-bg"
@@ -733,7 +739,7 @@ const StatsView: React.FC<StatsViewProps> = ({ books, theme }) => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white dark:bg-dark-card p-2 rounded-lg shadow-sm border border-border dark:border-dark-border flex items-center space-x-2 overflow-x-auto">
+      <div className="bg-white dark:bg-dark-card p-2 rounded-lg shadow-sm border border-border dark:border-dark-border flex items-center space-x-2 overflow-x-auto sm:justify-center">
         <TabButton
           onClick={() => setActiveTab("overview")}
           active={activeTab === "overview"}
