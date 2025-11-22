@@ -128,7 +128,7 @@ const BookshelfView: React.FC = () => {
     "All"
   );
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortOption, setSortOption] = useState<string>("default");
+  const [sortOption, setSortOption] = useState<string>("created_at_desc");
   const [isSortDropdownOpen, setSortDropdownOpen] = useState(false);
 
   const [isRandomNoteModalOpen, setRandomNoteModalOpen] = useState(false);
@@ -341,6 +341,16 @@ const BookshelfView: React.FC = () => {
 
     // Sorting logic
     switch (sortOption) {
+      case "created_at_desc":
+        return [...filtered].sort((a, b) => {
+          const dateA = a.review?.created_at
+            ? new Date(a.review.created_at).getTime()
+            : 0;
+          const dateB = b.review?.created_at
+            ? new Date(b.review.created_at).getTime()
+            : 0;
+          return dateB - dateA;
+        });
       case "rating_desc":
         return [...filtered].sort(
           (a, b) => (b.review?.rating || 0) - (a.review?.rating || 0)
@@ -365,11 +375,11 @@ const BookshelfView: React.FC = () => {
         );
       default:
         return [...filtered].sort((a, b) => {
-          const dateA = a.review?.end_date
-            ? new Date(a.review.end_date).getTime()
+          const dateA = a.review?.created_at
+            ? new Date(a.review.created_at).getTime()
             : 0;
-          const dateB = b.review?.end_date
-            ? new Date(b.review.end_date).getTime()
+          const dateB = b.review?.created_at
+            ? new Date(b.review.created_at).getTime()
             : 0;
           return dateB - dateA;
         });
@@ -387,7 +397,7 @@ const BookshelfView: React.FC = () => {
         notes.push({ title: "한줄평", content: review.one_line_review });
       }
       if (review.summary) {
-        notes.push({ title: "요약", content: review.summary });
+        notes.push({ title: "메모", content: review.summary });
       }
       if (review.overall_impression) {
         notes.push({ title: "총평", content: review.overall_impression });
@@ -473,7 +483,7 @@ const BookshelfView: React.FC = () => {
   };
 
   const sortOptions: { [key: string]: string } = {
-    default: "정렬 기준",
+    created_at_desc: "최신 추가순",
     date_read_desc: "완독일 (최신순)",
     rating_desc: "별점 (높은순)",
     title_asc: "제목 (가나다순)",

@@ -75,7 +75,8 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
       const { data: userBooks, error } = await supabase
         .from("user_books")
         .select(`*, books (*)`)
-        .eq("user_id", currentUser.id);
+        .eq("user_id", currentUser.id)
+        .order("created_at", { ascending: false });
 
       if (error) {
         console.error("Error fetching user books:", error);

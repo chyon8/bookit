@@ -646,7 +646,7 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
             />
           </FormRow>
 
-          <FormRow label="요약">
+          <FormRow label="메모">
             <FormTextarea
               name="summary"
               value={review.summary || ""}
@@ -710,7 +710,7 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
           </FormRow>
 
           {/* ... (배운 점, 책이 던지는 질문 등 나머지 FormRow들은 그대로 유지) ... */}
-          <FormRow label="배운 점">
+          <FormRow label="새로운 개념/알게된 점">
             <FormTextarea
               name="learnings"
               value={review.learnings || ""}
