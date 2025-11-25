@@ -313,9 +313,9 @@ const ReviewModal = () => {
   const [confirmation, setConfirmation] = useState<{
     isOpen: boolean;
     title: string;
-    message: React.ReactNode;
+    children: React.ReactNode;
     onConfirm: () => void;
-  }>({ isOpen: false, title: "", message: "", onConfirm: () => {} });
+  }>({ isOpen: false, title: "", children: "", onConfirm: () => {} });
 
   useEffect(() => {
     if (selectedBook) {
@@ -408,7 +408,7 @@ const ReviewModal = () => {
       setConfirmation({
         isOpen: true,
         title: "상태 변경 확인",
-        message: "책을 다시 읽으시겠어요? 기존의 완독일 기록이 삭제됩니다.",
+        children: "책을 다시 읽으시겠어요? 기존의 완독일 기록이 삭제됩니다.",
         onConfirm: () => {
           performStatusUpdate({ end_date: undefined }, newStatus);
           setConfirmation({ ...confirmation, isOpen: false });
@@ -421,7 +421,7 @@ const ReviewModal = () => {
       setConfirmation({
         isOpen: true,
         title: "상태 변경 확인",
-        message:
+        children:
           "'읽고싶은' 상태로 변경하면 모든 독서 기록(시작일, 완독일)이 삭제됩니다. 계속하시겠어요?",
         onConfirm: () => {
           performStatusUpdate(
@@ -551,7 +551,7 @@ const ReviewModal = () => {
     setConfirmation({
       isOpen: true,
       title: "책 삭제",
-      message: (
+      children: (
         <p>
           정말로 <span className="font-bold">{selectedBook.title}</span> 책을
           책장에서 삭제하시겠습니까?
@@ -866,8 +866,9 @@ const ReviewModal = () => {
           onClose={() => setConfirmation({ ...confirmation, isOpen: false })}
           onConfirm={confirmation.onConfirm}
           title={confirmation.title}
-          message={confirmation.message}
-        />
+        >
+          {confirmation.children}
+        </ConfirmModal>
       </div>
     </div>
   );
