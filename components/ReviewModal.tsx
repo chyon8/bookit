@@ -7,27 +7,10 @@ import {
   ChevronDownIcon,
   PlusIcon,
   PencilIcon,
+  BookOpenIcon,
 } from "./Icons";
 import ConfirmModal from "./ConfirmModal";
-
-// --- Props 및 타입 정의 ---
-interface ReviewModalProps {
-  book: BookWithReview;
-  onSave: (book: BookWithReview) => void;
-  onClose: () => void;
-  onDelete: (bookId: string) => void;
-}
-
-interface CheckboxProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  label: string;
-}
-
-// 인상 깊은 구절 객체 타입을 정의합니다.
-interface MemorableQuote {
-  quote: string;
-  page: string;
-  thought: string;
-}
+import { useAppContext } from "../context/AppContext";
 
 // --- Helper Components (기존 코드와 동일) ---
 const StarRating: React.FC<{
@@ -113,19 +96,25 @@ const FormSelect: React.FC<React.SelectHTMLAttributes<HTMLSelectElement>> = (
   </div>
 );
 
-const FormRow: React.FC<{ label: string; children: React.ReactNode }> = ({
-  label,
-  children,
-}) => (
+const FormRow: React.FC<{
+  label: string;
+  children: React.ReactNode;
+  htmlFor?: string;
+}> = ({ label, children, htmlFor }) => (
   <div>
-    <label className="block text-sm font-semibold text-text-body dark:text-dark-text-body mb-1">
+    <label
+      htmlFor={htmlFor}
+      className="block text-sm font-semibold text-text-body dark:text-dark-text-body mb-1"
+    >
       {label}
     </label>
     {children}
   </div>
 );
 
-const Checkbox: React.FC<CheckboxProps> = ({ label, ...props }) => (
+const Checkbox: React.FC<
+  React.InputHTMLAttributes<HTMLInputElement> & { label: string }
+> = ({ label, ...props }) => (
   <label className="flex items-center space-x-2 cursor-pointer">
     <input
       type="checkbox"
@@ -136,14 +125,12 @@ const Checkbox: React.FC<CheckboxProps> = ({ label, ...props }) => (
   </label>
 );
 
-type ConfirmationState = {
-  isOpen: boolean;
-  title: string;
-  message: React.ReactNode;
-  onConfirm: () => void;
-};
+interface MemorableQuote {
+  quote: string;
+  page: string;
+  thought: string;
+}
 
-// --- 새로운 QuoteCard 컴포넌트 ---
 const QuoteCard: React.FC<{
   quote: MemorableQuote;
   onDelete: () => void;
@@ -256,48 +243,106 @@ const QuoteCard: React.FC<{
   );
 };
 
+// --- New Book Info Header ---
+const BookInfoHeader: React.FC<{ book: BookWithReview }> = ({ book }) => {
+  const [showFullDescription, setShowFullDescription] = useState(false);
+  const descriptionLines = book.description?.split("\n") || [];
+  const shortDescription =
+    descriptionLines.slice(0, 2).join("\n") +
+    (descriptionLines.length > 2 ? "..." : "");
+
+  return (
+    <div className="p-6">
+      <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
+        <img
+          src={book.coverImageUrl}
+          alt={book.title}
+          className="w-28 h-auto md:w-32 object-cover rounded-md flex-shrink-0 shadow-lg"
+        />
+        <div className="flex-grow text-center md:text-left">
+          <h3 className="text-xl md:text-2xl font-bold text-text-heading dark:text-dark-text-heading">
+            {book.title}
+          </h3>
+          <p className="text-md text-text-body dark:text-dark-text-body mt-1">
+            {book.author}
+          </p>
+          <p className="text-sm text-text-muted dark:text-dark-text-muted mt-2">
+            {book.category}
+          </p>
+          {book.description && (
+            <div className="text-sm text-text-body dark:text-dark-text-body mt-4 text-left">
+              <p
+                className={`whitespace-pre-wrap ${
+                  !showFullDescription ? "line-clamp-3" : ""
+                }`}
+              >
+                {book.description}
+              </p>
+              {book.description.length > 100 && ( // Only show if description is long enough
+                <button
+                  onClick={() => setShowFullDescription(!showFullDescription)}
+                  className="text-primary font-semibold text-sm mt-2"
+                >
+                  {showFullDescription ? "간략히" : "더보기"}
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // --- Main Refactored Component ---
-const ReviewModal: React.FC<ReviewModalProps> = ({
-  book,
-  onSave,
-  onClose,
-  onDelete,
-}) => {
-  const [review, setReview] = useState<Partial<UserBook>>(() => {
-    const initialReview = book.review || {
-      status: ReadingStatus.WantToRead,
-      rating: 0,
-      memorable_quotes: [],
-      questions_from_book: [],
-    };
+const ReviewModal = () => {
+  const {
+    isReviewModalOpen,
+    selectedBook,
+    handleSaveReview,
+    handleCloseReview,
+    handleDeleteBook,
+  } = useAppContext();
 
-    const formatDate = (date: string | undefined) =>
-      date ? new Date(date).toISOString().split("T")[0] : undefined;
-
-    return {
-      ...initialReview,
-      start_date: formatDate(initialReview.start_date),
-      end_date: formatDate(initialReview.end_date),
-      // memorable_quotes가 객체 배열이 되도록 초기화합니다.
-      memorable_quotes: (initialReview.memorable_quotes || []).map((q) =>
-        typeof q === "string" ? { quote: q, page: "", thought: "" } : q
-      ),
-    };
-  });
-
-  // 인상 깊은 구절 입력을 위한 별도의 state
+  const [review, setReview] = useState<Partial<UserBook>>({});
   const [newQuote, setNewQuote] = useState<MemorableQuote>({
     quote: "",
     page: "",
     thought: "",
   });
+  const [confirmation, setConfirmation] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: React.ReactNode;
+    onConfirm: () => void;
+  }>({ isOpen: false, title: "", message: "", onConfirm: () => {} });
 
-  const [confirmation, setConfirmation] = useState<ConfirmationState>({
-    isOpen: false,
-    title: "",
-    message: "",
-    onConfirm: () => {},
-  });
+  useEffect(() => {
+    if (selectedBook) {
+      const initialReview = selectedBook.review || {
+        status: ReadingStatus.WantToRead,
+        rating: 0,
+        memorable_quotes: [],
+        questions_from_book: [],
+      };
+
+      const formatDate = (date: string | undefined) =>
+        date ? new Date(date).toISOString().split("T")[0] : undefined;
+
+      setReview({
+        ...initialReview,
+        start_date: formatDate(initialReview.start_date),
+        end_date: formatDate(initialReview.end_date),
+        memorable_quotes: (initialReview.memorable_quotes || []).map((q) =>
+          typeof q === "string" ? { quote: q, page: "", thought: "" } : q
+        ),
+      });
+    } else {
+      // Reset state when modal is closed
+      setReview({});
+      setNewQuote({ quote: "", page: "", thought: "" });
+    }
+  }, [selectedBook]);
 
   const readingStatusKorean = {
     [ReadingStatus.WantToRead]: "읽고 싶은",
@@ -395,9 +440,6 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
     setReview((prev) => ({ ...prev, rating: newRating }));
   };
 
-  // --- '인상 깊은 구절' 관련 함수 수정 ---
-
-  // 새 구절 입력 필드 핸들러
   const handleNewQuoteChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -405,7 +447,6 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
     setNewQuote((prev) => ({ ...prev, [name]: value }));
   };
 
-  // 구절 추가 함수
   const addMemorableQuote = () => {
     if (newQuote.quote.trim() === "") {
       alert("인상 깊었던 문장을 입력해주세요.");
@@ -415,11 +456,9 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
       ...prev,
       memorable_quotes: [...(prev.memorable_quotes || []), newQuote],
     }));
-    // 입력 필드 초기화
     setNewQuote({ quote: "", page: "", thought: "" });
   };
 
-  // 구절 삭제 함수
   const removeMemorableQuote = (index: number) => {
     setReview((prev) => ({
       ...prev,
@@ -440,7 +479,6 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
     });
   };
 
-  // --- '책이 던지는 질문' 관련 함수 (기존 로직 유지) ---
   const handleArrayChange = (
     field: "questions_from_book",
     index: number,
@@ -466,6 +504,8 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
   };
 
   const handleSave = () => {
+    if (!selectedBook) return;
+
     const { status, start_date, end_date } = review;
 
     if (status === ReadingStatus.Reading || status === ReadingStatus.Dropped) {
@@ -495,7 +535,6 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
       start_date:
         status === ReadingStatus.WantToRead ? undefined : review.start_date,
       end_date: status === ReadingStatus.Finished ? review.end_date : undefined,
-      // 빈 문자열 필터링 로직은 그대로 유지합니다.
       memorable_quotes: (review.memorable_quotes || []).filter(
         (q) => q.quote.trim() !== ""
       ),
@@ -504,25 +543,34 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
       ),
     };
 
-    onSave({ ...book, review: finalReview });
+    handleSaveReview({ ...selectedBook, review: finalReview });
   };
 
   const handleDeleteRequest = () => {
+    if (!selectedBook) return;
     setConfirmation({
       isOpen: true,
       title: "책 삭제",
       message: (
         <p>
-          정말로 <span className="font-bold">{book.title}</span> 책을 책장에서
-          삭제하시겠습니까?
+          정말로 <span className="font-bold">{selectedBook.title}</span> 책을
+          책장에서 삭제하시겠습니까?
         </p>
       ),
       onConfirm: () => {
-        onDelete(book.id);
+        if (selectedBook.review?.book_id) {
+          handleDeleteBook(selectedBook.review.book_id);
+        } else {
+          console.error("No book_id found to delete.");
+        }
         setConfirmation({ ...confirmation, isOpen: false });
       },
     });
   };
+
+  if (!isReviewModalOpen || !selectedBook) {
+    return null;
+  }
 
   const showStartDate =
     review.status === ReadingStatus.Reading ||
@@ -534,18 +582,21 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
   return (
     <div
       className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4"
-      onClick={onClose}
+      onClick={handleCloseReview}
     >
       <div
-        className="bg-white dark:bg-dark-card rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto flex flex-col"
+        className="bg-white dark:bg-dark-card rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         <header className="sticky top-0 bg-white dark:bg-dark-card p-4 border-b border-border dark:border-dark-border flex justify-between items-center z-10">
-          <h2 className="text-xl font-bold text-text-heading dark:text-dark-text-heading truncate pr-10">
-            {book.title}
-          </h2>
+          <div className="flex items-center space-x-3">
+            <BookOpenIcon className="w-6 h-6 text-primary" />
+            <h2 className="text-xl font-bold text-text-heading dark:text-dark-text-heading truncate pr-10">
+              독서 기록
+            </h2>
+          </div>
           <div className="flex items-center space-x-2">
-            {book.review && book.review.id && (
+            {review.id && (
               <button
                 onClick={handleDeleteRequest}
                 className="p-2 rounded-full text-text-body dark:text-dark-text-body hover:bg-red-100 hover:text-red-500 dark:hover:bg-red-500/20"
@@ -555,7 +606,7 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
               </button>
             )}
             <button
-              onClick={onClose}
+              onClick={handleCloseReview}
               className="p-2 rounded-full text-text-body dark:text-dark-text-body hover:bg-light-gray dark:hover:bg-dark-bg"
             >
               <XMarkIcon className="w-6 h-6" />
@@ -563,36 +614,37 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
           </div>
         </header>
 
-        {/* --- JSX Body --- */}
+        {/* --- Book Info Header --- */}
+        <BookInfoHeader book={selectedBook} />
+
+        {/* --- Divider --- */}
+        <div className="px-6">
+          <hr className="border-border dark:border-dark-border" />
+        </div>
+
+        {/* --- Form Body --- */}
         <main className="p-6 space-y-6 flex-grow">
-          {/* ... (독서 상태, 별점 등 다른 FormRow들은 그대로 유지) ... */}
-          <div className="flex flex-col sm:flex-row items-start space-y-4 sm:space-y-0 sm:space-x-6">
-            <img
-              src={book.coverImageUrl}
-              alt={book.title}
-              className="w-32 h-48 object-cover rounded-md flex-shrink-0 mx-auto sm:mx-0 shadow-md"
-            />
-            <div className="flex-grow space-y-4 w-full">
-              <FormRow label="독서 상태">
-                <FormSelect
-                  name="status"
-                  value={review.status || ReadingStatus.WantToRead}
-                  onChange={handleInputChange}
-                >
-                  {Object.entries(readingStatusKorean).map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </FormSelect>
-              </FormRow>
-              <FormRow label="별점">
-                <StarRating
-                  rating={review.rating || 0}
-                  setRating={handleRatingChange}
-                />
-              </FormRow>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <FormRow label="독서 상태" htmlFor="status-select">
+              <FormSelect
+                id="status-select"
+                name="status"
+                value={review.status || ReadingStatus.WantToRead}
+                onChange={handleInputChange}
+              >
+                {Object.entries(readingStatusKorean).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </FormSelect>
+            </FormRow>
+            <FormRow label="별점">
+              <StarRating
+                rating={review.rating || 0}
+                setRating={handleRatingChange}
+              />
+            </FormRow>
           </div>
 
           {(showStartDate || showFinishDate) && (
@@ -655,10 +707,8 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
             />
           </FormRow>
 
-          {/* --- === 수정된 '인상 깊은 구절' 섹션 === --- */}
           <FormRow label="인상 깊은 구절">
             <div className="space-y-3">
-              {/* 저장된 구절들을 카드로 표시 */}
               {(review.memorable_quotes || []).map((q, index) => (
                 <QuoteCard
                   key={index}
@@ -670,7 +720,6 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
                 />
               ))}
 
-              {/* 새로운 구절 입력 UI */}
               <div className="p-4 border border-border dark:border-dark-border rounded-lg space-y-3 bg-white dark:bg-dark-bg">
                 <FormTextarea
                   name="quote"
@@ -709,7 +758,6 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
             </div>
           </FormRow>
 
-          {/* ... (배운 점, 책이 던지는 질문 등 나머지 FormRow들은 그대로 유지) ... */}
           <FormRow label="새로운 개념/알게된 점">
             <FormTextarea
               name="learnings"
@@ -818,9 +866,8 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
           onClose={() => setConfirmation({ ...confirmation, isOpen: false })}
           onConfirm={confirmation.onConfirm}
           title={confirmation.title}
-        >
-          {confirmation.message}
-        </ConfirmModal>
+          message={confirmation.message}
+        />
       </div>
     </div>
   );
