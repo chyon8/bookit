@@ -256,6 +256,87 @@ const QuoteCard: React.FC<{
   );
 };
 
+const MemoCard: React.FC<{
+  memo: string;
+  onDelete: () => void;
+  onSave: (updatedMemo: string) => void;
+}> = ({ memo, onDelete, onSave }) => {
+  const [isEditing, setIsEditing] = useState(memo === "");
+  const [editedMemo, setEditedMemo] = useState(memo);
+
+  useEffect(() => {
+    setEditedMemo(memo);
+  }, [memo]);
+
+  const handleSave = () => {
+    onSave(editedMemo);
+    setIsEditing(false);
+  };
+
+  const handleCancel = () => {
+    if (memo === "") {
+      onDelete();
+    } else {
+      setEditedMemo(memo);
+      setIsEditing(false);
+    }
+  };
+
+  if (isEditing) {
+    return (
+      <div className="bg-light-gray/60 dark:bg-dark-bg/80 p-4 rounded-lg border border-primary dark:border-primary space-y-3">
+        <FormTextarea
+          value={editedMemo}
+          onChange={(e) => setEditedMemo(e.target.value)}
+          placeholder="메모 내용"
+          rows={3}
+        />
+        <div className="flex justify-end space-x-4">
+          <button
+            onClick={handleCancel}
+            className="text-sm font-semibold text-text-body dark:text-dark-text-body hover:opacity-80"
+          >
+            취소
+          </button>
+          <button
+            onClick={handleSave}
+            className="text-sm font-semibold text-primary hover:opacity-80"
+          >
+            저장
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-light-gray/60 dark:bg-dark-bg/80 p-4 rounded-lg border border-border dark:border-dark-border">
+      <div className="flex justify-between items-start">
+        <p className="text-text-body dark:text-dark-text-body whitespace-pre-wrap flex-1 pr-4">
+          {memo}
+        </p>
+        <div className="flex space-x-1">
+          <button
+            onClick={() => setIsEditing(true)}
+            className="p-1 text-text-body/50 dark:text-dark-text-body/50 hover:text-primary dark:hover:text-primary"
+            aria-label="메모 수정"
+          >
+            <PencilIcon className="w-5 h-5" />
+          </button>
+          <button
+            onClick={onDelete}
+            className="p-1 text-text-body/50 dark:text-dark-text-body/50 hover:text-red-500 dark:hover:text-red-500"
+            aria-label="메모 삭제"
+          >
+            <XMarkIcon className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
 // --- Main Refactored Component ---
 const ReviewModal: React.FC<ReviewModalProps> = ({
   book,
@@ -269,6 +350,7 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
       rating: 0,
       memorable_quotes: [],
       questions_from_book: [],
+      memos: [],
     };
 
     const formatDate = (date: string | undefined) =>
@@ -282,6 +364,7 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
       memorable_quotes: (initialReview.memorable_quotes || []).map((q) =>
         typeof q === "string" ? { quote: q, page: "", thought: "" } : q
       ),
+      memos: initialReview.memos || [],
     };
   });
 
@@ -440,6 +523,28 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
     });
   };
 
+  const addMemo = () => {
+    setReview((prev) => ({
+      ...prev,
+      memos: [...(prev.memos || []), ""],
+    }));
+  };
+
+  const removeMemo = (index: number) => {
+    setReview((prev) => ({
+      ...prev,
+      memos: (prev.memos || []).filter((_, i) => i !== index),
+    }));
+  };
+
+  const updateMemo = (index: number, updatedMemo: string) => {
+    setReview((prev) => {
+      const newMemos = [...(prev.memos || [])];
+      newMemos[index] = updatedMemo;
+      return { ...prev, memos: newMemos };
+    });
+  };
+
   // --- '책이 던지는 질문' 관련 함수 (기존 로직 유지) ---
   const handleArrayChange = (
     field: "questions_from_book",
@@ -496,6 +601,7 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
         status === ReadingStatus.WantToRead ? undefined : review.start_date,
       end_date: status === ReadingStatus.Finished ? review.end_date : undefined,
       // 빈 문자열 필터링 로직은 그대로 유지합니다.
+      memos: (review.memos || []).filter((m) => m.trim() !== ""),
       memorable_quotes: (review.memorable_quotes || []).filter(
         (q) => q.quote.trim() !== ""
       ),
@@ -647,12 +753,23 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
           </FormRow>
 
           <FormRow label="메모">
-            <FormTextarea
-              name="summary"
-              value={review.summary || ""}
-              onChange={handleInputChange}
-              rows={5}
-            />
+            <div className="space-y-3">
+              {(review.memos || []).map((memo, index) => (
+                <MemoCard
+                  key={index}
+                  memo={memo}
+                  onDelete={() => removeMemo(index)}
+                  onSave={(updatedMemo) => updateMemo(index, updatedMemo)}
+                />
+              ))}
+              <button
+                onClick={addMemo}
+                className="flex items-center space-x-2 text-sm font-semibold text-primary hover:opacity-80"
+              >
+                <PlusIcon className="w-4 h-4" />
+                <span>메모 추가</span>
+              </button>
+            </div>
           </FormRow>
 
           {/* --- === 수정된 '인상 깊은 구절' 섹션 === --- */}

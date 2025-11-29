@@ -341,7 +341,7 @@ const BookshelfView: React.FC = () => {
         const { title, author } = book;
         const {
           one_line_review,
-          summary,
+          memos,
           memorable_quotes,
           questions_from_book,
           connected_thoughts,
@@ -354,7 +354,7 @@ const BookshelfView: React.FC = () => {
           title,
           author,
           one_line_review,
-          summary,
+          ...(memos || []),
           ...((memorable_quotes as MemorableQuote[]) || []).flatMap((q) => [
             q.quote,
             q.thought,
@@ -451,8 +451,10 @@ const BookshelfView: React.FC = () => {
       if (review.one_line_review) {
         notes.push({ title: "한줄평", content: review.one_line_review });
       }
-      if (review.summary) {
-        notes.push({ title: "메모", content: review.summary });
+      if (review.memos && Array.isArray(review.memos)) {
+        review.memos.forEach((memo, index) => {
+          if (memo) notes.push({ title: `메모 #${index + 1}`, content: memo });
+        });
       }
       if (review.overall_impression) {
         notes.push({ title: "총평", content: review.overall_impression });

@@ -35,7 +35,7 @@ export interface UserBook {
   // Fields from schema.sql
   one_line_review?: string;
   motivation?: string;
-  summary?: string;
+  memos?: string[];
   memorable_quotes?: MemorableQuote[];
   learnings?: string;
   questions_from_book?: string[];
