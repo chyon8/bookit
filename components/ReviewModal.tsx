@@ -12,7 +12,7 @@ import {
 import ConfirmModal from "./ConfirmModal";
 import { useAppContext } from "../context/AppContext";
 
-// --- Helper Components (기존 코드와 동일) ---
+// --- Helper Components ---
 const StarRating: React.FC<{
   rating: number;
   setRating: (rating: number) => void;
@@ -323,50 +323,104 @@ const MemoCard: React.FC<{
   );
 };
 
+// --- New Book Info Header ---
+const BookInfoHeader: React.FC<{ book: BookWithReview }> = ({ book }) => {
+  const [showFullDescription, setShowFullDescription] = useState(false);
+
+  return (
+    <div className="p-6">
+      <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
+        <img
+          src={book.coverImageUrl}
+          alt={book.title}
+          className="w-28 h-auto md:w-32 object-cover rounded-md flex-shrink-0 shadow-lg"
+        />
+        <div className="flex-grow text-center md:text-left">
+          <h3 className="text-xl md:text-2xl font-bold text-text-heading dark:text-dark-text-heading">
+            {book.title}
+          </h3>
+          <p className="text-md text-text-body dark:text-dark-text-body mt-1">
+            {book.author}
+          </p>
+          <p className="text-sm text-text-muted dark:text-dark-text-muted mt-2">
+            {book.category}
+          </p>
+          {book.description && (
+            <div className="text-sm text-text-body dark:text-dark-text-body mt-4 text-left">
+              <p
+                className={`whitespace-pre-wrap ${
+                  !showFullDescription ? "line-clamp-3" : ""
+                }`}
+              >
+                {book.description}
+              </p>
+              {book.description.length > 100 && ( // Only show if description is long enough
+                <button
+                  onClick={() => setShowFullDescription(!showFullDescription)}
+                  className="text-primary font-semibold text-sm mt-2"
+                >
+                  {showFullDescription ? "간략히" : "더보기"}
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // --- Main Refactored Component ---
-const ReviewModal: React.FC<ReviewModalProps> = ({
-  book,
-  onSave,
-  onClose,
-  onDelete,
-}) => {
-  const [review, setReview] = useState<Partial<UserBook>>(() => {
-    const initialReview = book.review || {
-      status: ReadingStatus.WantToRead,
-      rating: 0,
-      memorable_quotes: [],
-      questions_from_book: [],
-      memos: [],
-    };
+const ReviewModal = () => {
+  const {
+    isReviewModalOpen,
+    selectedBook,
+    handleSaveReview,
+    handleCloseReview,
+    handleDeleteBook,
+  } = useAppContext();
 
-    const formatDate = (date: string | undefined) =>
-      date ? new Date(date).toISOString().split("T")[0] : undefined;
-
-    return {
-      ...initialReview,
-      start_date: formatDate(initialReview.start_date),
-      end_date: formatDate(initialReview.end_date),
-      // memorable_quotes가 객체 배열이 되도록 초기화합니다.
-      memorable_quotes: (initialReview.memorable_quotes || []).map((q) =>
-        typeof q === "string" ? { quote: q, page: "", thought: "" } : q
-      ),
-      memos: initialReview.memos || [],
-    };
-  });
-
-  // 인상 깊은 구절 입력을 위한 별도의 state
+  const [review, setReview] = useState<Partial<UserBook>>({});
   const [newQuote, setNewQuote] = useState<MemorableQuote>({
     quote: "",
     page: "",
     thought: "",
   });
+  const [confirmation, setConfirmation] = useState<{
+    isOpen: boolean;
+    title: string;
+    children: React.ReactNode;
+    onConfirm: () => void;
+  }>({ isOpen: false, title: "", children: null, onConfirm: () => {} });
 
-  const [confirmation, setConfirmation] = useState<ConfirmationState>({
-    isOpen: false,
-    title: "",
-    message: "",
-    onConfirm: () => {},
-  });
+  useEffect(() => {
+    if (selectedBook) {
+      const initialReview = selectedBook.review || {
+        status: ReadingStatus.WantToRead,
+        rating: 0,
+        memorable_quotes: [],
+        questions_from_book: [],
+        memos: [],
+      };
+
+      const formatDate = (date: string | undefined) =>
+        date ? new Date(date).toISOString().split("T")[0] : undefined;
+
+      setReview({
+        ...initialReview,
+        start_date: formatDate(initialReview.start_date),
+        end_date: formatDate(initialReview.end_date),
+        memorable_quotes: (initialReview.memorable_quotes || []).map((q) =>
+          typeof q === "string" ? { quote: q, page: "", thought: "" } : q
+        ),
+        memos: initialReview.memos || [],
+      });
+    } else {
+      // Reset state when modal is closed
+      setReview({});
+      setNewQuote({ quote: "", page: "", thought: "" });
+    }
+  }, [selectedBook]);
 
   const readingStatusKorean = {
     [ReadingStatus.WantToRead]: "읽고 싶은",
@@ -525,7 +579,6 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
     });
   };
 
-  // --- '책이 던지는 질문' 관련 함수 (기존 로직 유지) ---
   const handleArrayChange = (
     field: "questions_from_book",
     index: number,
@@ -582,7 +635,6 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
       start_date:
         status === ReadingStatus.WantToRead ? undefined : review.start_date,
       end_date: status === ReadingStatus.Finished ? review.end_date : undefined,
-      // 빈 문자열 필터링 로직은 그대로 유지합니다.
       memos: (review.memos || []).filter((m) => m.trim() !== ""),
       memorable_quotes: (review.memorable_quotes || []).filter(
         (q) => q.quote.trim() !== ""
