@@ -98,6 +98,9 @@ export const BookshelfCard: React.FC<BookshelfCardProps> = ({
           <p className="text-sm text-text-body dark:text-dark-text-body mt-1 line-clamp-2">
             {book.author.split("(지은이")[0].trim()}
           </p>
+          <p className="text-xs text-text-body dark:text-dark-text-body mt-2 line-clamp-2">
+            {book.description}
+          </p>
         </div>
         {renderStatusInfo()}
       </div>
@@ -144,6 +147,7 @@ const BookshelfView: React.FC = () => {
   const [isAdvancedFilterOpen, setAdvancedFilterOpen] = useState(false);
   const [rereadFilter, setRereadFilter] = useState(false);
   const [monthFilter, setMonthFilter] = useState<string>('all');
+  const [genreFilter, setGenreFilter] = useState<string>('all');
 
   const sortDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -324,10 +328,31 @@ const BookshelfView: React.FC = () => {
 
     return Array.from(months).sort().reverse();
   }, [books, statusFilter]);
+
+  const genreOptions = useMemo(() => {
+    const genres = new Set<string>();
+    books.forEach(book => {
+      if (book.category) {
+        genres.add(book.category);
+      }
+    });
+    return Array.from(genres).sort();
+  }, [books]);
   
   const handleStatusFilterChange = (status: ReadingStatus | "All") => {
     setStatusFilter(status);
     setMonthFilter('all'); // Reset month filter when status changes
+    setGenreFilter('all'); // Reset genre filter when status changes
+  };
+
+  const handleResetFilters = () => {
+    setSearchQuery('');
+    setStatusFilter('All');
+    setSortOption('created_at_desc');
+    setRereadFilter(false);
+    setMonthFilter('all');
+    setGenreFilter('all');
+    setAdvancedFilterOpen(false);
   };
 
   const sortedAndFilteredBooks = useMemo(() => {
@@ -392,6 +417,10 @@ const BookshelfView: React.FC = () => {
           }
         }
         return false;
+      })
+      .filter(book => {
+        if (genreFilter === 'all') return true;
+        return book.category === genreFilter;
       });
 
     // Sorting logic
@@ -439,7 +468,7 @@ const BookshelfView: React.FC = () => {
           return dateB - dateA;
         });
     }
-  }, [books, statusFilter, searchQuery, sortOption, rereadFilter, monthFilter]);
+  }, [books, statusFilter, searchQuery, sortOption, rereadFilter, monthFilter, genreFilter]);
 
   const handleShowRandomNote = () => {
     const allNotes: Note[] = (books || []).flatMap((book) => {
@@ -668,6 +697,12 @@ const BookshelfView: React.FC = () => {
       </div>
 
       <div className="flex justify-end items-center gap-4 mb-4">
+        <button
+          onClick={handleResetFilters}
+          className="text-sm font-semibold text-text-body dark:text-dark-text-body hover:text-text-heading dark:hover:text-dark-text-heading"
+        >
+          초기화
+        </button>
         <button 
           onClick={() => setAdvancedFilterOpen(prev => !prev)} 
           className="flex items-center text-sm font-semibold text-text-body dark:text-dark-text-body hover:text-text-heading dark:hover:text-dark-text-heading"
@@ -742,6 +777,24 @@ const BookshelfView: React.FC = () => {
               {monthOptions.map(month => (
                 <option key={month} value={month}>
                   {month.replace('-', '년 ')}월
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex items-center gap-2">
+            <label htmlFor="genre-filter" className="text-sm font-medium text-text-heading dark:text-dark-text-heading">
+              장르:
+            </label>
+            <select
+              id="genre-filter"
+              value={genreFilter}
+              onChange={(e) => setGenreFilter(e.target.value)}
+              className="bg-light-gray dark:bg-dark-bg text-text-body dark:text-dark-text-body rounded-md border-border dark:border-dark-border py-1 px-2 text-sm focus:ring-2 focus:ring-primary focus:outline-none"
+            >
+              <option value="all">모든 장르</option>
+              {genreOptions.map(genre => (
+                <option key={genre} value={genre}>
+                  {genre}
                 </option>
               ))}
             </select>

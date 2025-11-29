@@ -141,14 +141,7 @@ const ClientLayout: React.FC<{ children: React.ReactNode }> = ({
         <div className="max-w-5xl mx-auto">{children}</div>
       </main>
 
-      {isReviewModalOpen && selectedBook && (
-        <ReviewModal
-          book={selectedBook}
-          onSave={handleSaveReview}
-          onClose={handleCloseReview}
-          onDelete={handleDeleteBook}
-        />
-      )}
+      <ReviewModal />
 
       <ConfirmModal
         isOpen={isSignOutModalOpen}
