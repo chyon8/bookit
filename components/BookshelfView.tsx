@@ -22,12 +22,14 @@ interface BookshelfCardProps {
   book: BookWithReview;
   onSelect: (book: BookWithReview) => void;
   onDelete: (bookId: string, bookTitle: string) => void;
+  showStatusBadge?: boolean;
 }
 
 export const BookshelfCard: React.FC<BookshelfCardProps> = React.memo(({
   book,
   onSelect,
   onDelete,
+  showStatusBadge,
 }) => {
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -76,6 +78,11 @@ export const BookshelfCard: React.FC<BookshelfCardProps> = React.memo(({
       className="cursor-pointer group flex flex-col h-full"
     >
       <div className="relative aspect-[2/3] w-full">
+        {showStatusBadge && book.review?.status === ReadingStatus.Dropped && (
+            <div className="absolute top-2 left-2 bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-md">
+              중단
+            </div>
+        )}
         <img
           src={book.coverImageUrl}
           alt={book.title}
@@ -127,9 +134,10 @@ const BookshelfView: React.FC = () => {
     handleOpenReview: onSelectBook,
     handleDeleteBook,
   } = useAppContext();
-  const [statusFilter, setStatusFilter] = useState<ReadingStatus | "All">(
-    "All"
+  const [statusFilter, setStatusFilter] = useState<ReadingStatus | "All">
+    ("All"
   );
+  const [finishedSubFilter, setFinishedSubFilter] = useState<"finished" | "dropped">("finished");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOption, setSortOption] = useState<string>("created_at_desc");
   const [isSortDropdownOpen, setSortDropdownOpen] = useState(false);
@@ -139,7 +147,7 @@ const BookshelfView: React.FC = () => {
   const [currentNoteIndex, setCurrentNoteIndex] = useState(0);
 
   const [isConfirmModalOpen, setConfirmModalOpen] = useState(false);
-  const [bookToDelete, setBookToDelete] = useState<{
+  const [bookToDelete, setBookToDelete] = useState<{ 
     id: string;
     title: string;
   } | null>(null);
@@ -174,7 +182,9 @@ const BookshelfView: React.FC = () => {
         counts[book.review.status]++;
       }
     }
-    return counts;
+    const displayCounts = { ...counts };
+    displayCounts[ReadingStatus.Finished] = (counts[ReadingStatus.Finished] || 0) + (counts[ReadingStatus.Dropped] || 0);
+    return displayCounts;
   }, [books]);
 
   const handleRequestDelete = (bookId: string, bookTitle: string) => {
@@ -195,7 +205,7 @@ const BookshelfView: React.FC = () => {
     setBookToDelete(null);
   };
 
-  const RandomNoteModal: React.FC<RandomNoteModalProps> = ({
+  const RandomNoteModal: React.FC<RandomNoteModalProps> = ({ 
     currentNote,
     onClose,
     onNext,
@@ -346,6 +356,7 @@ const BookshelfView: React.FC = () => {
   
   const handleStatusFilterChange = (status: ReadingStatus | "All") => {
     setStatusFilter(status);
+    setFinishedSubFilter("finished");
     setMonthFilter('all'); // Reset month filter when status changes
     setGenreFilter('all'); // Reset genre filter when status changes
   };
@@ -362,9 +373,14 @@ const BookshelfView: React.FC = () => {
 
   const sortedAndFilteredBooks = useMemo(() => {
     let filtered = (books || [])
-      .filter(
-        (book) => statusFilter === "All" || book.review?.status === statusFilter
-      )
+      .filter((book) => {
+        if (statusFilter === "All") return true;
+        if (statusFilter === ReadingStatus.Finished) {
+          const subStatus = finishedSubFilter === 'finished' ? ReadingStatus.Finished : ReadingStatus.Dropped;
+          return book.review?.status === subStatus;
+        }
+        return book.review?.status === statusFilter;
+      })
       .filter((book) => {
         if (!searchQuery.trim()) return true;
         const query = searchQuery.toLowerCase();
@@ -442,7 +458,7 @@ const BookshelfView: React.FC = () => {
           return dateB - dateA;
         });
     }
-  }, [books, statusFilter, searchQuery, sortOption, rereadFilter, monthFilter, genreFilter]);
+  }, [books, statusFilter, finishedSubFilter, searchQuery, sortOption, rereadFilter, monthFilter, genreFilter]);
 
   const handleShowRandomNote = () => {
     const allNotes: Note[] = (books || []).flatMap((book) => {
@@ -527,7 +543,9 @@ const BookshelfView: React.FC = () => {
 
   const filterOptions: (ReadingStatus | "All")[] = [
     "All",
-    ...Object.values(ReadingStatus),
+    ReadingStatus.Reading,
+    ReadingStatus.Finished,
+    ReadingStatus.WantToRead,
   ];
 
   const readingStatusKorean = {
@@ -612,6 +630,7 @@ const BookshelfView: React.FC = () => {
                 book={book}
                 onSelect={onSelectBook}
                 onDelete={handleRequestDelete}
+                showStatusBadge={statusFilter === 'All'}
               />
             </div>
           ))}
@@ -622,7 +641,7 @@ const BookshelfView: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white dark:bg-dark-card p-4 rounded-lg shadow-sm border border-border dark:border-dark-border space-y-4">
+      <div className="bg-white dark:bg-dark-card p-4 rounded-lg shadow-sm border border-border dark:border-dark-border">
         <div>
           <input
             type="text"
@@ -632,45 +651,57 @@ const BookshelfView: React.FC = () => {
             className="w-full px-4 py-2 bg-light-gray dark:bg-dark-bg text-text-heading dark:text-dark-text-heading border border-border dark:border-dark-border rounded-lg focus:ring-2 focus:ring-primary focus:outline-none"
           />
         </div>
-        <div className="flex items-center justify-between flex-wrap gap-y-2">
-          <div className="flex flex-wrap gap-2">
-            {filterOptions.map((status) => (
-              <button
-                key={status}
-                onClick={() => handleStatusFilterChange(status)}
-                className={`px-3 py-1 text-sm font-semibold rounded-full transition-colors ${
-                  statusFilter === status
-                    ? "bg-text-heading dark:bg-primary text-white dark:text-text-heading"
-                    : "bg-light-gray dark:bg-dark-bg text-text-body dark:text-dark-text-body hover:bg-border dark:hover:bg-dark-border"
-                }`}
-              >
-                {
-                  readingStatusKorean[
-                    status as keyof typeof readingStatusKorean
-                  ]
-                }{" "}
-                <span
-                  className={
+      </div>
+
+      <div className="flex border-b border-gray-200 dark:border-gray-700">
+              {filterOptions.map((status) => (
+                <button
+                  key={status}
+                  onClick={() => handleStatusFilterChange(status)}
+                  className={`flex-1 text-center px-2 py-3 text-sm whitespace-nowrap -mb-px ${
                     statusFilter === status
-                      ? "text-white/70"
-                      : "text-black/40 dark:text-white/40"
-                  }
+                      ? 'font-bold text-primary border-b-2 border-primary'
+                      : 'text-text-body dark:text-dark-text-body'
+                  }`}
                 >
-                  {statusCounts[status as keyof typeof statusCounts]}
-                </span>
-              </button>
-            ))}
-          </div>
-          <button
+                  {readingStatusKorean[status as keyof typeof readingStatusKorean]} ({statusCounts[status as keyof typeof statusCounts]})
+                </button>
+              ))}
+            </div>      
+      {statusFilter === ReadingStatus.Finished && (
+        <div className="flex items-center justify-center pt-4 w-full">
+            <div className="inline-flex rounded-lg shadow-sm">
+                <button
+                    onClick={() => setFinishedSubFilter('finished')}
+                    className={`px-4 py-2 text-sm font-medium rounded-l-lg transition-colors ${ 
+                        finishedSubFilter === 'finished'
+                            ? 'bg-primary text-white border-primary'
+                            : 'bg-white dark:bg-dark-bg text-text-body dark:text-dark-text-body border-gray-200 dark:border-dark-border hover:bg-gray-50 dark:hover:bg-dark-border'
+                    } border`}
+                >
+                    완독 ({statusCounts[ReadingStatus.Finished] - statusCounts[ReadingStatus.Dropped]})
+                </button>
+                <button
+                    onClick={() => setFinishedSubFilter('dropped')}
+                    className={`px-4 py-2 text-sm font-medium rounded-r-lg transition-colors ${ 
+                        finishedSubFilter === 'dropped'
+                            ? 'bg-primary text-white border-primary'
+                            : 'bg-white dark:bg-dark-bg text-text-body dark:text-dark-text-body border-gray-200 dark:border-dark-border hover:bg-gray-50 dark:hover:bg-dark-border'
+                    } border-t border-b border-r`}
+                >
+                    중단 ({statusCounts[ReadingStatus.Dropped]})
+                </button>
+            </div>
+        </div>
+      )}
+
+      <div className="flex justify-end items-center gap-4 mb-4">
+        <button
             onClick={handleShowRandomNote}
-            className="ml-auto px-3 py-1 text-sm font-semibold rounded-full bg-card-secondary dark:bg-dark-bg text-text-heading dark:text-dark-text-heading whitespace-nowrap hover:shadow-md transition-shadow"
+            className="text-sm font-semibold text-text-body dark:text-dark-text-body hover:text-text-heading dark:hover:text-dark-text-heading whitespace-nowrap"
           >
             랜덤 기록 보기 ✨
           </button>
-        </div>
-      </div>
-
-      <div className="flex justify-end items-center gap-4 mb-4">
         <button
           onClick={handleResetFilters}
           className="text-sm font-semibold text-text-body dark:text-dark-text-body hover:text-text-heading dark:hover:text-dark-text-heading"
@@ -678,13 +709,13 @@ const BookshelfView: React.FC = () => {
           초기화
         </button>
         <button 
-          onClick={() => setAdvancedFilterOpen(prev => !prev)} 
+          onClick={() => setAdvancedFilterOpen(prev => !prev)}
           className="flex items-center text-sm font-semibold text-text-body dark:text-dark-text-body hover:text-text-heading dark:hover:text-dark-text-heading"
         >
           <span>상세 필터</span>
           <ChevronDownIcon
-            className={`w-5 h-5 ml-1 text-text-body dark:text-dark-text-body transition-transform ${
-              isAdvancedFilterOpen ? "rotate-180" : ""
+            className={`w-5 h-5 ml-1 text-text-body dark:text-dark-text-body transition-transform ${ 
+              isAdvancedFilterOpen ? "rotate-180" : "" 
             }`}
           />
         </button>
@@ -695,8 +726,8 @@ const BookshelfView: React.FC = () => {
           >
             <span>{sortOptions[sortOption]}</span>
             <ChevronDownIcon
-              className={`w-5 h-5 ml-1 text-text-body dark:text-dark-text-body transition-transform ${
-                isSortDropdownOpen ? "rotate-180" : ""
+              className={`w-5 h-5 ml-1 text-text-body dark:text-dark-text-body transition-transform ${ 
+                isSortDropdownOpen ? "rotate-180" : "" 
               }`}
             />
           </button>
@@ -709,7 +740,7 @@ const BookshelfView: React.FC = () => {
                     setSortOption(key);
                     setSortDropdownOpen(false);
                   }}
-                  className={`w-full text-left px-4 py-2 text-sm hover:bg-light-gray dark:hover:bg-dark-bg ${
+                  className={`w-full text-left px-4 py-2 text-sm hover:bg-light-gray dark:hover:bg-dark-bg ${ 
                     sortOption === key
                       ? "font-bold text-text-heading dark:text-dark-text-heading bg-gray-100 dark:bg-dark-bg"
                       : "text-text-heading dark:text-dark-text-heading"
@@ -793,13 +824,8 @@ const BookshelfView: React.FC = () => {
               )}
               {renderBookSection(
                 "완독",
-                groupedBooks[ReadingStatus.Finished],
+                [...(groupedBooks[ReadingStatus.Finished] || []), ...(groupedBooks[ReadingStatus.Dropped] || [])],
                 ReadingStatus.Finished
-              )}
-              {renderBookSection(
-                "중단",
-                groupedBooks[ReadingStatus.Dropped],
-                ReadingStatus.Dropped
               )}
             </>
           ) : (
@@ -813,6 +839,7 @@ const BookshelfView: React.FC = () => {
                       book={book}
                       onSelect={onSelectBook}
                       onDelete={handleRequestDelete}
+                      showStatusBadge={statusFilter === 'All'}
                     />
                   ))}
               </div>
