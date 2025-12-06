@@ -24,7 +24,7 @@ interface BookshelfCardProps {
   onDelete: (bookId: string, bookTitle: string) => void;
 }
 
-export const BookshelfCard: React.FC<BookshelfCardProps> = ({
+export const BookshelfCard: React.FC<BookshelfCardProps> = React.memo(({
   book,
   onSelect,
   onDelete,
@@ -106,7 +106,7 @@ export const BookshelfCard: React.FC<BookshelfCardProps> = ({
       </div>
     </div>
   );
-};
+});
 
 type Note = {
   book: BookWithReview;
@@ -148,6 +148,7 @@ const BookshelfView: React.FC = () => {
   const [rereadFilter, setRereadFilter] = useState(false);
   const [monthFilter, setMonthFilter] = useState<string>('all');
   const [genreFilter, setGenreFilter] = useState<string>('all');
+  const [visibleBooksCount, setVisibleBooksCount] = useState(20);
 
   const sortDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -302,6 +303,10 @@ const BookshelfView: React.FC = () => {
     };
   }, []);
 
+  useEffect(() => {
+    setVisibleBooksCount(20);
+  }, [statusFilter, searchQuery, sortOption, rereadFilter, monthFilter, genreFilter]);
+
   const monthOptions = useMemo(() => {
     const months = new Set<string>();
     const booksToFilter = statusFilter === 'All' 
@@ -363,38 +368,7 @@ const BookshelfView: React.FC = () => {
       .filter((book) => {
         if (!searchQuery.trim()) return true;
         const query = searchQuery.toLowerCase();
-        const { title, author } = book;
-        const {
-          one_line_review,
-          memos,
-          memorable_quotes,
-          questions_from_book,
-          connected_thoughts,
-          overall_impression,
-          reread_reason,
-          notes,
-        } = book.review || {};
-
-        const searchableContent = [
-          title,
-          author,
-          one_line_review,
-          ...(memos || []),
-          ...((memorable_quotes as MemorableQuote[]) || []).flatMap((q) => [
-            q.quote,
-            q.thought,
-          ]),
-          ...(questions_from_book || []),
-          connected_thoughts,
-          overall_impression,
-          reread_reason,
-          notes,
-        ]
-          .filter(Boolean)
-          .join(" ")
-          .toLowerCase();
-
-        return searchableContent.includes(query);
+        return book.searchable_content?.includes(query) ?? false;
       })
       .filter(book => {
         if (!rereadFilter) return true;
@@ -829,16 +803,32 @@ const BookshelfView: React.FC = () => {
               )}
             </>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-4 gap-y-8">
-              {sortedAndFilteredBooks.map((book) => (
-                <BookshelfCard
-                  key={book.id}
-                  book={book}
-                  onSelect={onSelectBook}
-                  onDelete={handleRequestDelete}
-                />
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-4 gap-y-8">
+                {sortedAndFilteredBooks
+                  .slice(0, visibleBooksCount)
+                  .map((book) => (
+                    <BookshelfCard
+                      key={book.id}
+                      book={book}
+                      onSelect={onSelectBook}
+                      onDelete={handleRequestDelete}
+                    />
+                  ))}
+              </div>
+              {visibleBooksCount < sortedAndFilteredBooks.length && (
+                <div className="mt-8 text-center">
+                  <button
+                    onClick={() =>
+                      setVisibleBooksCount((prev) => prev + 20)
+                    }
+                    className="px-6 py-2 bg-primary text-white font-semibold rounded-lg shadow-md hover:bg-primary-dark transition-colors"
+                  >
+                    더보기
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
       ) : (

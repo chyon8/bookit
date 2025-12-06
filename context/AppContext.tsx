@@ -85,15 +85,38 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
       } else if (userBooks) {
         const formattedBooks: BookWithReview[] = userBooks.map((ub: any) => {
           const { books: bookData, ...reviewData } = ub;
+          
+          // Create the searchable content string
+          const searchable_content = [
+            bookData.title,
+            bookData.author,
+            reviewData.one_line_review,
+            ...(reviewData.memos || []),
+            ...((reviewData.memorable_quotes as any[]) || []).flatMap((q: any) => [
+              q.quote,
+              q.thought,
+            ]),
+            ...(reviewData.questions_from_book || []),
+            reviewData.connected_thoughts,
+            reviewData.overall_impression,
+            reviewData.reread_reason,
+            reviewData.notes,
+          ]
+            .filter(Boolean)
+            .join(" ")
+            .toLowerCase();
+
           return {
             id: bookData.id,
             isbn13: bookData.isbn13,
             title: bookData.title,
             author: bookData.author,
+
             category: bookData.category,
             description: bookData.description,
             coverImageUrl: bookData.cover_image_url, // Fix: Map snake_case to camelCase
             review: reviewData as UserBook,
+            searchable_content,
           };
         });
         setBooks(formattedBooks);
@@ -206,11 +229,33 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
 
       if (reviewError) throw reviewError;
 
+      const finalReview = upsertedReview as UserBook;
+
+      const searchable_content = [
+        bookData.title,
+        bookData.author,
+        finalReview.one_line_review,
+        ...(finalReview.memos || []),
+        ...((finalReview.memorable_quotes as any[]) || []).flatMap((q: any) => [
+          q.quote,
+          q.thought,
+        ]),
+        ...(finalReview.questions_from_book || []),
+        finalReview.connected_thoughts,
+        finalReview.overall_impression,
+        finalReview.reread_reason,
+        finalReview.notes,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
       const finalBook: BookWithReview = {
         ...bookData,
         id: finalBookData.id,
         coverImageUrl: finalBookData.cover_image_url,
-        review: upsertedReview as UserBook,
+        review: finalReview,
+        searchable_content,
       };
 
       setBooks((currentBooks) => {

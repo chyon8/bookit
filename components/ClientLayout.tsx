@@ -12,12 +12,18 @@ import { Auth } from "@supabase/auth-ui-react";
 import Link from "next/link";
 import { ThemeSupa } from "@supabase/auth-ui-shared";
 import type { Session } from "@supabase/supabase-js";
+import { View } from "../types";
+import BookshelfView from "./BookshelfView";
+import SearchView from "./SearchView";
+import StatsView from "./StatsView";
+import ChatView from "./ChatView";
 
 const ClientLayout: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const {
     user,
+    books,
     theme,
     toggleTheme,
     isReviewModalOpen,
@@ -25,9 +31,11 @@ const ClientLayout: React.FC<{ children: React.ReactNode }> = ({
     handleSaveReview,
     handleCloseReview,
     handleDeleteBook,
+    handleOpenReview,
   } = useAppContext();
 
   const [isSignOutModalOpen, setSignOutModalOpen] = useState(false);
+  const [activeView, setActiveView] = useState<View>('bookshelf');
   const supabase = createClient();
 
   useEffect(() => {
@@ -46,6 +54,20 @@ const ClientLayout: React.FC<{ children: React.ReactNode }> = ({
 
   const handleSignOutClick = () => {
     setSignOutModalOpen(true);
+  };
+
+  const renderActiveView = () => {
+    switch (activeView) {
+      case 'search':
+        return <SearchView onSelectBook={handleOpenReview} />;
+      case 'stats':
+        return <StatsView books={books} theme={theme} />;
+      case 'chat':
+        return <ChatView books={books} />;
+      case 'bookshelf':
+      default:
+        return <BookshelfView />;
+    }
   };
 
   if (!user) {
@@ -109,12 +131,12 @@ const ClientLayout: React.FC<{ children: React.ReactNode }> = ({
       />
       <header className="bg-white dark:bg-dark-card p-2 border-b border-border dark:border-dark-border sticky top-0 z-20">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <Link href="/" className="flex items-center">
+          <div onClick={() => setActiveView('bookshelf')} className="flex items-center cursor-pointer">
             <BookOpenIcon className="w-8 h-8 text-primary" />
             <h1 className="text-xl font-bold text-text-heading dark:text-dark-text-heading ml-2">
               Bookit
             </h1>
-          </Link>
+          </div>
           <div className="flex items-center space-x-4">
             <button
               onClick={toggleTheme}
@@ -138,7 +160,7 @@ const ClientLayout: React.FC<{ children: React.ReactNode }> = ({
       </header>
 
       <main className="flex-grow p-4 md:p-6 mb-16">
-        <div className="max-w-5xl mx-auto">{children}</div>
+        <div className="max-w-5xl mx-auto">{renderActiveView()}</div>
       </main>
 
       <ReviewModal />
@@ -152,7 +174,7 @@ const ClientLayout: React.FC<{ children: React.ReactNode }> = ({
         <p>정말로 로그아웃하시겠습니까?</p>
       </ConfirmModal>
 
-      <Nav />
+      <Nav activeView={activeView} onViewChange={setActiveView} />
     </div>
   );
 };

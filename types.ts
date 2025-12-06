@@ -56,6 +56,7 @@ export interface UserBook {
 export interface BookWithReview extends Book {
   review?: Partial<UserBook>;
   isInBookshelf?: boolean;
+  searchable_content?: string;
 }
 
 export type View = "search" | "bookshelf" | "stats" | "chat";
