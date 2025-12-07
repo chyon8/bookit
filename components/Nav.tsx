@@ -19,7 +19,7 @@ const Nav: React.FC<NavProps> = ({ activeView, onViewChange }) => {
         <button
           onClick={() => onViewChange(view)}
           className={`flex flex-col items-center justify-center w-full pt-2 pb-1 transition-colors duration-200 ${
-            activeView === view ? 'text-primary' : 'text-white/70 hover:text-white'
+            activeView === view ? 'text-gray-900 dark:text-white' : 'text-gray-400 hover:text-gray-800 dark:text-dark-text-body/70 dark:hover:text-dark-text-body'
           }`}
         >
           {icon}
@@ -28,7 +28,7 @@ const Nav: React.FC<NavProps> = ({ activeView, onViewChange }) => {
     );
 
     return (
-        <footer className="fixed bottom-0 left-0 right-0 bg-footer dark:bg-dark-footer shadow-lg z-20 border-t border-black/20">
+        <footer className="fixed bottom-0 left-0 right-0 bg-white dark:bg-dark-card shadow-lg z-20 border-t border-gray-200 dark:border-dark-border">
             <nav className="max-w-5xl mx-auto flex justify-around">
                 <NavItem view="search" label="검색" icon={<SearchIcon className="w-6 h-6" />} />
                 <NavItem view="bookshelf" label="내 책장" icon={<BookshelfIcon className="w-6 h-6" />} />

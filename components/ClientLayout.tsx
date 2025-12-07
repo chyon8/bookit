@@ -36,7 +36,16 @@ const ClientLayout: React.FC<{ children: React.ReactNode }> = ({
 
   const [isSignOutModalOpen, setSignOutModalOpen] = useState(false);
   const [activeView, setActiveView] = useState<View>('bookshelf');
+  const [isScrolled, setIsScrolled] = useState(false);
   const supabase = createClient();
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 5);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   useEffect(() => {
     if (theme === "dark") {
@@ -129,7 +138,7 @@ const ClientLayout: React.FC<{ children: React.ReactNode }> = ({
           },
         }}
       />
-      <header className="bg-white dark:bg-dark-card p-2 border-b border-border dark:border-dark-border sticky top-0 z-20">
+      <header className={`bg-white dark:bg-dark-card p-2 sticky top-0 z-20 transition-shadow duration-200 ${isScrolled ? 'border-b border-border dark:border-dark-border' : 'border-b border-white dark:border-dark-card'}`}>
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div onClick={() => setActiveView('bookshelf')} className="flex items-center cursor-pointer">
             <BookOpenIcon className="w-8 h-8 text-primary" />
@@ -149,11 +158,18 @@ const ClientLayout: React.FC<{ children: React.ReactNode }> = ({
                 <SunIcon className="w-6 h-6" />
               )}
             </button>
-            <button
-              onClick={handleSignOutClick}
-              className="text-sm font-semibold text-text-body dark:text-dark-text-body hover:text-primary dark:hover:text-primary transition-colors"
-            >
-              로그아웃
+            <button onClick={handleSignOutClick} className="w-8 h-8 rounded-full overflow-hidden focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">
+              {user?.user_metadata?.avatar_url ? (
+                <img
+                  src={user.user_metadata.avatar_url}
+                  alt="User Avatar"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-sm font-bold text-gray-500 dark:text-gray-400">
+                  {user?.email?.charAt(0).toUpperCase()}
+                </div>
+              )}
             </button>
           </div>
         </div>

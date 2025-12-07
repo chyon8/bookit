@@ -63,6 +63,15 @@ export default function RootLayout({
         `,
           }}
         />
+        <style>{`
+          .no-scrollbar::-webkit-scrollbar {
+            display: none;
+          }
+          .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+          }
+        `}</style>
       </head>
       <body className="bg-light-gray dark:bg-dark-bg">
         <AppContextProvider>

@@ -89,7 +89,7 @@ export const BookshelfCard: React.FC<BookshelfCardProps> = React.memo(({
         <img
           src={book.coverImageUrl}
           alt={book.title}
-          className="w-full h-full object-cover rounded-md shadow-lg transition-transform group-hover:scale-105"
+          className="w-full h-full object-cover rounded-md border border-gray-200 dark:border-dark-border transition-transform group-hover:scale-105"
         />
         <button
           onClick={handleDeleteClick}
@@ -608,7 +608,7 @@ const BookshelfView: React.FC = () => {
     return (
       <div className="space-y-4">
         <div className="flex justify-between items-center">
-          <h2 className="text-xl font-bold text-text-heading dark:text-dark-text-heading">
+          <h2 className="text-2xl font-bold text-text-heading dark:text-dark-text-heading">
             {title}{" "}
             <span className="text-lg text-text-body dark:text-dark-text-body font-medium">
               {booksToRender.length}
@@ -617,13 +617,13 @@ const BookshelfView: React.FC = () => {
           {status && booksToRender.length > 10 && (
             <button
               onClick={() => handleStatusFilterChange(status)}
-              className="text-sm font-semibold text-primary hover:underline"
+              className="text-xs text-gray-500 dark:text-gray-400 hover:underline"
             >
               전체보기
             </button>
           )}
         </div>
-        <div className="flex overflow-x-auto space-x-4 -m-2 p-2">
+        <div className="flex overflow-x-auto space-x-4 -m-2 p-2 no-scrollbar">
           {limitedBooks.map((book) => (
             <div key={book.id} className="w-40 flex-shrink-0">
               <BookshelfCard
@@ -715,21 +715,20 @@ const BookshelfView: React.FC = () => {
         </div>
       )}
 
-      <div className="flex justify-end items-center gap-4 mb-4">
-
+      <div className="flex justify-end items-center gap-2 mb-4">
         <button
           onClick={handleResetFilters}
-          className="text-sm font-semibold text-text-body dark:text-dark-text-body hover:text-text-heading dark:hover:text-dark-text-heading"
+          className="bg-gray-100 dark:bg-dark-bg text-gray-800 dark:text-dark-text-body rounded-full px-4 py-2 text-sm font-medium"
         >
           초기화
         </button>
         <button 
           onClick={() => setAdvancedFilterOpen(prev => !prev)}
-          className="flex items-center text-sm font-semibold text-text-body dark:text-dark-text-body hover:text-text-heading dark:hover:text-dark-text-heading"
+          className="flex items-center bg-gray-100 dark:bg-dark-bg text-gray-800 dark:text-dark-text-body rounded-full px-4 py-2 text-sm font-medium"
         >
           <span>상세 필터</span>
           <ChevronDownIcon
-            className={`w-5 h-5 ml-1 text-text-body dark:text-dark-text-body transition-transform ${ 
+            className={`w-5 h-5 ml-1 transition-transform ${ 
               isAdvancedFilterOpen ? "rotate-180" : "" 
             }`}
           />
@@ -737,11 +736,11 @@ const BookshelfView: React.FC = () => {
         <div className="relative" ref={sortDropdownRef}>
           <button
             onClick={() => setSortDropdownOpen((prev) => !prev)}
-            className="flex items-center text-sm font-semibold text-text-body dark:text-dark-text-body hover:text-text-heading dark:hover:text-dark-text-heading"
+            className="flex items-center bg-gray-100 dark:bg-dark-bg text-gray-800 dark:text-dark-text-body rounded-full px-4 py-2 text-sm font-medium"
           >
             <span>{sortOptions[sortOption]}</span>
             <ChevronDownIcon
-              className={`w-5 h-5 ml-1 text-text-body dark:text-dark-text-body transition-transform ${ 
+              className={`w-5 h-5 ml-1 transition-transform ${ 
                 isSortDropdownOpen ? "rotate-180" : "" 
               }`}
             />
