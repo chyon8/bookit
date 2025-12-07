@@ -114,16 +114,16 @@ const SearchView = ({ onSelectBook }) => {
   return (
     <div className="space-y-6">
       <form onSubmit={(e) => e.preventDefault()} className="relative">
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="책 제목이나 저자로 검색..."
-          className="w-full pl-12 pr-10 py-3 bg-white dark:bg-dark-card text-text-heading dark:text-dark-text-heading border border-border dark:border-dark-border rounded-lg focus:ring-2 focus:ring-primary focus:outline-none transition-shadow"
-          autoFocus
-        />
-        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted">
-          <SearchIcon className="w-6 h-6" />
+        <div className="flex items-center border-b border-gray-200 dark:border-gray-700 focus-within:border-gray-800 dark:focus-within:border-gray-200 transition-colors duration-200">
+          <SearchIcon className="w-5 h-5 ml-2 text-text-muted flex-shrink-0" />
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="책 제목이나 저자로 검색..."
+            className="w-full pl-3 pr-10 py-2 bg-transparent text-text-heading dark:text-dark-text-heading focus:outline-none"
+            autoFocus
+          />
         </div>
         {query && (
           <button

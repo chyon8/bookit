@@ -6,6 +6,9 @@ import {
   ChevronRightIcon,
   ChevronDownIcon,
   TrashIcon,
+  SearchIcon,
+  XMarkIcon,
+  SparklesIcon,
 } from "./Icons";
 import { useAppContext } from "../context/AppContext";
 import ConfirmModal from "./ConfirmModal";
@@ -641,16 +644,36 @@ const BookshelfView: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white dark:bg-dark-card p-4 rounded-lg shadow-sm border border-border dark:border-dark-border">
-        <div>
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="기록 검색..."
-            className="w-full px-4 py-2 bg-light-gray dark:bg-dark-bg text-text-heading dark:text-dark-text-heading border border-border dark:border-dark-border rounded-lg focus:ring-2 focus:ring-primary focus:outline-none"
-          />
+      <div className="flex items-center gap-2">
+        <div className="relative flex-grow">
+          <div className="flex items-center border-b border-gray-200 dark:border-gray-700 focus-within:border-gray-800 dark:focus-within:border-gray-200 transition-colors duration-200">
+            <SearchIcon className="w-5 h-5 ml-2 text-text-muted flex-shrink-0" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="기록 검색..."
+              className="w-full pl-3 pr-10 py-2 bg-transparent text-text-heading dark:text-dark-text-heading focus:outline-none"
+            />
+          </div>
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-heading dark:hover:text-dark-text-heading"
+              aria-label="검색어 지우기"
+            >
+              <XMarkIcon className="w-6 h-6" />
+            </button>
+          )}
         </div>
+        <button
+          onClick={handleShowRandomNote}
+          className="p-2 rounded-full text-text-body dark:text-dark-text-body hover:bg-light-gray dark:hover:bg-dark-bg"
+          aria-label="랜덤 기록 보기"
+        >
+          <SparklesIcon className="w-5 h-5 text-primary" />
+        </button>
       </div>
 
       <div className="flex border-b border-gray-200 dark:border-gray-700">
@@ -696,12 +719,7 @@ const BookshelfView: React.FC = () => {
       )}
 
       <div className="flex justify-end items-center gap-4 mb-4">
-        <button
-            onClick={handleShowRandomNote}
-            className="text-sm font-semibold text-text-body dark:text-dark-text-body hover:text-text-heading dark:hover:text-dark-text-heading whitespace-nowrap"
-          >
-            랜덤 기록 보기 ✨
-          </button>
+
         <button
           onClick={handleResetFilters}
           className="text-sm font-semibold text-text-body dark:text-dark-text-body hover:text-text-heading dark:hover:text-dark-text-heading"
