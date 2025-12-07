@@ -790,14 +790,14 @@ const ReviewModal = () => {
             />
           </FormRow>
 
-          <FormRow label="읽게 된 동기">
+          {/* <FormRow label="읽게 된 동기">
             <FormTextarea
               name="motivation"
               value={review.motivation || ""}
               onChange={handleInputChange}
               rows={3}
             />
-          </FormRow>
+          </FormRow> */}
 
           <FormRow label="메모">
             <div className="space-y-3">
@@ -870,16 +870,16 @@ const ReviewModal = () => {
             </div>
           </FormRow>
 
-          <FormRow label="새로운 개념/알게된 점">
+          {/* <FormRow label="새로운 개념/알게된 점">
             <FormTextarea
               name="learnings"
               value={review.learnings || ""}
               onChange={handleInputChange}
               rows={4}
             />
-          </FormRow>
+          </FormRow> */}
 
-          <FormRow label="책이 던지는 질문">
+          {/* <FormRow label="책이 던지는 질문">
             <div className="space-y-2">
               {(review.questions_from_book || []).map((question, index) => (
                 <div key={index} className="flex items-center space-x-2">
@@ -913,25 +913,25 @@ const ReviewModal = () => {
                 <span>질문 추가</span>
               </button>
             </div>
-          </FormRow>
+          </FormRow> */}
 
-          <FormRow label="연결되는 생각/아이디어">
+          {/* <FormRow label="연결되는 생각/아이디어">
             <FormTextarea
               name="connected_thoughts"
               value={review.connected_thoughts || ""}
               onChange={handleInputChange}
               rows={3}
             />
-          </FormRow>
+          </FormRow> */}
 
-          <FormRow label="총평">
+          {/* <FormRow label="총평">
             <FormTextarea
               name="overall_impression"
               value={review.overall_impression || ""}
               onChange={handleInputChange}
               rows={4}
             />
-          </FormRow>
+          </FormRow> */}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormRow label="다시 읽을 건가요?">
