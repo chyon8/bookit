@@ -108,9 +108,6 @@ export const BookshelfCard: React.FC<BookshelfCardProps> = React.memo(({
           <p className="text-sm text-text-body dark:text-dark-text-body mt-1 line-clamp-2">
             {book.author.split("(지은이")[0].trim()}
           </p>
-          <p className="text-xs text-text-body dark:text-dark-text-body mt-2 line-clamp-2">
-            {book.description}
-          </p>
         </div>
         {renderStatusInfo()}
       </div>
