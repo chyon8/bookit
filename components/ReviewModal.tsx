@@ -324,7 +324,10 @@ const MemoCard: React.FC<{
 };
 
 // --- New Book Info Header ---
-const BookInfoHeader: React.FC<{ book: BookWithReview }> = ({ book }) => {
+const BookInfoHeader: React.FC<{
+  book: BookWithReview;
+  description?: string;
+}> = ({ book, description }) => {
   const [showFullDescription, setShowFullDescription] = useState(false);
 
   return (
@@ -345,16 +348,16 @@ const BookInfoHeader: React.FC<{ book: BookWithReview }> = ({ book }) => {
           <p className="text-sm text-text-muted dark:text-dark-text-muted mt-2">
             {book.category}
           </p>
-          {book.description && (
+          {description && (
             <div className="text-sm text-text-body dark:text-dark-text-body mt-4 text-left">
               <p
                 className={`whitespace-pre-wrap ${
                   !showFullDescription ? "line-clamp-3" : ""
                 }`}
               >
-                {book.description}
+                {description}
               </p>
-              {book.description.length > 100 && ( // Only show if description is long enough
+              {description.length > 100 && ( // Only show if description is long enough
                 <button
                   onClick={() => setShowFullDescription(!showFullDescription)}
                   className="text-primary font-semibold text-sm mt-2"
@@ -644,7 +647,7 @@ const ReviewModal = () => {
       ),
     };
 
-    handleSaveReview({ ...selectedBook, review: finalReview });
+    handleSaveReview({ ...selectedBook, review: finalReview as UserBook });
   };
 
   const handleDeleteRequest = () => {
@@ -716,7 +719,10 @@ const ReviewModal = () => {
         </header>
 
         {/* --- Book Info Header --- */}
-        <BookInfoHeader book={selectedBook} />
+        <BookInfoHeader
+          book={selectedBook}
+          description={selectedBook.description}
+        />
 
         {/* --- Divider --- */}
         <div className="px-6">

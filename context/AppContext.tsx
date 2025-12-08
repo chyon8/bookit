@@ -171,6 +171,7 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
         author: cleanedAuthor,
         cover_image_url: bookData.coverImageUrl,
         category: bookData.category,
+        description: bookData.description,
         isbn13: bookData.isbn13,
       };
 
@@ -202,6 +203,14 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
 
         if (existingBook) {
           finalBookData = { ...bookRecord, ...existingBook };
+          const { error: updateError } = await supabase
+            .from("books")
+            .update(bookRecord) // Update existing book with new data
+            .eq("id", existingBook.id);
+
+          if (updateError) {
+            console.error("Error updating existing book:", updateError);
+          }
         } else {
           const { data: newBook, error: insertError } = await supabase
             .from("books")
@@ -226,7 +235,7 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
         .upsert(reviewData, { onConflict: "user_id,book_id" })
         .select()
         .single();
-
+      
       if (reviewError) throw reviewError;
 
       const finalReview = upsertedReview as UserBook;
