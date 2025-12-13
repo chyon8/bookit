@@ -16,9 +16,9 @@ const RecordHeader: React.FC<RecordHeaderProps> = ({ onSave, isSaving, onBack })
         onClick={onBack}
         className="flex h-12 w-12 items-center justify-center"
       >
-        <ChevronLeftIcon className="h-6 w-6" />
+        <ChevronLeftIcon className="h-6 w-6 dark:text-white" />
       </button>
-      <h1 className="text-lg font-bold">독서 기록</h1>
+      <h1 className="text-lg font-bold dark:text-white">독서 기록</h1>
       <button
         onClick={onSave}
         disabled={isSaving}
