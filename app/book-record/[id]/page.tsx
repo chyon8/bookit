@@ -4,10 +4,12 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { BookWithReview, ReadingStatus, UserBook, MemorableQuote } from "../../../types";
 import { createClient } from "../../../utils/supabase/client";
-import { StarIcon as StarSolid, PlusIcon, XMarkIcon, PencilIcon } from "../../../components/Icons";
+import { StarIcon as StarSolid, PlusIcon, XMarkIcon, PencilIcon, ChevronDownIcon } from "../../../components/Icons";
 import RecordHeader from "../../../components/RecordHeader";
 import { useAppContext } from "../../../context/AppContext";
 import toast from "react-hot-toast";
+import ConfirmModal from "../../../components/ConfirmModal";
+
 
 // --- Reusable Form Components with new styles ---
 
@@ -80,6 +82,23 @@ const FormTextarea = React.forwardRef<HTMLTextAreaElement, React.TextareaHTMLAtt
   />
 ));
 FormTextarea.displayName = "FormTextarea";
+
+const FormSelect: React.FC<React.SelectHTMLAttributes<HTMLSelectElement>> = (
+  props
+) => (
+  <div className="relative">
+    <select
+      {...props}
+      className={`w-full min-h-[48px] px-4 pr-10 rounded-xl bg-[#F7F8FA] dark:bg-dark-bg text-text-heading dark:text-dark-text-heading focus:ring-2 focus:ring-primary focus:outline-none transition-shadow appearance-none ${props.className}`}
+    >
+      {props.children}
+    </select>
+    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-text-body dark:text-dark-text-body">
+      <ChevronDownIcon className="w-5 h-5" />
+    </div>
+  </div>
+);
+
 
 const FormRow: React.FC<{
   label: string;
@@ -190,6 +209,62 @@ const QuoteCard: React.FC<{
   );
 };
 
+const MemoCard: React.FC<{
+  memo: string;
+  onDelete: () => void;
+  onChange: (value: string) => void;
+}> = ({ memo, onDelete, onChange }) => {
+  const [isEditing, setIsEditing] = useState(memo === "");
+
+  if (isEditing) {
+    return (
+      <div className="bg-white dark:bg-dark-card p-4 rounded-2xl shadow-sm space-y-3 border border-primary/50">
+        <FormTextarea
+          value={memo}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="메모 내용"
+          rows={3}
+          className="flex-grow !bg-transparent !p-0 focus:!ring-0"
+        />
+        <div className="flex justify-end items-center space-x-4 pt-2">
+           <button onClick={onDelete} className="text-sm font-semibold text-red-500 hover:opacity-80">
+                삭제
+            </button>
+            <button onClick={() => setIsEditing(false)} className="text-sm font-bold text-primary hover:opacity-80">
+                완료
+            </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div onClick={() => setIsEditing(true)} className="bg-white dark:bg-dark-card p-4 rounded-2xl shadow-sm cursor-pointer hover:shadow-md transition-shadow">
+      <div className="flex justify-between items-start">
+        <p className="text-text-body dark:text-dark-text-body whitespace-pre-wrap flex-1 pr-4">
+          {memo}
+        </p>
+        <div className="flex space-x-1">
+          <button
+            onClick={(e) => { e.stopPropagation(); setIsEditing(true); }}
+            className="p-1 text-text-body/50 dark:text-dark-text-body/50 hover:text-primary dark:hover:text-primary"
+            aria-label="메모 수정"
+          >
+            <PencilIcon className="w-5 h-5" />
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+            className="p-1 text-text-body/50 dark:text-dark-text-body/50 hover:text-red-500 dark:hover:text-red-500"
+            aria-label="메모 삭제"
+          >
+            <XMarkIcon className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 
 const BookRecordPage = () => {
   const router = useRouter();
@@ -204,6 +279,12 @@ const BookRecordPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
+  const [confirmation, setConfirmation] = useState<{
+    isOpen: boolean;
+    title: string;
+    children: React.ReactNode;
+    onConfirm: () => void;
+  }>({ isOpen: false, title: "", children: null, onConfirm: () => {} });
 
   const initialReviewState = useMemo(() => JSON.stringify(book?.review), [book]);
   
@@ -269,6 +350,7 @@ const BookRecordPage = () => {
         memorable_quotes: (initialReview.memorable_quotes || []).map(q =>
           typeof q === "string" ? { quote: q, page: "", thought: "" } : q
         ),
+        memos: initialReview.memos || [],
       });
 
       setIsLoading(false);
@@ -279,9 +361,74 @@ const BookRecordPage = () => {
     }
   }, [id, user, router, supabase]);
 
+  const readingStatusKorean = {
+    [ReadingStatus.WantToRead]: "읽고 싶은",
+    [ReadingStatus.Reading]: "읽는 중",
+    [ReadingStatus.Finished]: "완독",
+    [ReadingStatus.Dropped]: "중단",
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setReview(prev => ({ ...prev, [name]: value }));
+     if (name === "status") {
+      handleStatusChange(value as ReadingStatus);
+    } else {
+      setReview(prev => ({ ...prev, [name]: value }));
+    }
+  };
+
+  const handleStatusChange = (newStatus: ReadingStatus) => {
+    const today = new Date().toISOString().split("T")[0];
+    const oldStatus = review.status;
+
+    const performStatusUpdate = (
+      updates: Partial<UserBook>,
+      newStatusToSet: ReadingStatus
+    ) => {
+      setReview((prev) => ({
+        ...prev,
+        ...updates,
+        status: newStatusToSet,
+      }));
+    };
+
+    if (newStatus === ReadingStatus.Reading && oldStatus === ReadingStatus.WantToRead) {
+      performStatusUpdate({ start_date: review.start_date || today, end_date: undefined }, newStatus);
+      return;
+    }
+
+    if (newStatus === ReadingStatus.Finished && oldStatus === ReadingStatus.Reading) {
+      performStatusUpdate({ end_date: review.end_date || today }, newStatus);
+      return;
+    }
+    
+    if (newStatus === ReadingStatus.Reading && oldStatus === ReadingStatus.Finished) {
+      setConfirmation({
+        isOpen: true,
+        title: "상태 변경 확인",
+        children: "책을 다시 읽으시겠어요? 기존의 완독일 기록이 삭제됩니다.",
+        onConfirm: () => {
+          performStatusUpdate({ end_date: undefined }, newStatus);
+          setConfirmation({ ...confirmation, isOpen: false });
+        },
+      });
+      return;
+    }
+
+    if (newStatus === ReadingStatus.WantToRead && oldStatus !== newStatus) {
+      setConfirmation({
+        isOpen: true,
+        title: "상태 변경 확인",
+        children: "'읽고싶은' 상태로 변경하면 모든 독서 기록(시작일, 완독일)이 삭제됩니다. 계속하시겠어요?",
+        onConfirm: () => {
+          performStatusUpdate({ start_date: undefined, end_date: undefined }, newStatus);
+          setConfirmation({ ...confirmation, isOpen: false });
+        },
+      });
+      return;
+    }
+
+    setReview((prev) => ({ ...prev, status: newStatus }));
   };
 
   const handleRatingChange = (newRating: number) => {
@@ -308,6 +455,28 @@ const BookRecordPage = () => {
     setReview(prev => ({
       ...prev,
       memorable_quotes: (prev.memorable_quotes || []).filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleMemoChange = (index: number, value: string) => {
+    setReview(prev => {
+        const newMemos = [...(prev.memos || [])];
+        newMemos[index] = value;
+        return { ...prev, memos: newMemos };
+    });
+  };
+
+  const addMemo = () => {
+    setReview(prev => ({
+      ...prev,
+      memos: [...(prev.memos || []), ""],
+    }));
+  };
+
+  const removeMemo = (index: number) => {
+    setReview(prev => ({
+      ...prev,
+      memos: (prev.memos || []).filter((_, i) => i !== index),
     }));
   };
 
@@ -357,6 +526,9 @@ const BookRecordPage = () => {
     );
   }
 
+  const showStartDate = review.status === ReadingStatus.Reading || review.status === ReadingStatus.Finished || review.status === ReadingStatus.Dropped;
+  const showFinishDate = review.status === ReadingStatus.Finished;
+
   return (
     <div className="bg-light-gray dark:bg-dark-bg min-h-screen">
       <RecordHeader onSave={handleSave} isSaving={isSaving} onBack={handleBackNavigation} />
@@ -390,12 +562,23 @@ const BookRecordPage = () => {
           </div>
 
           <div className="bg-white dark:bg-dark-card p-6 rounded-2xl shadow-lg space-y-6">
-            <FormRow label="독서 상태">
-               <FormInput readOnly value={review.status} className="!bg-gray-100" />
+            <FormRow label="독서 상태" htmlFor="status-select">
+              <FormSelect
+                id="status-select"
+                name="status"
+                value={review.status || ReadingStatus.WantToRead}
+                onChange={handleInputChange}
+              >
+                {Object.entries(readingStatusKorean).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </FormSelect>
             </FormRow>
 
             <div className="grid grid-cols-2 gap-4">
-                {review.start_date && <FormRow label="독서 시작일">
+                {showStartDate && <FormRow label="독서 시작일">
                     <FormInput
                         type="date"
                         name="start_date"
@@ -403,7 +586,7 @@ const BookRecordPage = () => {
                         onChange={handleInputChange}
                     />
                 </FormRow>}
-                {review.end_date && <FormRow label="완독일">
+                {showFinishDate && <FormRow label="완독일">
                     <FormInput
                         type="date"
                         name="end_date"
@@ -445,8 +628,37 @@ const BookRecordPage = () => {
             </FormRow>
           </div>
 
+          <div className="bg-white dark:bg-dark-card p-6 rounded-2xl shadow-lg space-y-4">
+            <FormRow label="메모">
+                <div className="space-y-4">
+                {(review.memos || []).map((memo, index) => (
+                    <MemoCard
+                    key={index}
+                    memo={memo}
+                    onDelete={() => removeMemo(index)}
+                    onChange={(value) => handleMemoChange(index, value)}
+                    />
+                ))}
+                <button
+                    onClick={addMemo}
+                    className="flex w-full items-center justify-center space-x-2 rounded-lg bg-primary/10 py-3 text-sm font-semibold text-primary hover:bg-primary/20"
+                >
+                    <PlusIcon className="w-5 h-5" />
+                    <span>메모 추가</span>
+                </button>
+                </div>
+            </FormRow>
+          </div>
         </div>
       </main>
+      <ConfirmModal
+          isOpen={confirmation.isOpen}
+          onClose={() => setConfirmation({ ...confirmation, isOpen: false })}
+          onConfirm={confirmation.onConfirm}
+          title={confirmation.title}
+        >
+          {confirmation.children}
+        </ConfirmModal>
     </div>
   );
 };
