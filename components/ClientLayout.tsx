@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { usePathname } from 'next/navigation';
 import { useAppContext } from "../context/AppContext";
 import { Toaster } from "react-hot-toast";
 import { SparklesIcon, SunIcon, MoonIcon, BookOpenIcon } from "./Icons";
-import ReviewModal from "./ReviewModal";
 import Nav from "./Nav";
 import ConfirmModal from "./ConfirmModal";
 import { createClient } from "../utils/supabase/client";
@@ -26,14 +26,10 @@ const ClientLayout: React.FC<{ children: React.ReactNode }> = ({
     books,
     theme,
     toggleTheme,
-    isReviewModalOpen,
-    selectedBook,
-    handleSaveReview,
-    handleCloseReview,
-    handleDeleteBook,
     handleOpenReview,
   } = useAppContext();
 
+  const pathname = usePathname();
   const [isSignOutModalOpen, setSignOutModalOpen] = useState(false);
   const [activeView, setActiveView] = useState<View>('bookshelf');
   const [isScrolled, setIsScrolled] = useState(false);
@@ -126,6 +122,12 @@ const ClientLayout: React.FC<{ children: React.ReactNode }> = ({
       </div>
     );
   }
+  
+  const isBookRecordPage = pathname.startsWith('/book-record/');
+
+  if (isBookRecordPage) {
+    return <>{children}</>;
+  }
 
   return (
     <div className="min-h-screen bg-light-gray dark:bg-dark-bg font-sans flex flex-col">
@@ -178,8 +180,6 @@ const ClientLayout: React.FC<{ children: React.ReactNode }> = ({
       <main className="flex-grow p-4 md:p-6 mb-16">
         <div className="max-w-5xl mx-auto">{renderActiveView()}</div>
       </main>
-
-      <ReviewModal />
 
       <ConfirmModal
         isOpen={isSignOutModalOpen}

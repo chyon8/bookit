@@ -6,7 +6,10 @@ import React, {
   useEffect,
   useContext,
   useCallback,
+  Dispatch,
+  SetStateAction,
 } from "react";
+import { useRouter } from "next/navigation";
 import { BookWithReview, UserBook } from "../types";
 import { BookOpenIcon, SparklesIcon } from "../components/Icons";
 import { createClient } from "../utils/supabase/client";
@@ -15,14 +18,12 @@ import toast from "react-hot-toast";
 
 interface AppContextType {
   books: BookWithReview[];
+  setBooks: Dispatch<SetStateAction<BookWithReview[]>>;
   isLoading: boolean;
   user: User | null;
   theme: "light" | "dark";
   toggleTheme: () => void;
-  isReviewModalOpen: boolean;
-  selectedBook: BookWithReview | null;
   handleOpenReview: (book: BookWithReview) => void;
-  handleCloseReview: () => void;
   handleSaveReview: (reviewedBook: BookWithReview) => Promise<void>;
   handleDeleteBook: (bookId: string) => Promise<void>;
 }
@@ -33,10 +34,9 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const supabase = createClient();
+  const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [books, setBooks] = useState<BookWithReview[]>([]);
-  const [selectedBook, setSelectedBook] = useState<BookWithReview | null>(null);
-  const [isReviewModalOpen, setReviewModalOpen] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("dark");
   const [isLoading, setIsLoading] = useState(true);
 
@@ -150,14 +150,8 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const handleOpenReview = useCallback((book: BookWithReview) => {
-    setSelectedBook(book);
-    setReviewModalOpen(true);
-  }, []);
-
-  const handleCloseReview = useCallback(() => {
-    setReviewModalOpen(false);
-    setSelectedBook(null);
-  }, []);
+    router.push(`/book-record/${book.id}`);
+  }, [router]);
 
   const handleSaveReview = async (reviewedBook: BookWithReview) => {
     const savePromise = async () => {
@@ -289,8 +283,6 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
       success: "저장되었습니다!",
       error: (err) => `Save failed: ${err.message}`,
     });
-
-    handleCloseReview();
   };
 
   const handleDeleteBook = async (bookId: string) => {
@@ -330,14 +322,12 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
     <AppContext.Provider
       value={{
         books,
+        setBooks,
         isLoading,
         user,
         theme,
         toggleTheme,
-        isReviewModalOpen,
-        selectedBook,
         handleOpenReview,
-        handleCloseReview,
         handleSaveReview,
         handleDeleteBook,
       }}
