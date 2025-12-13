@@ -170,7 +170,7 @@ const BookPreviewPage = () => {
       <header className="fixed top-0 left-0 right-0 z-10 bg-white dark:bg-dark-card shadow-sm">
         <div className="flex items-center justify-between px-4 py-3">
           <button
-            onClick={() => router.back()}
+            onClick={() => router.push("/search")}
             className="text-text-heading dark:text-dark-text-heading font-semibold"
           >
             ← 뒤로

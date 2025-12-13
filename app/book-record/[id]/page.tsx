@@ -393,7 +393,7 @@ const BookRecordPage = () => {
     };
 
     if (newStatus === ReadingStatus.Reading && oldStatus === ReadingStatus.WantToRead) {
-      performStatusUpdate({ start_date: review.start_date || today, end_date: undefined }, newStatus);
+      performStatusUpdate({ start_date: today, end_date: undefined }, newStatus);
       return;
     }
 
