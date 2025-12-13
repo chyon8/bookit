@@ -150,7 +150,16 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const handleOpenReview = useCallback((book: BookWithReview) => {
-    router.push(`/book-record/${book.id}`);
+    // Check if this is a saved book (DB UUID > 15 chars) or a search result (API ID/ISBN)
+    const isDbBook = book.id && book.id.length > 15;
+
+    if (isDbBook) {
+      // Saved book: go to record page with DB UUID
+      router.push(`/book-record/${book.id}`);
+    } else {
+      // Search result: go to preview page with ISBN
+      router.push(`/books/${book.isbn13 || book.id}`);
+    }
   }, [router]);
 
   const handleSaveReview = async (reviewedBook: BookWithReview) => {

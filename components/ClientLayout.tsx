@@ -123,8 +123,9 @@ const ClientLayout: React.FC<{ children: React.ReactNode }> = ({
   }
   
   const isBookRecordPage = pathname.startsWith('/book-record/');
+  const isBookPreviewPage = pathname.startsWith('/books/');
 
-  if (isBookRecordPage) {
+  if (isBookRecordPage || isBookPreviewPage) {
     return <>{children}</>;
   }
 
