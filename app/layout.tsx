@@ -1,6 +1,7 @@
 import React from "react";
 import { AppContextProvider } from "../context/AppContext";
 import ClientLayout from "../components/ClientLayout";
+import ToastProvider from "../components/ToastProvider"; // Import ToastProvider
 
 export const metadata = {
   title: "Bookit",
@@ -76,6 +77,7 @@ export default function RootLayout({
       <body className="bg-light-gray dark:bg-dark-bg">
         <AppContextProvider>
           <ClientLayout>{children}</ClientLayout>
+          <ToastProvider /> {/* Use ToastProvider here */}
         </AppContextProvider>
       </body>
     </html>

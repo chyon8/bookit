@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from "react";
 import { usePathname } from 'next/navigation';
 import { useAppContext } from "../context/AppContext";
-import { Toaster } from "react-hot-toast";
 import { SparklesIcon, SunIcon, MoonIcon, BookOpenIcon } from "./Icons";
 import Nav from "./Nav";
 import ConfirmModal from "./ConfirmModal";
@@ -131,15 +130,6 @@ const ClientLayout: React.FC<{ children: React.ReactNode }> = ({
 
   return (
     <div className="min-h-screen bg-light-gray dark:bg-dark-bg font-sans flex flex-col">
-      <Toaster
-        position="bottom-center"
-        toastOptions={{
-          style: {
-            background: theme === "dark" ? "#2d3748" : "#ffffff",
-            color: theme === "dark" ? "#e2e8f0" : "#1a202c",
-          },
-        }}
-      />
       <header className={`bg-white dark:bg-dark-card p-2 sticky top-0 z-20 transition-shadow duration-200 ${isScrolled ? 'border-b border-border dark:border-dark-border' : 'border-b border-white dark:border-dark-card'}`}>
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div onClick={() => setActiveView('bookshelf')} className="flex items-center cursor-pointer">
