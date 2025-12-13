@@ -286,8 +286,10 @@ const BookRecordPage = () => {
     onConfirm: () => void;
   }>({ isOpen: false, title: "", children: null, onConfirm: () => {} });
 
+  const DRAFT_KEY = `book-record-draft-${id}`;
+
   const initialReviewState = useMemo(() => JSON.stringify(book?.review), [book]);
-  
+
   useEffect(() => {
     const currentState = JSON.stringify(review);
     if (initialReviewState !== currentState) {
@@ -296,6 +298,13 @@ const BookRecordPage = () => {
       setIsDirty(false);
     }
   }, [review, initialReviewState]);
+
+  // Auto-save draft to sessionStorage
+  useEffect(() => {
+    if (isDirty && review && Object.keys(review).length > 0) {
+      sessionStorage.setItem(DRAFT_KEY, JSON.stringify(review));
+    }
+  }, [review, isDirty, DRAFT_KEY]);
 
   const handleBackNavigation = useCallback(() => {
     if (isDirty) {
@@ -310,8 +319,44 @@ const BookRecordPage = () => {
   useEffect(() => {
     const fetchBook = async () => {
       if (!id) return;
-      setIsLoading(true);
 
+      // Try to find book in books context first (optimistic loading)
+      const cachedBook = books.find(b => b.id === id);
+      if (cachedBook) {
+        setBook(cachedBook);
+
+        const formatDate = (date: string | undefined) => date ? new Date(date).toISOString().split("T")[0] : undefined;
+
+        // Check for draft first
+        const savedDraft = sessionStorage.getItem(DRAFT_KEY);
+        if (savedDraft) {
+          try {
+            const draftReview = JSON.parse(savedDraft);
+            setReview(draftReview);
+            setIsLoading(false);
+            return;
+          } catch (e) {
+            console.error("Failed to parse draft:", e);
+          }
+        }
+
+        // Use cached data
+        const initialReview = cachedBook.review || {};
+        setReview({
+          ...initialReview,
+          start_date: formatDate(initialReview.start_date),
+          end_date: formatDate(initialReview.end_date),
+          memorable_quotes: (initialReview.memorable_quotes || []).map(q =>
+            typeof q === "string" ? { quote: q, page: "", thought: "" } : q
+          ),
+          memos: initialReview.memos || [],
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // If not in context, fetch from DB
+      setIsLoading(true);
       const { data, error } = await supabase
         .from('user_books')
         .select(`*, books(*)`)
@@ -325,7 +370,7 @@ const BookRecordPage = () => {
         router.push("/bookshelf/All");
         return;
       }
-      
+
       const { books: bookData, ...reviewData } = data;
       const formattedBook: BookWithReview = {
         id: bookData.id,
@@ -339,6 +384,19 @@ const BookRecordPage = () => {
       };
 
       setBook(formattedBook);
+
+      // Check for draft
+      const savedDraft = sessionStorage.getItem(DRAFT_KEY);
+      if (savedDraft) {
+        try {
+          const draftReview = JSON.parse(savedDraft);
+          setReview(draftReview);
+          setIsLoading(false);
+          return;
+        } catch (e) {
+          console.error("Failed to parse draft:", e);
+        }
+      }
 
       const initialReview = formattedBook.review || {};
       const formatDate = (date: string | undefined) => date ? new Date(date).toISOString().split("T")[0] : undefined;
@@ -359,7 +417,7 @@ const BookRecordPage = () => {
     if (user && id) {
       fetchBook();
     }
-  }, [id, user, router, supabase]);
+  }, [id, user, router, supabase, books, DRAFT_KEY]);
 
   const readingStatusKorean = {
     [ReadingStatus.WantToRead]: "읽고 싶은",
@@ -483,7 +541,7 @@ const BookRecordPage = () => {
   const handleSave = async () => {
     if (!book || !user) return;
     setIsSaving(true);
-    
+
     const finalReview = { ...review };
     const finalBook = { ...book, review: finalReview as UserBook };
 
@@ -494,7 +552,7 @@ const BookRecordPage = () => {
         .eq("id", finalBook.review?.id);
 
       if (reviewError) throw reviewError;
-      
+
       // Update local state in AppContext
       setBooks((currentBooks) => {
         const existingIndex = currentBooks.findIndex((b) => b.id === finalBook.id);
@@ -506,6 +564,8 @@ const BookRecordPage = () => {
         return [...currentBooks, finalBook];
       });
 
+      // Clear draft after successful save
+      sessionStorage.removeItem(DRAFT_KEY);
       setIsDirty(false);
     };
 
@@ -520,8 +580,13 @@ const BookRecordPage = () => {
   
   if (isLoading || !book) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <p>Loading...</p>
+      <div className="flex h-screen items-center justify-center bg-light-gray dark:bg-dark-bg">
+        <div className="text-center animate-pulse">
+          <div className="w-16 h-16 mx-auto mb-4 bg-primary/20 rounded-full flex items-center justify-center">
+            <div className="w-8 h-8 bg-primary rounded-full animate-ping"></div>
+          </div>
+          <p className="text-text-body dark:text-dark-text-body">불러오는 중...</p>
+        </div>
       </div>
     );
   }
@@ -530,7 +595,7 @@ const BookRecordPage = () => {
   const showFinishDate = review.status === ReadingStatus.Finished;
 
   return (
-    <div className="bg-light-gray dark:bg-dark-bg min-h-screen">
+    <div className="bg-light-gray dark:bg-dark-bg min-h-screen animate-slideIn">
       <RecordHeader onSave={handleSave} isSaving={isSaving} onBack={handleBackNavigation} />
 
       {/* Main content with top padding for header and bottom for keyboard */}

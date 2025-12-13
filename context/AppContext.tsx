@@ -155,6 +155,8 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
 
     if (isDbBook) {
       // Saved book: go to record page with DB UUID
+      // Use prefetch and optimistic navigation
+      router.prefetch(`/book-record/${book.id}`);
       router.push(`/book-record/${book.id}`);
     } else {
       // Search result: go to preview page with ISBN

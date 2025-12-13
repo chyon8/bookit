@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { BookWithReview, ReadingStatus, UserBook } from "../types"; // UserBook 타입을 import 합니다.
 import {
   StarIcon,
@@ -34,9 +35,28 @@ export const BookshelfCard: React.FC<BookshelfCardProps> = React.memo(({
   onDelete,
   showStatusBadge,
 }) => {
+  const router = useRouter();
+  const [isClicked, setIsClicked] = useState(false);
+
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onDelete(book.id, book.title);
+  };
+
+  const handleMouseEnter = () => {
+    // Prefetch on hover for instant navigation
+    const isDbBook = book.id && book.id.length > 15;
+    if (isDbBook) {
+      router.prefetch(`/book-record/${book.id}`);
+    }
+  };
+
+  const handleClick = () => {
+    setIsClicked(true);
+    // Delay navigation slightly for animation
+    setTimeout(() => {
+      onSelect(book);
+    }, 150);
   };
 
   const renderStatusInfo = () => {
@@ -77,8 +97,11 @@ export const BookshelfCard: React.FC<BookshelfCardProps> = React.memo(({
 
   return (
     <div
-      onClick={() => onSelect(book)}
-      className="cursor-pointer group flex flex-col h-full"
+      onClick={handleClick}
+      onMouseEnter={handleMouseEnter}
+      className={`cursor-pointer group flex flex-col h-full transition-all duration-200 ${
+        isClicked ? 'animate-scaleDown' : ''
+      }`}
     >
       <div className="relative aspect-[2/3] w-full">
         {showStatusBadge && book.review?.status === ReadingStatus.Dropped && (
