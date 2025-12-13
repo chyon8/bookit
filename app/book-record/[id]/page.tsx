@@ -555,6 +555,18 @@ const BookRecordPage = () => {
           </div>
         </div>
 
+        {/* Description Section */}
+        {book.description && (
+          <div className="p-4 -mt-6 relative z-[2]">
+            <div className="bg-white dark:bg-dark-card p-6 rounded-2xl shadow-lg">
+              <h3 className="text-lg font-bold text-text-heading dark:text-dark-text-heading mb-2">책 소개</h3>
+              <p className="text-text-body dark:text-dark-text-body whitespace-pre-wrap">
+                {book.description}
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Form Section */}
         <div className="p-4 space-y-8 -mt-10 relative z-[2]">
           <div className="bg-white dark:bg-dark-card p-6 rounded-2xl shadow-lg">
