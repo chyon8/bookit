@@ -731,6 +731,7 @@ const BookRecordPage = () => {
 
         {/* Form Section */}
         <div className="p-4 space-y-8 -mt-10 relative z-[2]">
+          {book.description && <div />}
           <div className="bg-white dark:bg-dark-card p-6 rounded-2xl shadow-lg">
             <StarRating
               rating={review.rating || 0}
