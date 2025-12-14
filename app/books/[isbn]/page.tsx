@@ -55,29 +55,41 @@ const BookPreviewPage = () => {
           throw new Error("책 정보를 찾을 수 없습니다.");
         }
 
-        // 2. Check if book already exists in user's bookshelf
-        const { data: existingBooks, error: dbError } = await supabase
-          .from("user_books")
-          .select("book_id, books(id, isbn13)")
-          .eq("user_id", user.id);
+        // 2. More robustly check if the book is in the user's bookshelf
+        // Step 2.1: Check if the book exists in the main 'books' table by ISBN
+        const { data: bookInDb, error: bookError } = await supabase
+          .from("books")
+          .select("id")
+          .eq("isbn13", isbn)
+          .single();
 
-        if (dbError) {
-          console.error("Error checking existing books:", dbError);
+        if (bookError && bookError.code !== "PGRST116") {
+          console.error("Error checking books table:", bookError);
+          throw new Error("데이터베이스에서 책 확인 중 오류가 발생했습니다.");
         }
 
-        // Find if this ISBN already exists in user's bookshelf
-        let foundBookId = null;
-        if (existingBooks) {
-          for (const ub of existingBooks) {
-            const bookData = ub.books as any;
-            if (bookData && bookData.isbn13 === isbn) {
-              foundBookId = bookData.id;
-              break;
-            }
+        let foundUserBookId = null;
+
+        // Step 2.2: If the book exists in our DB, check if the current user has it
+        if (bookInDb) {
+          const { data: userBookLink, error: userBookError } = await supabase
+            .from("user_books")
+            .select("book_id")
+            .eq("user_id", user.id)
+            .eq("book_id", bookInDb.id)
+            .single();
+
+          if (userBookError && userBookError.code !== "PGRST116") {
+            console.error("Error checking user_books table:", userBookError);
+            throw new Error("사용자 서재 확인 중 오류가 발생했습니다.");
+          }
+
+          if (userBookLink) {
+            foundUserBookId = userBookLink.book_id;
           }
         }
 
-        setExistingBookId(foundBookId);
+        setExistingBookId(foundUserBookId);
         setBook(aladinData.book);
       } catch (error: any) {
         console.error("Error fetching book:", error);
@@ -109,17 +121,10 @@ const BookPreviewPage = () => {
       // Use the existing handleSaveReview from AppContext
       await handleSaveReview(bookToSave);
 
-      // After saving, fetch the newly created book ID
-      const { data: savedBook, error } = await supabase
-        .from("books")
-        .select("id")
-        .eq("isbn13", book.isbn13)
-        .single();
+      toast.success("책장에 추가되었습니다.");
 
-      if (error) throw error;
-
-      // Navigate to the record page with the new book ID
-      router.push(`/book-record/${savedBook.id}`);
+      // Navigate back to the previous page (search results)
+      router.back();
     } catch (error: any) {
       console.error("Error adding to bookshelf:", error);
       toast.error("책을 저장하는데 실패했습니다.");
@@ -170,7 +175,7 @@ const BookPreviewPage = () => {
       <header className="fixed top-0 left-0 right-0 z-10 bg-white dark:bg-dark-card shadow-sm">
         <div className="flex items-center justify-between px-4 py-3">
           <button
-            onClick={() => router.push("/search")}
+            onClick={() => router.back()}
             className="text-text-heading dark:text-dark-text-heading font-semibold"
           >
             ← 뒤로
