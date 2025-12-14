@@ -660,18 +660,25 @@ const BookRecordPage = () => {
         return [...currentBooks, finalBook];
       });
 
+      // After successful save, update the initial state reference to the new state
+      initialReviewState.current = JSON.stringify(finalReview);
+
       // Clear draft after successful save
       sessionStorage.removeItem(DRAFT_KEY);
       setIsDirty(false);
     };
 
-    toast.promise(savePromise(), {
-      loading: "기록 저장 중...",
-      success: "성공적으로 저장되었어요!",
-      error: "저장에 실패했습니다.",
-    });
-
-    setIsSaving(false);
+    try {
+      await toast.promise(savePromise(), {
+        loading: "기록 저장 중...",
+        success: "성공적으로 저장되었어요!",
+        error: "저장에 실패했습니다.",
+      });
+    } catch (e) {
+      // react-hot-toast's promise handler will catch and display the error.
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (isLoading || !book) {
