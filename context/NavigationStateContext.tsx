@@ -18,6 +18,7 @@ interface BookshelfState {
 
 interface SearchState {
   query: string;
+  visibleCount: number;
   scrollPosition: number;
 }
 
@@ -50,6 +51,7 @@ const defaultBookshelfState: BookshelfState = {
 
 const defaultSearchState: SearchState = {
   query: "",
+  visibleCount: 20,
   scrollPosition: 0,
 };
 

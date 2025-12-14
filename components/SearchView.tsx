@@ -65,7 +65,9 @@ const SearchView = ({ onSelectBook }) => {
   const [results, setResults] = useState<BookWithReview[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchPerformed, setSearchPerformed] = useState(navState.search.query.trim().length > 0);
+  const [visibleCount, setVisibleCount] = useState(navState.search.visibleCount);
   const scrollRestoredRef = useRef(false);
+  const isInitialMount = useRef(true);
 
   // Restore scroll position on mount
   useEffect(() => {
@@ -90,10 +92,10 @@ const SearchView = ({ onSelectBook }) => {
     };
   }, [saveScrollPosition]);
 
-  // Save query to navigation state
+  // Save query and visibleCount to navigation state
   useEffect(() => {
-    updateSearchState({ query });
-  }, [query, updateSearchState]);
+    updateSearchState({ query, visibleCount });
+  }, [query, visibleCount, updateSearchState]);
 
   // Perform search if there's a saved query on mount
   useEffect(() => {
@@ -103,6 +105,12 @@ const SearchView = ({ onSelectBook }) => {
   }, []); // Run only once on mount
 
   useEffect(() => {
+    // Skip on initial mount to preserve state
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+
     const handler = setTimeout(() => {
       if (query.trim()) {
         performSearch(query);
@@ -110,6 +118,7 @@ const SearchView = ({ onSelectBook }) => {
         setResults([]);
         setLoading(false);
         setSearchPerformed(false);
+        setVisibleCount(20); // Reset to default when clearing search
       }
     }, 500);
 
@@ -183,9 +192,21 @@ const SearchView = ({ onSelectBook }) => {
             <p>"{query}"(으)로 검색 중입니다...</p>
           </div>
         ) : results.length > 0 ? (
-          results.map((book) => (
-            <BookCard key={book.id} book={book} onSelect={onSelectBook} />
-          ))
+          <>
+            {results.slice(0, visibleCount).map((book) => (
+              <BookCard key={book.id} book={book} onSelect={onSelectBook} />
+            ))}
+            {visibleCount < results.length && (
+              <div className="text-center pt-4">
+                <button
+                  onClick={() => setVisibleCount(prev => prev + 20)}
+                  className="px-6 py-2 bg-primary text-white font-semibold rounded-lg shadow-md hover:bg-primary-dark transition-colors"
+                >
+                  더보기 ({visibleCount} / {results.length})
+                </button>
+              </div>
+            )}
+          </>
         ) : (
           searchPerformed && (
             <p className="text-center text-text-body dark:text-dark-text-body py-10">

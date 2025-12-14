@@ -186,6 +186,7 @@ const BookshelfView: React.FC = () => {
 
   const sortDropdownRef = useRef<HTMLDivElement>(null);
   const scrollRestoredRef = useRef(false);
+  const isInitialMount = useRef(true);
 
   const statusCounts = useMemo(() => {
     if (!books) {
@@ -380,7 +381,12 @@ const BookshelfView: React.FC = () => {
     };
   }, []);
 
+  // Reset visible count only when filters change (not on initial mount)
   useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
     setVisibleBooksCount(20);
   }, [statusFilter, searchQuery, sortOption, rereadFilter, monthFilter, genreFilter]);
 

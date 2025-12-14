@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import {
   BookWithReview,
@@ -335,19 +335,31 @@ const BookRecordPage = () => {
 
   const DRAFT_KEY = `book-record-draft-${id}`;
 
-  const initialReviewState = useMemo(
-    () => JSON.stringify(book?.review),
-    [book]
-  );
+  // Store initial state once when book is loaded
+  const initialReviewState = useRef<string>("");
 
   useEffect(() => {
-    const currentState = JSON.stringify(review);
-    if (initialReviewState !== currentState) {
-      setIsDirty(true);
-    } else {
-      setIsDirty(false);
+    if (book?.review && !initialReviewState.current) {
+      // Normalize the review state for comparison (format dates, ensure arrays)
+      const normalizedReview = {
+        ...book.review,
+        start_date: book.review.start_date ? new Date(book.review.start_date).toISOString().split("T")[0] : undefined,
+        end_date: book.review.end_date ? new Date(book.review.end_date).toISOString().split("T")[0] : undefined,
+        memorable_quotes: (book.review.memorable_quotes || []).map(q =>
+          typeof q === 'string' ? { quote: q, page: '', thought: '' } : q
+        ),
+        memos: book.review.memos || [],
+      };
+      initialReviewState.current = JSON.stringify(normalizedReview);
     }
-  }, [review, initialReviewState]);
+  }, [book]);
+
+  useEffect(() => {
+    if (!initialReviewState.current) return;
+
+    const currentState = JSON.stringify(review);
+    setIsDirty(initialReviewState.current !== currentState);
+  }, [review]);
 
   // Auto-save draft to sessionStorage
   useEffect(() => {
