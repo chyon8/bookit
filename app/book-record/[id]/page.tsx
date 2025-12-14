@@ -533,11 +533,12 @@ const BookRecordPage = () => {
       return;
     }
 
-    if (
-      newStatus === ReadingStatus.Finished &&
-      oldStatus === ReadingStatus.Reading
-    ) {
-      performStatusUpdate({ end_date: review.end_date || today }, newStatus);
+    if (newStatus === ReadingStatus.Finished) {
+      const updates: Partial<UserBook> = { end_date: today };
+      if (!review.start_date) {
+        updates.start_date = today;
+      }
+      performStatusUpdate(updates, newStatus);
       return;
     }
 
