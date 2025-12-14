@@ -186,7 +186,6 @@ const BookshelfView: React.FC = () => {
 
   const sortDropdownRef = useRef<HTMLDivElement>(null);
   const scrollRestoredRef = useRef(false);
-  const isInitialMount = useRef(true);
 
   const statusCounts = useMemo(() => {
     if (!books) {
@@ -381,14 +380,8 @@ const BookshelfView: React.FC = () => {
     };
   }, []);
 
-  // Reset visible count only when filters change (not on initial mount)
-  useEffect(() => {
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      return;
-    }
-    setVisibleBooksCount(20);
-  }, [statusFilter, searchQuery, sortOption, rereadFilter, monthFilter, genreFilter]);
+  // Note: visibleBooksCount reset is now handled imperatively in event handlers
+  // This prevents false resets when restoring state from Context on back navigation
 
   const monthOptions = useMemo(() => {
     const months = new Set<string>();
@@ -432,6 +425,7 @@ const BookshelfView: React.FC = () => {
     setFinishedSubFilter("finished");
     setMonthFilter('all'); // Reset month filter when status changes
     setGenreFilter('all'); // Reset genre filter when status changes
+    setVisibleBooksCount(20); // Reset pagination on filter change
   };
 
   const handleResetFilters = () => {
@@ -442,6 +436,33 @@ const BookshelfView: React.FC = () => {
     setMonthFilter('all');
     setGenreFilter('all');
     setAdvancedFilterOpen(false);
+    setVisibleBooksCount(20); // Reset pagination on filter reset
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setVisibleBooksCount(20); // Reset pagination on search
+  };
+
+  const handleSortChange = (sortKey: string) => {
+    setSortOption(sortKey);
+    setSortDropdownOpen(false);
+    setVisibleBooksCount(20); // Reset pagination on sort change
+  };
+
+  const handleRereadFilterChange = (checked: boolean) => {
+    setRereadFilter(checked);
+    setVisibleBooksCount(20); // Reset pagination on filter change
+  };
+
+  const handleMonthFilterChange = (month: string) => {
+    setMonthFilter(month);
+    setVisibleBooksCount(20); // Reset pagination on filter change
+  };
+
+  const handleGenreFilterChange = (genre: string) => {
+    setGenreFilter(genre);
+    setVisibleBooksCount(20); // Reset pagination on filter change
   };
 
   const sortedAndFilteredBooks = useMemo(() => {
@@ -721,7 +742,7 @@ const BookshelfView: React.FC = () => {
             <input
               type="text"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               placeholder="기록 검색..."
               className="w-full pl-3 pr-10 py-2 bg-transparent text-text-heading dark:text-dark-text-heading focus:outline-none"
             />
@@ -729,7 +750,7 @@ const BookshelfView: React.FC = () => {
           {searchQuery && (
             <button
               type="button"
-              onClick={() => setSearchQuery("")}
+              onClick={() => handleSearchChange("")}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-heading dark:hover:text-dark-text-heading"
               aria-label="검색어 지우기"
             >
@@ -823,11 +844,8 @@ const BookshelfView: React.FC = () => {
               {Object.entries(sortOptions).map(([key, label]) => (
                 <button
                   key={key}
-                  onClick={() => {
-                    setSortOption(key);
-                    setSortDropdownOpen(false);
-                  }}
-                  className={`w-full text-left px-4 py-2 text-sm hover:bg-light-gray dark:hover:bg-dark-bg ${ 
+                  onClick={() => handleSortChange(key)}
+                  className={`w-full text-left px-4 py-2 text-sm hover:bg-light-gray dark:hover:bg-dark-bg ${
                     sortOption === key
                       ? "font-bold text-text-heading dark:text-dark-text-heading bg-gray-100 dark:bg-dark-bg"
                       : "text-text-heading dark:text-dark-text-heading"
@@ -848,7 +866,7 @@ const BookshelfView: React.FC = () => {
               type="checkbox"
               id="reread-filter"
               checked={rereadFilter}
-              onChange={(e) => setRereadFilter(e.target.checked)}
+              onChange={(e) => handleRereadFilterChange(e.target.checked)}
               className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
             />
             <label htmlFor="reread-filter" className="text-sm font-medium text-text-heading dark:text-dark-text-heading">
@@ -862,7 +880,7 @@ const BookshelfView: React.FC = () => {
             <select
               id="month-filter"
               value={monthFilter}
-              onChange={(e) => setMonthFilter(e.target.value)}
+              onChange={(e) => handleMonthFilterChange(e.target.value)}
               className="bg-light-gray dark:bg-dark-bg text-text-body dark:text-dark-text-body rounded-md border-border dark:border-dark-border py-1 px-2 text-sm focus:ring-2 focus:ring-primary focus:outline-none"
             >
               <option value="all">모든 달</option>
@@ -880,7 +898,7 @@ const BookshelfView: React.FC = () => {
             <select
               id="genre-filter"
               value={genreFilter}
-              onChange={(e) => setGenreFilter(e.target.value)}
+              onChange={(e) => handleGenreFilterChange(e.target.value)}
               className="bg-light-gray dark:bg-dark-bg text-text-body dark:text-dark-text-body rounded-md border-border dark:border-dark-border py-1 px-2 text-sm focus:ring-2 focus:ring-primary focus:outline-none"
             >
               <option value="all">모든 장르</option>

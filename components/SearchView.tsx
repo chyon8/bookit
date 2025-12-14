@@ -67,7 +67,7 @@ const SearchView = ({ onSelectBook }) => {
   const [searchPerformed, setSearchPerformed] = useState(navState.search.query.trim().length > 0);
   const [visibleCount, setVisibleCount] = useState(navState.search.visibleCount);
   const scrollRestoredRef = useRef(false);
-  const isInitialMount = useRef(true);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Restore scroll position on mount
   useEffect(() => {
@@ -104,33 +104,14 @@ const SearchView = ({ onSelectBook }) => {
     }
   }, []); // Run only once on mount
 
-  useEffect(() => {
-    // Skip on initial mount to preserve state
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      return;
-    }
-
-    const handler = setTimeout(() => {
-      if (query.trim()) {
-        performSearch(query);
-      } else {
-        setResults([]);
-        setLoading(false);
-        setSearchPerformed(false);
-        setVisibleCount(20); // Reset to default when clearing search
-      }
-    }, 500);
-
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [query]);
+  // Note: Query change handling is now done imperatively via handleQueryChange
+  // This prevents false resets when restoring state from Context on back navigation
 
   const performSearch = async (searchQuery) => {
     setLoading(true);
     setSearchPerformed(true);
     setResults([]);
+    setVisibleCount(20); // Reset pagination on new search
 
     try {
       const response = await fetch(
@@ -160,6 +141,27 @@ const SearchView = ({ onSelectBook }) => {
     }
   };
 
+  const handleQueryChange = (newQuery: string) => {
+    setQuery(newQuery);
+
+    // Clear previous timer
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    // Debounced search
+    debounceTimerRef.current = setTimeout(() => {
+      if (newQuery.trim()) {
+        performSearch(newQuery);
+      } else {
+        setResults([]);
+        setLoading(false);
+        setSearchPerformed(false);
+        setVisibleCount(20);
+      }
+    }, 500);
+  };
+
   return (
     <div className="space-y-6">
       <form onSubmit={(e) => e.preventDefault()} className="relative">
@@ -168,7 +170,7 @@ const SearchView = ({ onSelectBook }) => {
           <input
             type="text"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => handleQueryChange(e.target.value)}
             placeholder="책 제목이나 저자로 검색..."
             className="w-full pl-3 pr-10 py-2 bg-transparent text-text-heading dark:text-dark-text-heading focus:outline-none"
             autoFocus
@@ -177,7 +179,7 @@ const SearchView = ({ onSelectBook }) => {
         {query && (
           <button
             type="button"
-            onClick={() => setQuery("")}
+            onClick={() => handleQueryChange("")}
             className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-heading dark:hover:text-dark-text-heading"
             aria-label="검색어 지우기"
           >
