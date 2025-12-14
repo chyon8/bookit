@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Book, BookWithReview, ReadingStatus } from "../types";
 import { SearchIcon, StarIcon, XMarkIcon } from "./Icons";
 import { useAppContext } from "../context/AppContext";
+import { useNavigationState } from "../context/NavigationStateContext";
 
 const BookCard = ({ book, onSelect }) => {
   const handleSelect = () => {
@@ -57,10 +58,49 @@ const BookCard = ({ book, onSelect }) => {
 
 const SearchView = ({ onSelectBook }) => {
   const { books } = useAppContext();
-  const [query, setQuery] = useState("");
+  const { state: navState, updateSearchState, saveScrollPosition } = useNavigationState();
+
+  // Initialize from saved state
+  const [query, setQuery] = useState(navState.search.query);
   const [results, setResults] = useState<BookWithReview[]>([]);
   const [loading, setLoading] = useState(false);
-  const [searchPerformed, setSearchPerformed] = useState(false);
+  const [searchPerformed, setSearchPerformed] = useState(navState.search.query.trim().length > 0);
+  const scrollRestoredRef = useRef(false);
+
+  // Restore scroll position on mount
+  useEffect(() => {
+    if (!scrollRestoredRef.current && navState.search.scrollPosition > 0) {
+      setTimeout(() => {
+        window.scrollTo(0, navState.search.scrollPosition);
+        scrollRestoredRef.current = true;
+      }, 100);
+    }
+  }, [navState.search.scrollPosition]);
+
+  // Save scroll position
+  useEffect(() => {
+    const handleScroll = () => {
+      saveScrollPosition('search', window.scrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      saveScrollPosition('search', window.scrollY);
+    };
+  }, [saveScrollPosition]);
+
+  // Save query to navigation state
+  useEffect(() => {
+    updateSearchState({ query });
+  }, [query, updateSearchState]);
+
+  // Perform search if there's a saved query on mount
+  useEffect(() => {
+    if (navState.search.query.trim() && results.length === 0 && !loading) {
+      performSearch(navState.search.query);
+    }
+  }, []); // Run only once on mount
 
   useEffect(() => {
     const handler = setTimeout(() => {

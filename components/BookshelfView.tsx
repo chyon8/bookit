@@ -12,6 +12,7 @@ import {
   SparklesIcon,
 } from "./Icons";
 import { useAppContext } from "../context/AppContext";
+import { useNavigationState } from "../context/NavigationStateContext";
 import ConfirmModal from "./ConfirmModal";
 
 // memorable_quotes의 타입을 명시적으로 정의합니다.
@@ -157,12 +158,14 @@ const BookshelfView: React.FC = () => {
     handleOpenReview: onSelectBook,
     handleDeleteBook,
   } = useAppContext();
-  const [statusFilter, setStatusFilter] = useState<ReadingStatus | "All">
-    ("All"
-  );
-  const [finishedSubFilter, setFinishedSubFilter] = useState<"finished" | "dropped">("finished");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [sortOption, setSortOption] = useState<string>("created_at_desc");
+
+  const { state: navState, updateBookshelfState, saveScrollPosition } = useNavigationState();
+
+  // Initialize state from navigation context
+  const [statusFilter, setStatusFilter] = useState<ReadingStatus | "All">(navState.bookshelf.statusFilter);
+  const [finishedSubFilter, setFinishedSubFilter] = useState<"finished" | "dropped">(navState.bookshelf.finishedSubFilter);
+  const [searchQuery, setSearchQuery] = useState(navState.bookshelf.searchQuery);
+  const [sortOption, setSortOption] = useState<string>(navState.bookshelf.sortOption);
   const [isSortDropdownOpen, setSortDropdownOpen] = useState(false);
 
   const [isRandomNoteModalOpen, setRandomNoteModalOpen] = useState(false);
@@ -170,18 +173,19 @@ const BookshelfView: React.FC = () => {
   const [currentNoteIndex, setCurrentNoteIndex] = useState(0);
 
   const [isConfirmModalOpen, setConfirmModalOpen] = useState(false);
-  const [bookToDelete, setBookToDelete] = useState<{ 
+  const [bookToDelete, setBookToDelete] = useState<{
     id: string;
     title: string;
   } | null>(null);
 
-  const [isAdvancedFilterOpen, setAdvancedFilterOpen] = useState(false);
-  const [rereadFilter, setRereadFilter] = useState(false);
-  const [monthFilter, setMonthFilter] = useState<string>('all');
-  const [genreFilter, setGenreFilter] = useState<string>('all');
-  const [visibleBooksCount, setVisibleBooksCount] = useState(20);
+  const [isAdvancedFilterOpen, setAdvancedFilterOpen] = useState(navState.bookshelf.isAdvancedFilterOpen);
+  const [rereadFilter, setRereadFilter] = useState(navState.bookshelf.rereadFilter);
+  const [monthFilter, setMonthFilter] = useState<string>(navState.bookshelf.monthFilter);
+  const [genreFilter, setGenreFilter] = useState<string>(navState.bookshelf.genreFilter);
+  const [visibleBooksCount, setVisibleBooksCount] = useState(navState.bookshelf.visibleBooksCount);
 
   const sortDropdownRef = useRef<HTMLDivElement>(null);
+  const scrollRestoredRef = useRef(false);
 
   const statusCounts = useMemo(() => {
     if (!books) {
@@ -320,6 +324,46 @@ const BookshelfView: React.FC = () => {
       </div>
     );
   };
+
+  // Restore scroll position on mount
+  useEffect(() => {
+    if (!scrollRestoredRef.current && navState.bookshelf.scrollPosition > 0) {
+      // Use setTimeout to ensure DOM is ready
+      setTimeout(() => {
+        window.scrollTo(0, navState.bookshelf.scrollPosition);
+        scrollRestoredRef.current = true;
+      }, 100);
+    }
+  }, [navState.bookshelf.scrollPosition]);
+
+  // Save scroll position before unmounting
+  useEffect(() => {
+    const handleScroll = () => {
+      saveScrollPosition('bookshelf', window.scrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      // Save final scroll position on unmount
+      saveScrollPosition('bookshelf', window.scrollY);
+    };
+  }, [saveScrollPosition]);
+
+  // Save state changes to navigation context
+  useEffect(() => {
+    updateBookshelfState({
+      statusFilter,
+      finishedSubFilter,
+      searchQuery,
+      sortOption,
+      rereadFilter,
+      monthFilter,
+      genreFilter,
+      isAdvancedFilterOpen,
+      visibleBooksCount,
+    });
+  }, [statusFilter, finishedSubFilter, searchQuery, sortOption, rereadFilter, monthFilter, genreFilter, isAdvancedFilterOpen, visibleBooksCount, updateBookshelfState]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
