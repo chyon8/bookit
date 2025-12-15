@@ -158,12 +158,71 @@ const BookPreviewPage = () => {
 
   if (isLoading || !book) {
     return (
-      <div className="flex h-screen items-center justify-center bg-light-gray dark:bg-dark-bg">
-        <div className="text-center">
-          <BookOpenIcon className="w-12 h-12 text-primary mx-auto animate-pulse" />
-          <p className="text-text-body dark:text-dark-text-body mt-4">
-            책 정보 불러오는 중... (ISBN: {isbn})
-          </p>
+      <div className="bg-light-gray dark:bg-dark-bg min-h-screen">
+        {/* Header is interactive */}
+        <header className="fixed top-0 left-0 right-0 z-10 bg-white dark:bg-dark-card shadow-sm">
+          <div className="flex items-center justify-between px-4 py-3">
+            <button
+              onClick={() => router.back()}
+              className="text-text-heading dark:text-dark-text-heading font-semibold"
+            >
+              ← 뒤로
+            </button>
+            <h1 className="text-lg font-bold text-text-heading dark:text-dark-text-heading">
+              책 정보
+            </h1>
+            <div className="w-12"></div>
+          </div>
+        </header>
+
+        {/* Main content skeleton */}
+        <main className="pt-14 pb-24">
+          {/* Hero Section Skeleton */}
+          <div className="relative h-64 animate-pulse overflow-hidden bg-gray-200 p-4 dark:bg-gray-800">
+            <div className="absolute inset-0 bg-black/10 backdrop-blur-sm"></div>
+            <div className="relative z-[1] flex h-full flex-col items-center justify-center text-white">
+              <div
+                className="h-36 w-auto rounded-md bg-gray-300 object-cover dark:bg-gray-700"
+                style={{ width: "9rem" }}
+              ></div>
+              <div className="mt-3 h-7 w-48 rounded-md bg-gray-300 dark:bg-gray-600"></div>
+              <div className="mt-2 h-4 w-32 rounded-md bg-gray-300 dark:bg-gray-600"></div>
+            </div>
+          </div>
+
+          {/* Book Details Skeleton */}
+          <div className="relative z-[2] -mt-10 space-y-4 p-4">
+            <div className="animate-pulse space-y-6 rounded-2xl bg-white p-6 shadow-lg dark:bg-dark-card">
+              {/* Category Skeleton */}
+              <div>
+                <div className="mb-3 h-4 w-20 rounded-md bg-gray-200 dark:bg-gray-700"></div>
+                <div className="h-5 w-3/4 rounded-md bg-gray-200 dark:bg-gray-700"></div>
+              </div>
+
+              {/* Description Skeleton */}
+              <div>
+                <div className="mb-3 h-4 w-20 rounded-md bg-gray-200 dark:bg-gray-700"></div>
+                <div className="space-y-2">
+                  <div className="h-4 rounded-md bg-gray-200 dark:bg-gray-700"></div>
+                  <div className="h-4 rounded-md bg-gray-200 dark:bg-gray-700"></div>
+                  <div className="h-4 w-5/6 rounded-md bg-gray-200 dark:bg-gray-700"></div>
+                </div>
+              </div>
+
+              {/* ISBN Skeleton */}
+              <div className="border-t border-border pt-4 dark:border-dark-border">
+                <div className="flex items-center justify-between">
+                  <div className="h-4 w-12 rounded-md bg-gray-200 dark:bg-gray-700"></div>
+                  <div className="h-4 w-28 rounded-md bg-gray-200 dark:bg-gray-700"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+
+        {/* Fixed Bottom Action Button Skeleton */}
+        <div className="fixed bottom-0 left-0 right-0 bg-white p-4 shadow-lg dark:bg-dark-card">
+          <div className="h-12 w-full animate-pulse rounded-xl bg-gray-200 dark:bg-gray-700"></div>
         </div>
       </div>
     );
