@@ -566,7 +566,7 @@ const BookshelfView: React.FC = () => {
       }
       if (review.memos && Array.isArray(review.memos)) {
         review.memos.forEach((memo, index) => {
-          if (memo) notes.push({ title: `메모 #${index + 1}`, content: memo });
+          if (memo) notes.push({ title: `메모 #${index + 1}`, content: memo.text });
         });
       }
       if (review.overall_impression) {

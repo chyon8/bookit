@@ -10,7 +10,7 @@ import React, {
   SetStateAction,
 } from "react";
 import { useRouter } from "next/navigation";
-import { BookWithReview, UserBook } from "../types";
+import { BookWithReview, UserBook, Memo } from "../types";
 import { BookOpenIcon, SparklesIcon } from "../components/Icons";
 import { createClient } from "../utils/supabase/client";
 import type { User } from "@supabase/supabase-js";
@@ -68,6 +68,29 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
     };
   }, [supabase]);
 
+  const processMemos = (memosArray: any[] | undefined): Memo[] => {
+    if (!memosArray) return [];
+    return memosArray
+      .map(m => {
+        if (typeof m === 'string') {
+          return { text: m, createdAt: new Date().toISOString() };
+        }
+        if (typeof m === 'object' && m !== null) {
+          if ('text' in m && typeof (m as any).text === 'string' &&
+              'createdAt' in m && typeof (m as any).createdAt === 'string') {
+            return m as Memo;
+          }
+          if ('text' in m && typeof (m as any).text === 'string') {
+            console.warn("Malformed memo object found (missing createdAt), providing default:", m);
+            return { text: (m as any).text, createdAt: new Date().toISOString() };
+          }
+        }
+        console.warn("Unexpected memo format, returning empty memo:", m);
+        return null;
+      })
+      .filter((m): m is Memo => m !== null);
+  };
+
   const fetchUserBooks = useCallback(
     async (currentUser: User) => {
       if (!currentUser) return;
@@ -86,12 +109,14 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
         const formattedBooks: BookWithReview[] = userBooks.map((ub: any) => {
           const { books: bookData, ...reviewData } = ub;
           
+          const normalizedMemos = processMemos(reviewData.memos);
+
           // Create the searchable content string
           const searchable_content = [
             bookData.title,
             bookData.author,
             reviewData.one_line_review,
-            ...(reviewData.memos || []),
+            ...normalizedMemos.map(memo => memo.text),
             ...((reviewData.memorable_quotes as any[]) || []).flatMap((q: any) => [
               q.quote,
               q.thought,
@@ -114,8 +139,8 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
 
             category: bookData.category,
             description: bookData.description,
-            coverImageUrl: bookData.cover_image_url, // Fix: Map snake_case to camelCase
-            review: reviewData as UserBook,
+            coverImageUrl: bookData.cover_image_url,
+            review: { ...reviewData, memos: normalizedMemos } as UserBook,
             searchable_content,
           };
         });
@@ -244,12 +269,13 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
       if (reviewError) throw reviewError;
 
       const finalReview = upsertedReview as UserBook;
+      finalReview.memos = processMemos(finalReview.memos); // Normalize memos after upsert
 
       const searchable_content = [
         bookData.title,
         bookData.author,
         finalReview.one_line_review,
-        ...(finalReview.memos || []),
+        ...finalReview.memos.map(memo => memo.text),
         ...((finalReview.memorable_quotes as any[]) || []).flatMap((q: any) => [
           q.quote,
           q.thought,
