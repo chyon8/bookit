@@ -7,6 +7,7 @@ import {
   ReadingStatus,
   UserBook,
   MemorableQuote,
+  Memo,
 } from "../../../types";
 import { createClient } from "../../../utils/supabase/client";
 import {
@@ -243,35 +244,56 @@ const QuoteCard: React.FC<{
 };
 
 const MemoCard: React.FC<{
-  memo: string;
+  memo: Memo;
   onDelete: () => void;
   onChange: (value: string) => void;
 }> = ({ memo, onDelete, onChange }) => {
-  const [isEditing, setIsEditing] = useState(memo === "");
+  const [isEditing, setIsEditing] = useState(memo.text === "");
+
+  // Helper to format date
+  const formattedDate = useMemo(() => {
+    if (!memo.createdAt) return null;
+    try {
+      return new Date(memo.createdAt).toLocaleDateString("ko-KR", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch (e) {
+      return "날짜 오류";
+    }
+  }, [memo.createdAt]);
 
   if (isEditing) {
     return (
       <div className="bg-white dark:bg-dark-card p-4 rounded-2xl shadow-sm space-y-3 border border-primary/50">
         <FormTextarea
-          value={memo}
+          value={memo.text}
           onChange={(e) => onChange(e.target.value)}
           placeholder="메모 내용"
           rows={3}
           className="flex-grow !bg-transparent !p-0 focus:!ring-0"
         />
-        <div className="flex justify-end items-center space-x-4 pt-2">
-          <button
-            onClick={onDelete}
-            className="text-sm font-semibold text-red-500 hover:opacity-80"
-          >
-            삭제
-          </button>
-          <button
-            onClick={() => setIsEditing(false)}
-            className="text-sm font-bold text-primary hover:opacity-80"
-          >
-            완료
-          </button>
+        <div className="flex justify-between items-center pt-2">
+           <span className="text-xs text-text-muted dark:text-dark-text-body/50">
+            {formattedDate || "지금 작성 중"}
+          </span>
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={onDelete}
+              className="text-sm font-semibold text-red-500 hover:opacity-80"
+            >
+              삭제
+            </button>
+            <button
+              onClick={() => setIsEditing(false)}
+              className="text-sm font-bold text-primary hover:opacity-80"
+            >
+              완료
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -284,7 +306,7 @@ const MemoCard: React.FC<{
     >
       <div className="flex justify-between items-start">
         <p className="text-text-body dark:text-dark-text-body whitespace-pre-wrap flex-1 pr-4">
-          {memo}
+          {memo.text}
         </p>
         <div className="flex space-x-1">
           <button
@@ -309,6 +331,11 @@ const MemoCard: React.FC<{
           </button>
         </div>
       </div>
+      {formattedDate && (
+        <p className="mt-2 pt-2 border-t border-gray-100 dark:border-dark-border/50 text-xs text-right text-text-muted dark:text-dark-text-body/50">
+          {formattedDate}
+        </p>
+      )}
     </div>
   );
 };
@@ -399,11 +426,19 @@ const BookRecordPage = () => {
         if (savedDraft) {
           try {
             const draftReview = JSON.parse(savedDraft);
+            // Ad-hoc migration for memos in draft
+            if (draftReview.memos && draftReview.memos.length > 0 && typeof draftReview.memos[0] === 'string') {
+              draftReview.memos = draftReview.memos.map((memoText: string) => ({
+                text: memoText,
+                createdAt: new Date().toISOString(),
+              }));
+            }
             setReview(draftReview);
             setIsLoading(false);
             return;
           } catch (e) {
-            console.error("Failed to parse draft:", e);
+            console.error("Failed to parse or migrate draft:", e);
+            sessionStorage.removeItem(DRAFT_KEY); // Clear potentially corrupted draft
           }
         }
 
@@ -416,7 +451,9 @@ const BookRecordPage = () => {
           memorable_quotes: (initialReview.memorable_quotes || []).map((q) =>
             typeof q === "string" ? { quote: q, page: "", thought: "" } : q
           ),
-          memos: initialReview.memos || [],
+          memos: (initialReview.memos || []).map(m => 
+            typeof m === 'string' ? { text: m, createdAt: new Date().toISOString() } : m
+          ),
         });
         setIsLoading(false);
         return;
@@ -457,11 +494,19 @@ const BookRecordPage = () => {
       if (savedDraft) {
         try {
           const draftReview = JSON.parse(savedDraft);
+          // Ad-hoc migration for memos in draft
+          if (draftReview.memos && draftReview.memos.length > 0 && typeof draftReview.memos[0] === 'string') {
+            draftReview.memos = draftReview.memos.map((memoText: string) => ({
+              text: memoText,
+              createdAt: new Date().toISOString(),
+            }));
+          }
           setReview(draftReview);
           setIsLoading(false);
           return;
         } catch (e) {
-          console.error("Failed to parse draft:", e);
+          console.error("Failed to parse or migrate draft:", e);
+          sessionStorage.removeItem(DRAFT_KEY); // Clear potentially corrupted draft
         }
       }
 
@@ -476,7 +521,9 @@ const BookRecordPage = () => {
         memorable_quotes: (initialReview.memorable_quotes || []).map((q) =>
           typeof q === "string" ? { quote: q, page: "", thought: "" } : q
         ),
-        memos: initialReview.memos || [],
+        memos: (initialReview.memos || []).map(m => 
+          typeof m === 'string' ? { text: m, createdAt: new Date().toISOString() } : m
+        ),
       });
 
       setIsLoading(false);
@@ -603,34 +650,56 @@ const BookRecordPage = () => {
   };
 
   const removeMemorableQuote = (index: number) => {
-    setReview((prev) => ({
-      ...prev,
-      memorable_quotes: (prev.memorable_quotes || []).filter(
-        (_, i) => i !== index
-      ),
-    }));
+    setConfirmation({
+      isOpen: true,
+      title: "인용구 삭제",
+      children: "정말로 이 인용구를 삭제하시겠습니까?",
+      onConfirm: () => {
+        setReview((prev) => ({
+          ...prev,
+          memorable_quotes: (prev.memorable_quotes || []).filter(
+            (_, i) => i !== index
+          ),
+        }));
+        setConfirmation({ ...confirmation, isOpen: false });
+      },
+    });
   };
 
-  const handleMemoChange = (index: number, value: string) => {
+  const handleMemoChange = (index: number, newText: string) => {
     setReview((prev) => {
       const newMemos = [...(prev.memos || [])];
-      newMemos[index] = value;
+      if (newMemos[index]) {
+        newMemos[index] = { ...newMemos[index], text: newText };
+      }
       return { ...prev, memos: newMemos };
     });
   };
 
   const addMemo = () => {
+    const newMemo: Memo = {
+      text: "",
+      createdAt: new Date().toISOString(),
+    };
     setReview((prev) => ({
       ...prev,
-      memos: [...(prev.memos || []), ""],
+      memos: [...(prev.memos || []), newMemo],
     }));
   };
 
   const removeMemo = (index: number) => {
-    setReview((prev) => ({
-      ...prev,
-      memos: (prev.memos || []).filter((_, i) => i !== index),
-    }));
+    setConfirmation({
+      isOpen: true,
+      title: "메모 삭제",
+      children: "정말로 이 메모를 삭제하시겠습니까?",
+      onConfirm: () => {
+        setReview((prev) => ({
+          ...prev,
+          memos: (prev.memos || []).filter((_, i) => i !== index),
+        }));
+        setConfirmation({ ...confirmation, isOpen: false });
+      },
+    });
   };
 
   const handleSave = async () => {

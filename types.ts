@@ -21,6 +21,11 @@ export interface MemorableQuote {
   thought: string;
 }
 
+export interface Memo {
+  text: string;
+  createdAt: string;
+}
+
 // This interface combines schema.sql and user requirements.
 export interface UserBook {
   id?: string;
@@ -35,7 +40,7 @@ export interface UserBook {
   // Fields from schema.sql
   one_line_review?: string;
   motivation?: string;
-  memos?: string[];
+  memos?: Memo[];
   memorable_quotes?: MemorableQuote[];
   learnings?: string;
   questions_from_book?: string[];
