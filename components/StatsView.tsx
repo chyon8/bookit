@@ -53,11 +53,15 @@ const StatCard: React.FC<{
   title: string;
   value: string | number;
   description?: string;
-}> = ({ title, value, description }) => (
+  icon?: React.ReactNode;
+}> = ({ title, value, description, icon }) => (
   <div className="bg-white dark:bg-dark-card p-4 rounded-lg text-center shadow-sm border border-border dark:border-dark-border">
-    <p className="text-sm font-semibold text-text-body dark:text-dark-text-body uppercase tracking-wider">
-      {title}
-    </p>
+    <div className="flex items-center justify-center gap-2 mb-1">
+      {icon}
+      <p className="text-sm font-semibold text-text-body dark:text-dark-text-body uppercase tracking-wider">
+        {title}
+      </p>
+    </div>
     <p className="text-3xl font-bold text-text-heading dark:text-dark-text-heading mt-1 truncate">
       {value}
     </p>
@@ -421,13 +425,26 @@ const StatsView: React.FC<StatsViewProps> = ({ books, theme }) => {
         return (
           <div className="space-y-6">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <StatCard title="총 보유" value={processedStats.totalBooks} />
-              <StatCard title="완독" value={processedStats.totalFinished} />
-              <StatCard title="평균 별점" value={processedStats.avgRating} />
+              <StatCard
+                title="총 보유"
+                value={processedStats.totalBooks}
+                icon={<BookshelfIcon className="w-5 h-5 text-text-body dark:text-dark-text-body" />}
+              />
+              <StatCard
+                title="완독"
+                value={processedStats.totalFinished}
+                icon={<BookOpenIcon className="w-5 h-5 text-text-body dark:text-dark-text-body" />}
+              />
+              <StatCard
+                title="평균 별점"
+                value={processedStats.avgRating}
+                icon={<StarIcon className="w-5 h-5 text-text-body dark:text-dark-text-body" />}
+              />
               <StatCard
                 title="이번 달"
                 value={processedStats.finishedThisMonth}
                 description={`${processedStats.currentlyReading}권 읽는 중`}
+                icon={<ChartBarIcon className="w-5 h-5 text-text-body dark:text-dark-text-body" />}
               />
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
