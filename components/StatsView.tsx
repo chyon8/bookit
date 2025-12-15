@@ -222,10 +222,7 @@ const StatsView: React.FC<StatsViewProps> = ({ books, theme }) => {
         fastest: null as { book: BookWithReview; days: number } | null,
         slowest: null as { book: BookWithReview; days: number } | null,
       },
-      ownership: {
-        data: [] as { name: string; value: number }[],
-        ownedBooks: [] as BookWithReview[],
-      },
+
       wishlist: {
         categoryData: [] as { name: string; value: number }[],
         authorData: [] as { name: string; count: number }[],
@@ -253,7 +250,7 @@ const StatsView: React.FC<StatsViewProps> = ({ books, theme }) => {
     let booksWithReadingDays = 0;
     let fastestRead: { book: BookWithReview; days: number } | null = null;
     let slowestRead: { book: BookWithReview; days: number } | null = null;
-    let ownedCount = 0;
+
     const wishlistCategoryCounts: { [key: string]: number } = {};
     const wishlistAuthorCounts: { [key: string]: number } = {};
 
@@ -313,10 +310,7 @@ const StatsView: React.FC<StatsViewProps> = ({ books, theme }) => {
           }
         }
 
-        if (book.review?.worth_owning) {
-          ownedCount++;
-          stats.ownership.ownedBooks.push(book);
-        }
+
       }
 
       if (status === ReadingStatus.Reading) {
@@ -378,13 +372,7 @@ const StatsView: React.FC<StatsViewProps> = ({ books, theme }) => {
     stats.readingSpeed.fastest = fastestRead;
     stats.readingSpeed.slowest = slowestRead;
 
-    stats.ownership.data = [
-      { name: "소장", value: ownedCount },
-      { name: "비소장", value: stats.totalFinished - ownedCount },
-    ].filter((d) => d.value > 0);
-    stats.ownership.ownedBooks.sort(
-      (a, b) => (b.review?.rating || 0) - (a.review?.rating || 0)
-    );
+
 
     stats.wishlist.categoryData = Object.entries(wishlistCategoryCounts)
       .map(([name, value]) => ({ name, value }))
@@ -482,33 +470,7 @@ const StatsView: React.FC<StatsViewProps> = ({ books, theme }) => {
                   </PieChart>
                 </ResponsiveContainer>
               </ChartContainer>
-              <ChartContainer
-                title="소장 가치 분석"
-                empty={processedStats.ownership.data.length === 0}
-                emptyText="완독한 책에 소장 가치를 표시해보세요."
-              >
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={processedStats.ownership.data}
-                      dataKey="value"
-                      nameKey="name"
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={80}
-                    >
-                      {processedStats.ownership.data.map((entry, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={chartColors.pie[index % chartColors.pie.length]}
-                        />
-                      ))}
-                    </Pie>
-                    <Tooltip contentStyle={chartColors.tooltip} />
-                    <Legend wrapperStyle={{ color: chartColors.textColor }} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </ChartContainer>
+
             </div>
           </div>
         );
