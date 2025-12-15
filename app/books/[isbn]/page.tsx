@@ -135,7 +135,7 @@ const BookPreviewPage = () => {
 
   const handleGoToRecord = () => {
     if (existingBookId) {
-      router.push(`/book-record/${existingBookId}`);
+      router.replace(`/book-record/${existingBookId}`);
     }
   };
 
