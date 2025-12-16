@@ -19,7 +19,8 @@ import toast from "react-hot-toast";
 interface AppContextType {
   books: BookWithReview[];
   setBooks: Dispatch<SetStateAction<BookWithReview[]>>;
-  isLoading: boolean;
+  isAuthLoading: boolean; // Renamed from isLoading
+  isBooksLoading: boolean; // New state for book specific loading
   user: User | null;
   theme: "light" | "dark";
   toggleTheme: () => void;
@@ -38,7 +39,8 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
   const [user, setUser] = useState<User | null>(null);
   const [books, setBooks] = useState<BookWithReview[]>([]);
   const [theme, setTheme] = useState<"light" | "dark">("dark");
-  const [isLoading, setIsLoading] = useState(true);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [isBooksLoading, setIsBooksLoading] = useState(true);
 
   // Get user session
   useEffect(() => {
@@ -47,7 +49,7 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
         data: { session },
       } = await supabase.auth.getSession();
       setUser(session?.user ?? null);
-      setIsLoading(false);
+      setIsAuthLoading(false);
     };
     getSession();
 
@@ -59,7 +61,7 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
         } else {
           setBooks([]); // Clear books on logout
         }
-        setIsLoading(false);
+        setIsAuthLoading(false);
       }
     );
 
@@ -93,7 +95,11 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const fetchUserBooks = useCallback(
     async (currentUser: User) => {
-      if (!currentUser) return;
+      if (!currentUser) {
+        setIsBooksLoading(false); // No user, so no books to load
+        return;
+      }
+      setIsBooksLoading(true); // Start loading books
 
       const { data: userBooks, error } = await supabase
         .from("user_books")
@@ -146,6 +152,7 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
         });
         setBooks(formattedBooks);
       }
+      setIsBooksLoading(false); // Finish loading books
     },
     [supabase]
   );
@@ -342,7 +349,7 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
     });
   };
 
-  if (isLoading && !user) {
+  if (isAuthLoading && !user) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-light-gray dark:bg-dark-bg">
         <div className="text-center">
@@ -360,7 +367,8 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
       value={{
         books,
         setBooks,
-        isLoading,
+        isAuthLoading, // Renamed
+        isBooksLoading, // New
         user,
         theme,
         toggleTheme,

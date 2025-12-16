@@ -157,6 +157,7 @@ const BookshelfView: React.FC = () => {
     books,
     handleOpenReview: onSelectBook,
     handleDeleteBook,
+    isBooksLoading, // Use the new book loading state
   } = useAppContext();
 
   const { state: navState, updateBookshelfState, saveScrollPosition } = useNavigationState();
@@ -677,6 +678,24 @@ const BookshelfView: React.FC = () => {
     return groups;
   }, [sortedAndFilteredBooks, statusFilter]);
 
+  if (isBooksLoading) {
+    return (
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-4 gap-y-8 py-10 animate-pulse">
+        {[...Array(10)].map((_, index) => ( // Render 10 skeleton cards
+          <div key={index} className="flex flex-col h-full">
+            <div className="relative aspect-[2/3] w-full bg-gray-200 dark:bg-gray-700 rounded-md"></div>
+            <div className="bg-white dark:bg-dark-card p-3 rounded-b-md flex-grow flex flex-col justify-between">
+              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-2"></div>
+              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+              <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mt-2"></div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // After loading, if books are still empty
   if (!books || books.length === 0) {
     return (
       <div className="text-center py-20">
