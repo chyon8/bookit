@@ -350,7 +350,7 @@ const BookRecordPage = () => {
 
   const [book, setBook] = useState<BookWithReview | null>(null);
   const [review, setReview] = useState<Partial<UserBook>>({});
-  const [isLoading, setIsLoading] = useState(true);
+
   const [isSaving, setIsSaving] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const [confirmation, setConfirmation] = useState<{
@@ -453,7 +453,7 @@ const BookRecordPage = () => {
                 ...draftReview,
                 memos: processMemos(draftReview.memos), // Use processMemos for draft
               });
-              setIsLoading(false);
+
               return;
             } catch (e) {
               console.error("Failed to parse or migrate draft:", e);
@@ -463,21 +463,10 @@ const BookRecordPage = () => {
   
           // Use cached data
           const initialReview = cachedBook.review || {};
-          setReview({
-            ...initialReview,
-            start_date: formatDate(initialReview.start_date),
-            end_date: formatDate(initialReview.end_date),
-            memorable_quotes: (initialReview.memorable_quotes || []).map((q) =>
-              typeof q === "string" ? { quote: q, page: "", thought: "" } : q
-            ),
-            memos: processMemos(initialReview.memos), // Use processMemos here
-          });
-          setIsLoading(false);
-          return;
-        }
+                  }
   
         // If not in context, fetch from DB
-        setIsLoading(true);
+  
         const { data, error } = await supabase
           .from("user_books")
           .select(`*, books(*)`)
@@ -515,7 +504,7 @@ const BookRecordPage = () => {
               ...draftReview,
               memos: processMemos(draftReview.memos), // Use processMemos for draft
             });
-            setIsLoading(false);
+
             return;
           } catch (e) {
             console.error("Failed to parse or migrate draft:", e);
@@ -537,7 +526,7 @@ const BookRecordPage = () => {
           memos: processMemos(initialReview.memos), // Use processMemos here
         });
   
-        setIsLoading(false);
+  
       };
   
       if (user && id) {
@@ -761,19 +750,8 @@ const BookRecordPage = () => {
     }
   };
 
-  if (isLoading || !book) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-light-gray dark:bg-dark-bg">
-        <div className="text-center animate-pulse">
-          <div className="w-16 h-16 mx-auto mb-4 bg-primary/20 rounded-full flex items-center justify-center">
-            <div className="w-8 h-8 bg-primary rounded-full animate-ping"></div>
-          </div>
-          <p className="text-text-body dark:text-dark-text-body">
-            불러오는 중...
-          </p>
-        </div>
-      </div>
-    );
+  if (!book) {
+    return null; // Or handle as an error, but with loading.tsx, this state should ideally not be reached if ID is valid
   }
 
   const showStartDate =
