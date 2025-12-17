@@ -3,6 +3,7 @@ import { Book, BookWithReview, ReadingStatus } from "../types";
 import { SearchIcon, StarIcon, XMarkIcon } from "./Icons";
 import { useAppContext } from "../context/AppContext";
 import { useNavigationState } from "../context/NavigationStateContext";
+import BookSearchLoading from './BookSearchLoading';
 
 const BookCard = ({ book, onSelect }) => {
   const handleSelect = () => {
@@ -190,9 +191,7 @@ const SearchView = ({ onSelectBook }) => {
 
       <div className="space-y-4">
         {loading ? (
-          <div className="text-center text-text-body dark:text-dark-text-body py-10">
-            <p>"{query}"(으)로 검색 중입니다...</p>
-          </div>
+          <BookSearchLoading />
         ) : results.length > 0 ? (
           <>
             {results.slice(0, visibleCount).map((book) => (
