@@ -20,6 +20,7 @@ interface SearchState {
   query: string;
   visibleCount: number;
   scrollPosition: number;
+  cachedResults: any[]; // Store search results to avoid re-fetching on back navigation
 }
 
 interface NavigationState {
@@ -53,6 +54,7 @@ const defaultSearchState: SearchState = {
   query: "",
   visibleCount: 20,
   scrollPosition: 0,
+  cachedResults: [],
 };
 
 const NavigationStateContext = createContext<NavigationStateContextType | undefined>(undefined);

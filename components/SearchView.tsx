@@ -98,10 +98,18 @@ const SearchView = ({ onSelectBook }) => {
     updateSearchState({ query, visibleCount });
   }, [query, visibleCount, updateSearchState]);
 
-  // Perform search if there's a saved query on mount
+  // Restore cached results or perform search on mount
   useEffect(() => {
-    if (navState.search.query.trim() && results.length === 0 && !loading) {
-      performSearch(navState.search.query);
+    const savedQuery = navState.search.query.trim();
+    const cachedResults = navState.search.cachedResults;
+
+    // If we have cached results for the saved query, use them instead of re-fetching
+    if (savedQuery && cachedResults && cachedResults.length > 0) {
+      setResults(cachedResults);
+      setSearchPerformed(true);
+    } else if (savedQuery && results.length === 0 && !loading) {
+      // No cache available, perform fresh search
+      performSearch(savedQuery);
     }
   }, []); // Run only once on mount
 
@@ -126,8 +134,11 @@ const SearchView = ({ onSelectBook }) => {
 
       if (data.item) {
         setResults(data.item);
+        // Save results to Context to avoid re-fetching on back navigation
+        updateSearchState({ cachedResults: data.item });
       } else {
         setResults([]);
+        updateSearchState({ cachedResults: [] });
       }
     } catch (error) {
       console.error("Aladin search failed:", error);
@@ -137,6 +148,7 @@ const SearchView = ({ onSelectBook }) => {
           : "온라인 검색 중 오류가 발생했습니다. 다시 시도해주세요."
       );
       setResults([]);
+      updateSearchState({ cachedResults: [] });
     } finally {
       setLoading(false);
     }
@@ -159,6 +171,8 @@ const SearchView = ({ onSelectBook }) => {
         setLoading(false);
         setSearchPerformed(false);
         setVisibleCount(20);
+        // Clear cache when search is cleared
+        updateSearchState({ cachedResults: [] });
       }
     }, 500);
   };
