@@ -1,7 +1,8 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { getChatResponse } from '../services/geminiService';
-import { BookWithReview } from '../types';
-import { BookOpenIcon } from './Icons';
+import React, { useState, useRef, useEffect } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { BookWithReview } from "../types";
+import { BookOpenIcon } from "./Icons";
 
 interface ChatViewProps {
   books: BookWithReview[];
@@ -10,23 +11,23 @@ interface ChatViewProps {
 interface Message {
   id: number;
   text: string;
-  sender: 'user' | 'ai';
+  sender: "user" | "ai";
 }
 
 const ChatView: React.FC<ChatViewProps> = ({ books }) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 1,
-      text: "안녕하세요! 저는 당신의 AI 독서 비서입니다. 당신의 독서 기록에 대해 무엇이든 물어보세요. 또는 **\"AI 리포트\"**라고 입력하여 독서 취향에 대한 상세 분석을 받아보세요.",
-      sender: 'ai',
+      text: '안녕하세요! 저는 당신의 AI 독서 비서입니다. 당신의 독서 기록에 대해 무엇이든 물어보세요. 또는 **"AI 리포트"**라고 입력하여 독서 취향에 대한 상세 분석을 받아보세요.',
+      sender: "ai",
     },
   ]);
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
 
   const handleSendMessage = async (e: React.FormEvent, messageText: string) => {
@@ -36,30 +37,84 @@ const ChatView: React.FC<ChatViewProps> = ({ books }) => {
     const newUserMessage: Message = {
       id: Date.now(),
       text: messageText,
-      sender: 'user',
+      sender: "user",
     };
 
-    setMessages(prev => [...prev, newUserMessage]);
-    setInput('');
+    setMessages((prev) => [...prev, newUserMessage]);
+    setInput("");
     setIsLoading(true);
 
     try {
-      const aiResponse = await getChatResponse(books, messageText);
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ books, prompt: messageText }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to get chat response");
+      }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (!reader) {
+        throw new Error("No response body");
+      }
+
+      // Create a placeholder message for streaming
+      const aiMessageId = Date.now() + 1;
       const newAiMessage: Message = {
-        id: Date.now() + 1,
-        text: aiResponse,
-        sender: 'ai',
+        id: aiMessageId,
+        text: "",
+        sender: "ai",
       };
-      setMessages(prev => [...prev, newAiMessage]);
+      setMessages((prev) => [...prev, newAiMessage]);
+      setIsLoading(false);
+
+      let accumulatedText = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split("\n");
+
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            const data = line.slice(6);
+            if (data === "[DONE]") {
+              break;
+            }
+            try {
+              const parsed = JSON.parse(data);
+              if (parsed.text) {
+                accumulatedText += parsed.text;
+                setMessages((prev) =>
+                  prev.map((msg) =>
+                    msg.id === aiMessageId
+                      ? { ...msg, text: accumulatedText }
+                      : msg
+                  )
+                );
+              }
+            } catch (e) {
+              // Skip invalid JSON
+            }
+          }
+        }
+      }
     } catch (error) {
       console.error("Failed to get chat response:", error);
       const errorMessage: Message = {
         id: Date.now() + 1,
-        text: "죄송합니다, 지금은 AI 두뇌에 연결할 수 없어요. 나중에 다시 시도해주세요.",
-        sender: 'ai',
+        text: "죄송합니다, 지금은 AI에 연결할 수 없어요. 나중에 다시 시도해주세요.",
+        sender: "ai",
       };
-      setMessages(prev => [...prev, errorMessage]);
-    } finally {
+      setMessages((prev) => [...prev, errorMessage]);
       setIsLoading(false);
     }
   };
@@ -78,18 +133,33 @@ const ChatView: React.FC<ChatViewProps> = ({ books }) => {
       {/* 메시지 영역 */}
       <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3 md:space-y-4">
         {messages.map((message) => (
-          <div key={message.id} className={`flex items-start gap-2 md:gap-3 ${message.sender === 'user' ? 'justify-end' : ''}`}>
-            {message.sender === 'ai' && (
+          <div
+            key={message.id}
+            className={`flex items-start gap-2 md:gap-3 ${
+              message.sender === "user" ? "justify-end" : ""
+            }`}
+          >
+            {message.sender === "ai" && (
               <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 flex items-center justify-center flex-shrink-0">
                 <BookOpenIcon className="w-4 h-4 md:w-4.5 md:h-4.5 text-slate-600 dark:text-slate-300" />
               </div>
             )}
-            <div className={`max-w-[75%] md:max-w-md p-3 md:p-4 rounded-2xl ${
-              message.sender === 'user'
-                ? 'bg-slate-800 dark:bg-slate-700 text-white rounded-tr-sm'
-                : 'bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 shadow-sm text-slate-700 dark:text-slate-200 rounded-bl-sm'
-            }`}>
-              <p className="text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: message.text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }}></p>
+            <div
+              className={`max-w-[75%] md:max-w-md p-3 md:p-4 rounded-2xl ${
+                message.sender === "user"
+                  ? "bg-slate-800 dark:bg-slate-700 text-white rounded-tr-sm"
+                  : "bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 shadow-sm text-slate-700 dark:text-slate-200 rounded-bl-sm"
+              }`}
+            >
+              {message.sender === "user" ? (
+                <p className="text-sm leading-relaxed">{message.text}</p>
+              ) : (
+                <div className="text-sm leading-relaxed prose prose-sm dark:prose-invert max-w-none prose-headings:mt-3 prose-headings:mb-2 prose-p:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-0.5">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {message.text}
+                  </ReactMarkdown>
+                </div>
+              )}
             </div>
           </div>
         ))}
@@ -120,7 +190,10 @@ const ChatView: React.FC<ChatViewProps> = ({ books }) => {
         </div>
 
         {/* 입력 폼 */}
-        <form onSubmit={(e) => handleSendMessage(e, input)} className="relative max-w-3xl mx-auto">
+        <form
+          onSubmit={(e) => handleSendMessage(e, input)}
+          className="relative max-w-3xl mx-auto"
+        >
           <input
             type="text"
             value={input}
@@ -142,7 +215,11 @@ const ChatView: React.FC<ChatViewProps> = ({ books }) => {
               stroke="currentColor"
               className="w-4 h-4 md:w-5 md:h-5"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 10.5 12 3m0 0 7.5 7.5M12 3v18" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M4.5 10.5 12 3m0 0 7.5 7.5M12 3v18"
+              />
             </svg>
           </button>
         </form>
