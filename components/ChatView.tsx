@@ -199,7 +199,8 @@ const ChatView: React.FC<ChatViewProps> = ({ books }) => {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="AI 독서 비서에게 질문하기..."
-            className="w-full pl-4 md:pl-6 pr-14 md:pr-16 py-3 md:py-4 bg-slate-50 dark:bg-slate-900 rounded-full border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-300 dark:focus:ring-slate-600 focus:border-transparent text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 text-sm md:text-base"
+            // 아래 className에서 text-sm을 text-base로 변경했습니다.
+            className="w-full pl-4 md:pl-6 pr-14 md:pr-16 py-3 md:py-4 bg-slate-50 dark:bg-slate-900 rounded-full border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-300 dark:focus:ring-slate-600 focus:border-transparent text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 text-base"
             disabled={isLoading}
           />
           <button
