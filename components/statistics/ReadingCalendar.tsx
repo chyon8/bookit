@@ -39,7 +39,6 @@ const ReadingCalendar: React.FC<ReadingCalendarProps> = ({
   const calendarData = useMemo(() => {
     const monthStart = startOfMonth(currentDate);
     const monthEnd = endOfMonth(currentDate);
-    // 달력의 첫 칸과 마지막 칸을 맞추기 위해 주 단위 계산 (빈 칸 생성용)
     const calendarStart = startOfWeek(monthStart, { locale: ko });
     const calendarEnd = endOfWeek(monthEnd, { locale: ko });
 
@@ -124,7 +123,6 @@ const ReadingCalendar: React.FC<ReadingCalendarProps> = ({
     ));
   };
 
-  // ✅ [수정 1] 요일 한글화
   const weekDays = ["일", "월", "화", "수", "목", "금", "토"];
 
   return (
@@ -201,7 +199,7 @@ const ReadingCalendar: React.FC<ReadingCalendarProps> = ({
           {calendarData.calendarDays.map((day) => {
             const isCurrentM = isSameMonth(day, currentDate);
 
-            // ✅ [수정 2] 이번 달이 아니면 빈 공간(div)만 렌더링하고 리턴
+            // 이번 달이 아니면 빈 공간 유지
             if (!isCurrentM) {
               return <div key={day.toISOString()} className="aspect-square" />;
             }
@@ -215,7 +213,9 @@ const ReadingCalendar: React.FC<ReadingCalendarProps> = ({
                 key={day.toISOString()}
                 onClick={() => handleDateClick(day)}
                 className={`
-                  aspect-square relative rounded-2xl overflow-hidden transition-all duration-300
+                  aspect-square relative overflow-hidden transition-all duration-300
+                  /* ✅ 수정됨: 모바일에서는 rounded-lg(살짝 둥금), 태블릿 이상에서는 rounded-2xl(많이 둥금) */
+                  rounded-lg sm:rounded-2xl
                   ${
                     hasBooks
                       ? "cursor-pointer hover:shadow-lg hover:scale-[1.02]"
@@ -236,16 +236,16 @@ const ReadingCalendar: React.FC<ReadingCalendarProps> = ({
                 )}
 
                 {/* Date Number Badge */}
-                <div className="absolute top-2 left-2 z-10 flex flex-col items-start">
+                <div className="absolute top-1 left-1 sm:top-2 sm:left-2 z-10 flex flex-col items-start">
                   <span
                     className={`
-                       flex items-center justify-center w-7 h-7 text-xs font-bold rounded-full
+                       flex items-center justify-center w-6 h-6 sm:w-7 sm:h-7 text-[10px] sm:text-xs font-bold rounded-full
                        ${
                          isTodayDate
-                           ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-md" // 오늘
+                           ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-md"
                            : hasBooks
-                           ? "text-white/90 drop-shadow-md" // 책 있음
-                           : "text-slate-400 dark:text-slate-500" // 평소
+                           ? "text-white/90 drop-shadow-md"
+                           : "text-slate-400 dark:text-slate-500"
                        }
                      `}
                   >
@@ -255,8 +255,8 @@ const ReadingCalendar: React.FC<ReadingCalendarProps> = ({
 
                 {/* Multiple Books Count Badge */}
                 {dailyBook && dailyBook.count > 1 && (
-                  <div className="absolute bottom-2 right-2 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm px-2 py-0.5 rounded-full shadow-sm">
-                    <span className="text-[10px] font-bold text-slate-800 dark:text-white">
+                  <div className="absolute bottom-1 right-1 sm:bottom-2 sm:right-2 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm px-1.5 py-0.5 sm:px-2 rounded-full shadow-sm">
+                    <span className="text-[9px] sm:text-[10px] font-bold text-slate-800 dark:text-white">
                       +{dailyBook.count - 1}
                     </span>
                   </div>
