@@ -20,6 +20,8 @@ import {
   ChartBarIcon,
   StarIcon,
 } from "./Icons";
+import ReadingCalendar from "./statistics/ReadingCalendar";
+import MonthlyBreakdown from "./statistics/MonthlyBreakdown";
 
 type Tab = "overview" | "habits" | "genres" | "wishlist";
 type Theme = "light" | "dark";
@@ -140,23 +142,6 @@ const SpeedReadCard: React.FC<{
       </div>
     )}
   </div>
-);
-
-const TimeRangeButton: React.FC<{
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}> = ({ active, onClick, children }) => (
-  <button
-    onClick={onClick}
-    className={`px-3 sm:px-4 py-1 sm:py-1.5 text-[10px] sm:text-xs font-semibold rounded-full transition-colors whitespace-nowrap ${
-      active
-        ? "bg-slate-800 dark:bg-primary text-white dark:text-text-heading"
-        : "text-slate-500 dark:text-dark-text-body hover:bg-slate-100 dark:hover:bg-dark-bg"
-    }`}
-  >
-    {children}
-  </button>
 );
 
 const TabButton: React.FC<{
@@ -483,82 +468,20 @@ const StatsView: React.FC<StatsViewProps> = ({ books, theme }) => {
           </div>
         );
       case "habits":
-        const timeRangeText =
-          timeRange === "all" ? "전체 기간" : `최근 ${timeRange}개월`;
-        const chartTitle = `월별 완독 수 (${timeRangeText})`;
-
         return (
           <div className="space-y-4 sm:space-y-6">
+            {/* Reading Calendar */}
+            <ReadingCalendar books={books} theme={theme} />
+
+            {/* Monthly Breakdown with Interactive Chart */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-              <div className="bg-white dark:bg-dark-card p-4 sm:p-6 md:p-10 rounded-2xl sm:rounded-3xl shadow-sm">
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-0 mb-4 sm:mb-6">
-                  <h3 className="text-base sm:text-lg font-semibold text-slate-800 dark:text-dark-text-heading tracking-tight">
-                    {chartTitle}
-                  </h3>
-                  <div className="flex items-center gap-1.5 sm:gap-2">
-                    <TimeRangeButton
-                      onClick={() => setTimeRange("6")}
-                      active={timeRange === "6"}
-                    >
-                      6개월
-                    </TimeRangeButton>
-                    <TimeRangeButton
-                      onClick={() => setTimeRange("12")}
-                      active={timeRange === "12"}
-                    >
-                      12개월
-                    </TimeRangeButton>
-                    <TimeRangeButton
-                      onClick={() => setTimeRange("all")}
-                      active={timeRange === "all"}
-                    >
-                      전체
-                    </TimeRangeButton>
-                  </div>
-                </div>
-                {processedStats.monthlyData.length === 0 ? (
-                  <p className="text-slate-400 dark:text-dark-text-body text-center py-8 sm:py-10 text-sm">
-                    책을 완독하여 월별 독서 기록을 시작하세요.
-                  </p>
-                ) : (
-                  <div className="h-[250px] sm:h-[300px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart
-                        data={processedStats.monthlyData}
-                        margin={{ top: 5, right: 10, left: -20, bottom: 5 }}
-                      >
-                        <CartesianGrid
-                          strokeDasharray="0"
-                          stroke={chartColors.gridColor}
-                          vertical={false}
-                        />
-                        <XAxis
-                          dataKey="name"
-                          tick={{ fill: chartColors.textColor }}
-                        />
-                        <YAxis
-                          allowDecimals={false}
-                          tick={{ fill: chartColors.textColor }}
-                        />
-                        <Tooltip
-                          contentStyle={chartColors.tooltip}
-                          cursor={{
-                            fill: isDark
-                              ? "rgba(255, 255, 255, 0.1)"
-                              : "rgba(0, 0, 0, 0.05)",
-                          }}
-                        />
-                        <Bar
-                          dataKey="Books"
-                          fill={chartColors.bar.booksFinished}
-                          name="권"
-                          radius={[6, 6, 0, 0]}
-                          barSize={32}
-                        />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                )}
+              <div className="lg:col-span-2">
+                <MonthlyBreakdown
+                  books={books}
+                  theme={theme}
+                  timeRange={timeRange}
+                  onTimeRangeChange={setTimeRange}
+                />
               </div>
               <ChartContainer
                 title="별점 분포"
