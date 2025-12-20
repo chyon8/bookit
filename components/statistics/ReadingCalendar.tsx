@@ -1,7 +1,7 @@
-'use client';
-import React, { useState, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
-import { BookWithReview, ReadingStatus } from '../../types';
+"use client";
+import React, { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
+import { BookWithReview, ReadingStatus } from "../../types";
 import {
   format,
   startOfMonth,
@@ -13,11 +13,12 @@ import {
   getDay,
   startOfWeek,
   endOfWeek,
-} from 'date-fns';
+} from "date-fns";
+import { ko } from "date-fns/locale"; // [수정 1] 한국어 로케일 추가
 
 interface ReadingCalendarProps {
   books: BookWithReview[];
-  theme?: 'light' | 'dark';
+  theme?: "light" | "dark";
 }
 
 interface DailyBook {
@@ -25,7 +26,10 @@ interface DailyBook {
   count: number;
 }
 
-const ReadingCalendar: React.FC<ReadingCalendarProps> = ({ books, theme = 'light' }) => {
+const ReadingCalendar: React.FC<ReadingCalendarProps> = ({
+  books,
+  theme = "light",
+}) => {
   const router = useRouter();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -52,7 +56,7 @@ const ReadingCalendar: React.FC<ReadingCalendarProps> = ({ books, theme = 'light
       ) {
         const endDate = new Date(book.review.end_date);
         if (!isNaN(endDate.getTime())) {
-          const dateKey = format(endDate, 'yyyy-MM-dd');
+          const dateKey = format(endDate, "yyyy-MM-dd");
           if (!booksMap.has(dateKey)) {
             booksMap.set(dateKey, []);
           }
@@ -73,7 +77,7 @@ const ReadingCalendar: React.FC<ReadingCalendarProps> = ({ books, theme = 'light
   };
 
   const getDayBooks = (day: Date): DailyBook | null => {
-    const dateKey = format(day, 'yyyy-MM-dd');
+    const dateKey = format(day, "yyyy-MM-dd");
     const booksOnDay = calendarData.booksMap.get(dateKey);
     if (!booksOnDay || booksOnDay.length === 0) return null;
 
@@ -89,7 +93,7 @@ const ReadingCalendar: React.FC<ReadingCalendarProps> = ({ books, theme = 'light
   };
 
   const getBooksForDate = (date: Date): BookWithReview[] => {
-    const dateKey = format(date, 'yyyy-MM-dd');
+    const dateKey = format(date, "yyyy-MM-dd");
     return calendarData.booksMap.get(dateKey) || [];
   };
 
@@ -119,8 +123,8 @@ const ReadingCalendar: React.FC<ReadingCalendarProps> = ({ books, theme = 'light
           key={i}
           className={`w-3 h-3 ${
             i <= rating
-              ? 'text-yellow-400 fill-current'
-              : 'text-slate-300 dark:text-slate-600'
+              ? "text-yellow-400 fill-current"
+              : "text-slate-300 dark:text-slate-600"
           }`}
           viewBox="0 0 20 20"
           fill="currentColor"
@@ -132,15 +136,12 @@ const ReadingCalendar: React.FC<ReadingCalendarProps> = ({ books, theme = 'light
     return stars;
   };
 
-  const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const weekDays = ["일", "월", "화", "수", "목", "금", "토"];
 
   return (
     <div className="bg-white dark:bg-dark-card p-4 sm:p-6 md:p-10 rounded-2xl sm:rounded-3xl shadow-sm">
       {/* Header with Navigation */}
       <div className="flex items-center justify-between mb-4 sm:mb-6">
-        <h3 className="text-base sm:text-lg font-semibold text-slate-800 dark:text-dark-text-heading tracking-tight">
-          Reading Calendar
-        </h3>
         <div className="flex items-center gap-3">
           <button
             onClick={handlePreviousMonth}
@@ -153,11 +154,17 @@ const ReadingCalendar: React.FC<ReadingCalendarProps> = ({ books, theme = 'light
               viewBox="0 0 24 24"
               stroke="currentColor"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
             </svg>
           </button>
           <span className="text-sm font-semibold text-slate-700 dark:text-dark-text-heading min-w-[120px] text-center">
-            {format(currentDate, 'MMMM yyyy')}
+            {/* [수정 2] 달력 헤더 한국어 적용 (예: 2025년 12월) */}
+            {format(currentDate, "yyyy년 M월", { locale: ko })}
           </span>
           <button
             onClick={handleNextMonth}
@@ -170,7 +177,12 @@ const ReadingCalendar: React.FC<ReadingCalendarProps> = ({ books, theme = 'light
               viewBox="0 0 24 24"
               stroke="currentColor"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5l7 7-7 7"
+              />
             </svg>
           </button>
         </div>
@@ -201,21 +213,21 @@ const ReadingCalendar: React.FC<ReadingCalendarProps> = ({ books, theme = 'light
               onClick={() => handleDateClick(day)}
               className={`aspect-square p-1 relative rounded-xl overflow-hidden transition-all ${
                 isCurrentMonthDay
-                  ? 'bg-slate-50 dark:bg-dark-bg hover:ring-2 hover:ring-slate-200 dark:hover:ring-slate-700'
-                  : 'bg-slate-50/50 dark:bg-dark-bg/50 opacity-40'
-              } ${hasBooks && isCurrentMonthDay ? 'cursor-pointer' : ''}`}
+                  ? "bg-slate-50 dark:bg-dark-bg hover:ring-2 hover:ring-slate-200 dark:hover:ring-slate-700"
+                  : "bg-slate-50/50 dark:bg-dark-bg/50 opacity-40"
+              } ${hasBooks && isCurrentMonthDay ? "cursor-pointer" : ""}`}
             >
               {/* Date Number */}
               <span
                 className={`absolute top-1 left-1 sm:top-2 sm:left-2 z-10 text-[10px] font-medium ${
                   dailyBook
-                    ? 'text-white drop-shadow-md'
+                    ? "text-white drop-shadow-md"
                     : isCurrentMonthDay
-                    ? 'text-slate-400 dark:text-dark-text-muted'
-                    : 'text-slate-300 dark:text-slate-600'
+                    ? "text-slate-400 dark:text-dark-text-muted"
+                    : "text-slate-300 dark:text-slate-600"
                 }`}
               >
-                {format(day, 'd')}
+                {format(day, "d")}
               </span>
 
               {/* Book Cover */}
@@ -253,7 +265,8 @@ const ReadingCalendar: React.FC<ReadingCalendarProps> = ({ books, theme = 'light
           <div className="relative bg-white dark:bg-dark-card rounded-2xl shadow-xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
               <h3 className="text-lg font-bold text-slate-800 dark:text-dark-text-heading">
-                {format(selectedDate, 'PPP')}
+                {/* [수정 3] 모달 날짜 한국어 적용 */}
+                {format(selectedDate, "PPP", { locale: ko })}
               </h3>
               <button
                 onClick={handleCloseModal}
@@ -266,7 +279,12 @@ const ReadingCalendar: React.FC<ReadingCalendarProps> = ({ books, theme = 'light
                   viewBox="0 0 24 24"
                   stroke="currentColor"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             </div>
@@ -290,7 +308,7 @@ const ReadingCalendar: React.FC<ReadingCalendarProps> = ({ books, theme = 'light
                           {book.title}
                         </h4>
                         <p className="text-xs text-slate-500 dark:text-dark-text-body mt-1 truncate">
-                          {book.author.split('(지은이')[0].trim()}
+                          {book.author.split("(지은이")[0].trim()}
                         </p>
                         {book.review?.rating && book.review.rating > 0 && (
                           <div className="flex items-center gap-1 mt-2">
