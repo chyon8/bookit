@@ -57,7 +57,7 @@ const StatCard: React.FC<{
 }> = ({ title, value, description, icon }) => (
   <div className="bg-white dark:bg-dark-card p-4 sm:p-6 md:p-8 rounded-2xl sm:rounded-3xl shadow-sm text-center relative overflow-hidden">
     {icon && (
-      <div className="absolute top-2 right-2 sm:top-4 sm:right-4 text-slate-100 dark:text-dark-text-muted opacity-20">
+      <div className="absolute top-2 right-2 sm:top-4 sm:right-4 text-slate-200 dark:text-dark-text-muted opacity-40">
         {React.cloneElement(icon as React.ReactElement, { className: "w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16" })}
       </div>
     )}
