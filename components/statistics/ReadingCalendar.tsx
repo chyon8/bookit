@@ -255,8 +255,8 @@ const ReadingCalendar: React.FC<ReadingCalendarProps> = ({
 
                 {/* Multiple Books Count Badge */}
                 {dailyBook && dailyBook.count > 1 && (
-                  <div className="absolute bottom-1 right-1 sm:bottom-2 sm:right-2 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm px-1.5 py-0.5 sm:px-2 rounded-full shadow-sm">
-                    <span className="text-[9px] sm:text-[10px] font-bold text-slate-800 dark:text-white">
+                  <div className="absolute bottom-0.5 right-0.5 sm:bottom-1.5 sm:right-1.5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm px-1 h-3 sm:h-4 flex items-center justify-center rounded-md sm:rounded-lg shadow-sm">
+                    <span className="text-[7px] sm:text-[9px] font-semibold text-slate-700 dark:text-white leading-none">
                       +{dailyBook.count - 1}
                     </span>
                   </div>
