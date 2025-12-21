@@ -226,7 +226,7 @@ const MonthlyBreakdown: React.FC<MonthlyBreakdownProps> = ({
       {selectedMonth && selectedMonthBooks.length > 0 && (
         <div className="bg-white dark:bg-dark-card p-4 sm:p-6 md:p-10 rounded-2xl sm:rounded-3xl shadow-sm">
           <h3 className="text-base sm:text-lg font-semibold text-slate-800 dark:text-dark-text-heading mb-4 sm:mb-6 tracking-tight">
-            Books Read in {selectedMonth}
+            {selectedMonth} 완독 목록
           </h3>
           <div className="space-y-3 sm:space-y-4">
             {selectedMonthBooks.map((book) => (

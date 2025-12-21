@@ -129,9 +129,9 @@ const ReadingCalendar: React.FC<ReadingCalendarProps> = ({
     <div className="bg-white dark:bg-dark-card p-6 sm:p-8 rounded-[2rem] shadow-sm border border-slate-100 dark:border-none">
       {/* 1. Header Navigation */}
       <div className="flex items-center justify-between mb-8">
-        <h2 className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-white font-serif tracking-tight">
+        <h3 className="text-base sm:text-lg font-semibold text-slate-800 dark:text-dark-text-heading tracking-tight">
           독서 캘린더
-        </h2>
+        </h3>
 
         <div className="flex items-center bg-slate-50 dark:bg-slate-800 rounded-full p-1">
           <button
