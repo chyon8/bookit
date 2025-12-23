@@ -9,6 +9,7 @@ import {
   MemorableQuote,
   Memo,
 } from "../../../types";
+import Tesseract from "tesseract.js";
 import { createClient } from "../../../utils/supabase/client";
 import {
   StarIcon as StarSolid,
@@ -16,6 +17,8 @@ import {
   XMarkIcon,
   PencilIcon,
   ChevronDownIcon,
+  CameraIcon,
+  PhotoIcon,
 } from "../../../components/Icons";
 import RecordHeader from "../../../components/RecordHeader";
 import { useAppContext } from "../../../context/AppContext";
@@ -133,6 +136,65 @@ const FormRow: React.FC<{
     {children}
   </div>
 );
+
+
+
+// --- OCR Preview Component ---
+
+interface ScanPreviewModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onApply: (text: string) => void;
+  scannedText: string;
+}
+
+const ScanPreviewModal: React.FC<ScanPreviewModalProps> = ({
+  isOpen,
+  onClose,
+  onApply,
+  scannedText,
+}) => {
+  const [text, setText] = useState(scannedText);
+
+  useEffect(() => {
+    setText(scannedText);
+  }, [scannedText]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white dark:bg-dark-card w-full max-w-lg rounded-2xl p-6 shadow-xl space-y-4">
+        <h3 className="text-lg font-bold text-text-heading dark:text-dark-text-heading">
+          텍스트 스캔 결과 (Beta)
+        </h3>
+        <p className="text-sm text-text-body dark:text-dark-text-body">
+          OCR 결과가 부정확할 수 있습니다. 내용을 확인하고 수정해주세요.
+        </p>
+        <FormTextarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          rows={6}
+          className="w-full resize-none"
+        />
+        <div className="flex justify-end space-x-3 pt-2">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded-lg text-text-body dark:text-dark-text-body hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
+          >
+            취소
+          </button>
+          <button
+            onClick={() => onApply(text)}
+            className="px-4 py-2 rounded-lg bg-primary text-white font-bold hover:bg-opacity-90 transition-colors"
+          >
+            인용구에 적용
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // --- Page Specific Components ---
 
@@ -359,6 +421,105 @@ const BookRecordPage = () => {
     children: React.ReactNode;
     onConfirm: () => void;
   }>({ isOpen: false, title: "", children: null, onConfirm: () => {} });
+
+  // OCR State
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanPreviewOpen, setScanPreviewOpen] = useState(false);
+  const [scannedTextResult, setScannedTextResult] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+  
+  // Handlers for OCR
+  const handleImageScan = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsScanning(true);
+    
+    // Check if file is HEIC and reject it with helpful message
+    if (file.type === "image/heic" || file.type === "image/heif" || file.name.toLowerCase().endsWith(".heic") || file.name.toLowerCase().endsWith(".heif")) {
+       toast.error("HEIC 포맷은 지원하지 않습니다.\n\niPhone 사진을 JPG로 변환하는 방법:\n1. 사진 공유 시 '옵션' → '가장 호환 가능한 형식' 선택\n2. 또는 JPG/PNG 이미지를 사용해주세요", { 
+         id: "ocr-loading",
+         duration: 8000 
+       });
+       setIsScanning(false);
+       return;
+    }
+
+    toast.loading("텍스트 추출 시작...", { id: "ocr-loading" });
+
+    try {
+      const { data: { text } } = await Tesseract.recognize(
+        file,
+        'kor+eng', 
+        { 
+          logger: m => {
+             // 1. Update Loading UI based on status
+             if (m.status === 'loading tesseract core' || m.status === 'loading language traineddata') {
+                toast.loading("언어 데이터 다운로드 중... (첫 실행 시 인터넷 필요)", { id: "ocr-loading" });
+             } else if (m.status === 'recognizing text') {
+                const progress = Math.floor(m.progress * 100);
+                toast.loading(`텍스트 추출 중... ${progress}%`, { id: "ocr-loading" });
+             } else {
+                // Other initialization statuses
+                toast.loading("엔진 초기화 중...", { id: "ocr-loading" });
+             }
+          }
+        }
+      );
+      
+      setScannedTextResult(text);
+      setScanPreviewOpen(true);
+      toast.dismiss("ocr-loading");
+    } catch (err: any) {
+      console.error("OCR Failed:", err);
+      
+      // 2. Error Handling
+      // If error occurs during download phase or is network related
+      const isNetworkError = !navigator.onLine || err?.message?.includes('Network Error') || err?.message?.includes('fetch');
+      
+      if (isNetworkError) {
+         toast.error("첫 스캔 시 언어 리소스 다운로드를 위해\n인터넷 연결이 필요합니다.", { 
+            id: "ocr-loading",
+            duration: 6000,
+         });
+      } else {
+         const errorMessage = err?.message || "알 수 없는 오류";
+         toast.error(`오류가 발생했습니다: ${errorMessage}`, { 
+            id: "ocr-loading",
+            duration: 4000,
+         });
+      }
+    } finally {
+      setIsScanning(false);
+      // Reset input so same file can be selected again
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      if (galleryInputRef.current) galleryInputRef.current.value = "";
+    }
+  };
+
+  const applyScannedText = (text: string) => {
+    // Add new quote with scanned text
+    const newQuote: MemorableQuote = { quote: text, page: "", thought: "" };
+    setReview((prev) => ({
+      ...prev,
+      memorable_quotes: [...(prev.memorable_quotes || []), newQuote],
+    }));
+    setScanPreviewOpen(false);
+    toast.success("인용구가 추가되었습니다!");
+  };
+
+  const triggerScan = () => {
+    fileInputRef.current?.click();
+  };
+
+  const triggerCamera = () => {
+    fileInputRef.current?.click();
+  };
+
+  const triggerGallery = () => {
+    galleryInputRef.current?.click();
+  };
 
       const DRAFT_KEY = `book-record-draft-${id}`;
   
@@ -873,7 +1034,57 @@ const BookRecordPage = () => {
                   <PlusIcon className="w-5 h-5" />
                   <span>인용구 추가</span>
                 </button>
+
+                
+                {/* OCR Buttons Container */}
+                <div className="flex space-x-2">
+                  <button
+                    onClick={triggerCamera}
+                    disabled={isScanning}
+                    className="flex-1 flex items-center justify-center space-x-2 rounded-lg bg-gray-100 dark:bg-white/5 py-3 text-sm font-semibold text-text-heading dark:text-dark-text-heading hover:bg-gray-200 dark:hover:bg-white/10"
+                  >
+                    {isScanning ? (
+                      <span className="animate-pulse">추출 중...</span>
+                    ) : (
+                      <>
+                        <CameraIcon className="w-5 h-5 text-primary" />
+                        <span>카메라</span>
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={triggerGallery}
+                    disabled={isScanning}
+                    className="flex-1 flex items-center justify-center space-x-2 rounded-lg bg-gray-100 dark:bg-white/5 py-3 text-sm font-semibold text-text-heading dark:text-dark-text-heading hover:bg-gray-200 dark:hover:bg-white/10"
+                  >
+                    {isScanning ? (
+                      <span className="animate-pulse">추출 중...</span>
+                    ) : (
+                      <>
+                        <PhotoIcon className="w-5 h-5 text-primary" />
+                        <span>갤러리</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
+             {/* Hidden File Input for Camera */}
+             <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              ref={fileInputRef}
+              onChange={handleImageScan}
+              className="hidden"
+            />
+            {/* Hidden File Input for Gallery (No capture attribute) */}
+            <input
+              type="file"
+              accept="image/*"
+              ref={galleryInputRef}
+              onChange={handleImageScan}
+              className="hidden"
+            />
             </FormRow>
           </div>
 
@@ -908,6 +1119,13 @@ const BookRecordPage = () => {
       >
         {confirmation.children}
       </ConfirmModal>
+
+      <ScanPreviewModal 
+        isOpen={scanPreviewOpen}
+        onClose={() => setScanPreviewOpen(false)}
+        onApply={applyScannedText}
+        scannedText={scannedTextResult}
+      />
     </div>
   );
 };
