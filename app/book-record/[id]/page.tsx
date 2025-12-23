@@ -9,7 +9,6 @@ import {
   MemorableQuote,
   Memo,
 } from "../../../types";
-import Tesseract from "tesseract.js";
 import { createClient } from "../../../utils/supabase/client";
 import {
   StarIcon as StarSolid,
@@ -146,6 +145,9 @@ interface ScanPreviewModalProps {
   onClose: () => void;
   onApply: (text: string) => void;
   scannedText: string;
+  imageFile: File | null;
+  onScan: () => void;
+  isScanning: boolean;
 }
 
 const ScanPreviewModal: React.FC<ScanPreviewModalProps> = ({
@@ -153,6 +155,9 @@ const ScanPreviewModal: React.FC<ScanPreviewModalProps> = ({
   onClose,
   onApply,
   scannedText,
+  imageFile,
+  onScan,
+  isScanning,
 }) => {
   const [text, setText] = useState(scannedText);
 
@@ -162,34 +167,75 @@ const ScanPreviewModal: React.FC<ScanPreviewModalProps> = ({
 
   if (!isOpen) return null;
 
+  const imageSrc = imageFile ? URL.createObjectURL(imageFile) : null;
+
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-dark-card w-full max-w-lg rounded-2xl p-6 shadow-xl space-y-4">
+      <div className="bg-white dark:bg-dark-card w-full max-w-lg rounded-2xl p-6 shadow-xl space-y-4 max-h-[90vh] flex flex-col">
         <h3 className="text-lg font-bold text-text-heading dark:text-dark-text-heading">
-          텍스트 스캔 결과 (Beta)
+          {text ? "텍스트 확인 및 수정" : "이미지 확인"}
         </h3>
-        <p className="text-sm text-text-body dark:text-dark-text-body">
-          OCR 결과가 부정확할 수 있습니다. 내용을 확인하고 수정해주세요.
-        </p>
-        <FormTextarea
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          rows={6}
-          className="w-full resize-none"
-        />
-        <div className="flex justify-end space-x-3 pt-2">
+        
+        <div className="flex-1 overflow-y-auto space-y-4 min-h-0">
+          {/* Image Preview */}
+          {imageSrc && (
+            <div className="relative rounded-lg overflow-hidden border border-gray-200 dark:border-dark-border/50">
+               {/* eslint-disable-next-line @next/next/no-img-element */}
+               <img src={imageSrc} alt="Preview" className="w-full h-auto object-contain max-h-[40vh]" />
+            </div>
+          )}
+
+          {/* Text Area (only if text exists) */}
+          {text ? (
+             <div className="space-y-2">
+                <p className="text-sm text-text-body dark:text-dark-text-body">
+                  필요한 부분을 선택하거나 수정하세요.
+                </p>
+                <FormTextarea
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  rows={8}
+                  className="w-full resize-none"
+                />
+             </div>
+          ) : (
+            <div className="text-center py-4">
+               <p className="text-text-body dark:text-dark-text-body mb-4">
+                 위 이미지에서 텍스트를 추출하시겠습니까?
+               </p>
+               <button
+                 onClick={onScan}
+                 disabled={isScanning}
+                 className="px-6 py-3 rounded-xl bg-primary text-white font-bold hover:bg-opacity-90 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 mx-auto w-full"
+               >
+                 {isScanning ? (
+                   <>
+                     <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                     <span>추출 중...</span>
+                   </>
+                 ) : (
+                   <span>텍스트 추출하기</span>
+                 )}
+               </button>
+            </div>
+          )}
+        </div>
+
+        <div className="flex justify-end space-x-3 pt-2 border-t border-gray-100 dark:border-dark-border/50 mt-auto">
           <button
             onClick={onClose}
             className="px-4 py-2 rounded-lg text-text-body dark:text-dark-text-body hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
           >
             취소
           </button>
-          <button
-            onClick={() => onApply(text)}
-            className="px-4 py-2 rounded-lg bg-primary text-white font-bold hover:bg-opacity-90 transition-colors"
-          >
-            인용구에 적용
-          </button>
+          {text && (
+            <button
+              onClick={() => onApply(text)}
+              className="px-4 py-2 rounded-lg bg-primary text-white font-bold hover:bg-opacity-90 transition-colors"
+            >
+              인용구에 적용
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -426,15 +472,70 @@ const BookRecordPage = () => {
   const [isScanning, setIsScanning] = useState(false);
   const [scanPreviewOpen, setScanPreviewOpen] = useState(false);
   const [scannedTextResult, setScannedTextResult] = useState("");
+  const [scanFile, setScanFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
   
+  // Image preprocessing helper for better OCR accuracy
+  const preprocessImage = async (file: File): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      img.onload = () => {
+        // Set canvas size to image size
+        canvas.width = img.width;
+        canvas.height = img.height;
+        
+        if (!ctx) {
+          resolve(file); // Fallback to original
+          return;
+        }
+        
+        // Draw original image
+        ctx.drawImage(img, 0, 0);
+        
+        // Get image data
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imageData.data;
+        
+        // Convert to grayscale and increase contrast
+        for (let i = 0; i < data.length; i += 4) {
+          // Grayscale conversion
+          const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
+          
+          // Increase contrast (simple threshold)
+          const contrast = avg > 128 ? 255 : 0;
+          
+          data[i] = contrast;     // R
+          data[i + 1] = contrast; // G
+          data[i + 2] = contrast; // B
+        }
+        
+        // Put processed image back
+        ctx.putImageData(imageData, 0, 0);
+        
+        // Convert canvas to blob then to file
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const processedFile = new File([blob], file.name, { type: 'image/png' });
+            resolve(processedFile);
+          } else {
+            resolve(file); // Fallback
+          }
+        }, 'image/png');
+      };
+      
+      img.onerror = () => resolve(file); // Fallback on error
+      img.src = URL.createObjectURL(file);
+    });
+  };
+  
   // Handlers for OCR
-  const handleImageScan = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    setIsScanning(true);
     
     // Check if file is HEIC and reject it with helpful message
     if (file.type === "image/heic" || file.type === "image/heif" || file.name.toLowerCase().endsWith(".heic") || file.name.toLowerCase().endsWith(".heif")) {
@@ -442,59 +543,68 @@ const BookRecordPage = () => {
          id: "ocr-loading",
          duration: 8000 
        });
-       setIsScanning(false);
        return;
     }
 
-    toast.loading("텍스트 추출 시작...", { id: "ocr-loading" });
+    setScanFile(file);
+    setScannedTextResult(""); // Clear previous result
+    setScanPreviewOpen(true); // Open modal immediately
+    
+    // Reset inputs
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    if (galleryInputRef.current) galleryInputRef.current.value = "";
+  };
+
+  // Helper to convert File to Base64
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (error) => reject(error);
+    });
+  };
+
+  const performOCR = async () => {
+    if (!scanFile) return;
+
+    setIsScanning(true);
+    toast.loading("텍스트 추출 중...", { id: "ocr-loading" });
 
     try {
-      const { data: { text } } = await Tesseract.recognize(
-        file,
-        'kor+eng', 
-        { 
-          logger: m => {
-             // 1. Update Loading UI based on status
-             if (m.status === 'loading tesseract core' || m.status === 'loading language traineddata') {
-                toast.loading("언어 데이터 다운로드 중... (첫 실행 시 인터넷 필요)", { id: "ocr-loading" });
-             } else if (m.status === 'recognizing text') {
-                const progress = Math.floor(m.progress * 100);
-                toast.loading(`텍스트 추출 중... ${progress}%`, { id: "ocr-loading" });
-             } else {
-                // Other initialization statuses
-                toast.loading("엔진 초기화 중...", { id: "ocr-loading" });
-             }
-          }
-        }
-      );
+      const base64Image = await fileToBase64(scanFile);
       
-      setScannedTextResult(text);
-      setScanPreviewOpen(true);
+      const response = await fetch('/api/ocr', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ image: base64Image }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "OCR 요청 실패");
+      }
+      
+      if (!data.text) {
+         toast.dismiss("ocr-loading");
+         toast.error("텍스트를 찾을 수 없습니다.");
+         return;
+      }
+
+      setScannedTextResult(data.text);
       toast.dismiss("ocr-loading");
+      toast.success("텍스트 추출 완료!");
     } catch (err: any) {
       console.error("OCR Failed:", err);
-      
-      // 2. Error Handling
-      // If error occurs during download phase or is network related
-      const isNetworkError = !navigator.onLine || err?.message?.includes('Network Error') || err?.message?.includes('fetch');
-      
-      if (isNetworkError) {
-         toast.error("첫 스캔 시 언어 리소스 다운로드를 위해\n인터넷 연결이 필요합니다.", { 
-            id: "ocr-loading",
-            duration: 6000,
-         });
-      } else {
-         const errorMessage = err?.message || "알 수 없는 오류";
-         toast.error(`오류가 발생했습니다: ${errorMessage}`, { 
-            id: "ocr-loading",
-            duration: 4000,
-         });
-      }
+      toast.error(`오류가 발생했습니다: ${err.message}`, { 
+        id: "ocr-loading",
+        duration: 4000,
+      });
     } finally {
       setIsScanning(false);
-      // Reset input so same file can be selected again
-      if (fileInputRef.current) fileInputRef.current.value = "";
-      if (galleryInputRef.current) galleryInputRef.current.value = "";
     }
   };
 
@@ -1074,7 +1184,7 @@ const BookRecordPage = () => {
               accept="image/*"
               capture="environment"
               ref={fileInputRef}
-              onChange={handleImageScan}
+              onChange={handleFileSelect}
               className="hidden"
             />
             {/* Hidden File Input for Gallery (No capture attribute) */}
@@ -1082,7 +1192,7 @@ const BookRecordPage = () => {
               type="file"
               accept="image/*"
               ref={galleryInputRef}
-              onChange={handleImageScan}
+              onChange={handleFileSelect}
               className="hidden"
             />
             </FormRow>
@@ -1122,9 +1232,16 @@ const BookRecordPage = () => {
 
       <ScanPreviewModal 
         isOpen={scanPreviewOpen}
-        onClose={() => setScanPreviewOpen(false)}
+        onClose={() => {
+           setScanPreviewOpen(false);
+           setScanFile(null);
+           setScannedTextResult("");
+        }}
         onApply={applyScannedText}
         scannedText={scannedTextResult}
+        imageFile={scanFile}
+        onScan={performOCR}
+        isScanning={isScanning}
       />
     </div>
   );
