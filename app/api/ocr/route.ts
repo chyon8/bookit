@@ -80,10 +80,13 @@ export async function POST(req: NextRequest) {
 
     // Thresholds
     const rightMarginThreshold = width * 0.85; // Skip right 15%
-    const bottomMarginThreshold = height * 0.90; // Skip bottom 10%
-    const confidenceThreshold = 0.9;
+    const topMarginThreshold = height * 0.15; // Top 15% (Header)
+    const bottomMarginThreshold = height * 0.85; // Bottom 15% (Footer)
+    const confidenceThreshold = 0.8; // Relaxed confidence slightly for smaller text like page numbers
 
     // 2. Iterate Blocks
+    let pageNumber = "";
+
     if (pageObj.blocks) {
        for (const block of pageObj.blocks) {
           // Check Confidence
@@ -92,8 +95,6 @@ export async function POST(req: NextRequest) {
           }
 
           // Check Position (Bounding Box)
-          // We use the bounding box center or average position to determine if it falls in the skip zone.
-          // Let's check vertices.
           let minX = width, maxX = 0, minY = height, maxY = 0;
           
           if (block.boundingBox && block.boundingBox.vertices) {
@@ -107,19 +108,7 @@ export async function POST(req: NextRequest) {
              }
           }
 
-          // Filter Right Margin: If the block starts in the right margin zone
-          if (minX > rightMarginThreshold) {
-             continue; 
-          }
-
-          // Filter Bottom Margin: If the block starts in the bottom margin zone
-          if (minY > bottomMarginThreshold) {
-             continue;
-          }
-
-          // 3. Aggregate Text
-          // Blocks contain paragraphs -> words -> symbols. 
-          // We need to reconstruct the string.
+          // Reconstruct text for this block first
           let blockText = "";
           if (block.paragraphs) {
              for (const paragraph of block.paragraphs) {
@@ -143,7 +132,32 @@ export async function POST(req: NextRequest) {
                 blockText += "\n"; // Paragraph break
              }
           }
-          finalString += blockText + "\n";
+          blockText = blockText.trim();
+
+          // Filter Right Margin: If the block starts in the right margin zone
+          if (minX > rightMarginThreshold) {
+             continue; 
+          }
+
+          // Check for Page Number in Top or Bottom Margins
+          const isInTopMargin = maxY < topMarginThreshold;
+          const isInBottomMargin = minY > bottomMarginThreshold;
+
+          if (isInTopMargin || isInBottomMargin) {
+             // More permissive regex: e.g. "123", "p. 123", "- 123 -", "[ 123 ]", "Page 123"
+             // Limit to short strings that contain digits to avoid capturing long headers/footers
+             if (blockText.length < 15 && /[0-9]/.test(blockText)) {
+                // Extract the first sequence of digits
+                const match = blockText.match(/(\d+)/);
+                if (match) {
+                   pageNumber = match[1];
+                }
+             }
+             // Even if it's not a page number, we skip adding margin text to main content
+             continue;
+          }
+
+          finalString += blockText + "\n\n";
        }
     }
 
@@ -153,7 +167,7 @@ export async function POST(req: NextRequest) {
     // Cleanup extra newlines
     const cleanedText = finalString.trim().replace(/\n{3,}/g, "\n\n");
 
-    return NextResponse.json({ text: cleanedText });
+    return NextResponse.json({ text: cleanedText, pageNumber });
 
   } catch (error: any) {
     console.error('OCR Route Error:', error);

@@ -248,8 +248,9 @@ const QuoteCard: React.FC<{
   quote: MemorableQuote;
   onDelete: () => void;
   onChange: (field: keyof MemorableQuote, value: string) => void;
-}> = ({ quote, onDelete, onChange }) => {
-  const [isEditing, setIsEditing] = useState(!quote.quote);
+  initialIsEditing?: boolean;
+}> = ({ quote, onDelete, onChange, initialIsEditing }) => {
+  const [isEditing, setIsEditing] = useState(initialIsEditing || !quote.quote);
 
   if (isEditing) {
     return (
@@ -473,6 +474,7 @@ const BookRecordPage = () => {
   const [scanPreviewOpen, setScanPreviewOpen] = useState(false);
   const [scannedTextResult, setScannedTextResult] = useState("");
   const [scanFile, setScanFile] = useState<File | null>(null);
+  const [isLastQuoteFromOCR, setIsLastQuoteFromOCR] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
   
@@ -597,6 +599,10 @@ const BookRecordPage = () => {
       setScannedTextResult(data.text);
       toast.dismiss("ocr-loading");
       toast.success("텍스트 추출 완료!");
+      
+      // Auto-apply if text is found
+      applyScannedText(data.text, data.pageNumber || "");
+      
     } catch (err: any) {
       console.error("OCR Failed:", err);
       toast.error(`오류가 발생했습니다: ${err.message}`, { 
@@ -608,9 +614,10 @@ const BookRecordPage = () => {
     }
   };
 
-  const applyScannedText = (text: string) => {
+  const applyScannedText = (text: string, page: string = "") => {
     // Add new quote with scanned text
-    const newQuote: MemorableQuote = { quote: text, page: "", thought: "" };
+    const newQuote: MemorableQuote = { quote: text, page: page, thought: "" };
+    setIsLastQuoteFromOCR(true);
     setReview((prev) => ({
       ...prev,
       memorable_quotes: [...(prev.memorable_quotes || []), newQuote],
@@ -882,6 +889,7 @@ const BookRecordPage = () => {
   };
 
   const addMemorableQuote = () => {
+    setIsLastQuoteFromOCR(false);
     const newQuote: MemorableQuote = { quote: "", page: "", thought: "" };
     setReview((prev) => ({
       ...prev,
@@ -1127,13 +1135,20 @@ const BookRecordPage = () => {
           <div className="bg-white dark:bg-dark-card p-6 rounded-2xl shadow-lg space-y-4">
             <FormRow label="인상 깊은 구절">
               <div className="space-y-4">
-                {(review.memorable_quotes || []).map((q, index) => (
+                  {(review.memorable_quotes || []).map((q, index) => (
                   <QuoteCard
                     key={index}
                     quote={q}
                     onDelete={() => removeMemorableQuote(index)}
                     onChange={(field, value) =>
                       handleQuoteChange(index, field, value)
+                    }
+                    initialIsEditing={
+                      // If it's the last quote AND it came from OCR, force edit.
+                      // Or if it's empty (handled by default in QuoteCard, but passing explicit false/true helps)
+                      // Actually, !q.quote covers the empty case.
+                      // We only need to force edit if q.quote HAS value but is new from OCR.
+                      (index === (review.memorable_quotes?.length || 0) - 1 && isLastQuoteFromOCR)
                     }
                   />
                 ))}
