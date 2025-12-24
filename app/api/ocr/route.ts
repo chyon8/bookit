@@ -82,19 +82,14 @@ export async function POST(req: NextRequest) {
     const rightMarginThreshold = width * 0.85; // Skip right 15%
     const topMarginThreshold = height * 0.15; // Top 15% (Header)
     const bottomMarginThreshold = height * 0.85; // Bottom 15% (Footer)
-    const confidenceThreshold = 0.8; // Relaxed confidence slightly for smaller text like page numbers
+    const confidenceThreshold = 0.5; // Lower threshold to catch small/faint page numbers
 
     // 2. Iterate Blocks
     let pageNumber = "";
 
     if (pageObj.blocks) {
        for (const block of pageObj.blocks) {
-          // Check Confidence
-          if (block.confidence < confidenceThreshold) {
-             continue;
-          }
-
-          // Check Position (Bounding Box)
+          // Get position first for logging
           let minX = width, maxX = 0, minY = height, maxY = 0;
           
           if (block.boundingBox && block.boundingBox.vertices) {
@@ -134,15 +129,24 @@ export async function POST(req: NextRequest) {
           }
           blockText = blockText.trim();
 
+          const isInTopMargin = maxY < topMarginThreshold;
+          const isInBottomMargin = minY > bottomMarginThreshold;
+          
+          // Check Confidence - but be more lenient for margin blocks with digits
+          const isLikelyPageNumber = (isInTopMargin || isInBottomMargin) && 
+                                      blockText.length < 15 && 
+                                      /[0-9]/.test(blockText);
+          
+          if (block.confidence < confidenceThreshold && !isLikelyPageNumber) {
+             continue;
+          }
+
           // Filter Right Margin: If the block starts in the right margin zone
           if (minX > rightMarginThreshold) {
              continue; 
           }
 
           // Check for Page Number in Top or Bottom Margins
-          const isInTopMargin = maxY < topMarginThreshold;
-          const isInBottomMargin = minY > bottomMarginThreshold;
-
           if (isInTopMargin || isInBottomMargin) {
              // More permissive regex: e.g. "123", "p. 123", "- 123 -", "[ 123 ]", "Page 123"
              // Limit to short strings that contain digits to avoid capturing long headers/footers
