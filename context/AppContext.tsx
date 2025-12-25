@@ -15,6 +15,7 @@ import { BookOpenIcon, SparklesIcon } from "../components/Icons";
 import { createClient } from "../utils/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import toast from "react-hot-toast";
+import { useUserBooks } from "../hooks/useBookData";
 
 interface AppContextType {
   books: BookWithReview[];
@@ -40,7 +41,16 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
   const [books, setBooks] = useState<BookWithReview[]>([]);
   const [theme, setTheme] = useState<"light" | "dark">("dark");
   const [isAuthLoading, setIsAuthLoading] = useState(true);
-  const [isBooksLoading, setIsBooksLoading] = useState(true);
+
+  // Use TanStack Query for fetching books
+  const { data: queriedBooks, isLoading: isBooksLoading } = useUserBooks(user);
+
+  // Sync queried books with local state
+  useEffect(() => {
+    if (queriedBooks) {
+      setBooks(queriedBooks);
+    }
+  }, [queriedBooks]);
 
   // Get user session
   useEffect(() => {
@@ -56,9 +66,7 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setUser(session?.user ?? null);
-        if (session) {
-          fetchUserBooks(session.user);
-        } else {
+        if (!session) {
           setBooks([]); // Clear books on logout
         }
         setIsAuthLoading(false);
@@ -92,75 +100,6 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
       })
       .filter((m): m is Memo => m !== null);
   };
-
-  const fetchUserBooks = useCallback(
-    async (currentUser: User) => {
-      if (!currentUser) {
-        setIsBooksLoading(false); // No user, so no books to load
-        return;
-      }
-      setIsBooksLoading(true); // Start loading books
-
-      const { data: userBooks, error } = await supabase
-        .from("user_books")
-        .select(`*, books (*)`)
-        .eq("user_id", currentUser.id)
-        .order("created_at", { ascending: false });
-
-      if (error) {
-        console.error("Error fetching user books:", error);
-        toast.error("Could not fetch your bookshelf.");
-        setBooks([]);
-      } else if (userBooks) {
-        const formattedBooks: BookWithReview[] = userBooks.map((ub: any) => {
-          const { books: bookData, ...reviewData } = ub;
-          
-          const normalizedMemos = processMemos(reviewData.memos);
-
-          // Create the searchable content string
-          const searchable_content = [
-            bookData.title,
-            bookData.author,
-            reviewData.one_line_review,
-            ...normalizedMemos.map(memo => memo.text),
-            ...((reviewData.memorable_quotes as any[]) || []).flatMap((q: any) => [
-              q.quote,
-              q.thought,
-            ]),
-            ...(reviewData.questions_from_book || []),
-            reviewData.connected_thoughts,
-            reviewData.overall_impression,
-            reviewData.reread_reason,
-            reviewData.notes,
-          ]
-            .filter(Boolean)
-            .join(" ")
-            .toLowerCase();
-
-          return {
-            id: bookData.id,
-            isbn13: bookData.isbn13,
-            title: bookData.title,
-            author: bookData.author,
-
-            category: bookData.category,
-            description: bookData.description,
-            coverImageUrl: bookData.cover_image_url,
-            review: { ...reviewData, memos: normalizedMemos } as UserBook,
-            searchable_content,
-          };
-        });
-        setBooks(formattedBooks);
-      }
-      setIsBooksLoading(false); // Finish loading books
-    },
-    [supabase]
-  );
-
-  // Initial fetch
-  useEffect(() => {
-    if (user) fetchUserBooks(user);
-  }, [user, fetchUserBooks]);
 
   // Theme management
   useEffect(() => {

@@ -1,6 +1,7 @@
 import React from "react";
 import { AppContextProvider } from "../context/AppContext";
 import { NavigationStateProvider } from "../context/NavigationStateContext";
+import { QueryProvider } from "../providers/QueryProvider";
 import ClientLayout from "../components/ClientLayout";
 import ToastProvider from "../components/ToastProvider"; // Import ToastProvider
 
@@ -86,12 +87,14 @@ export default function RootLayout({
         `}</style>
       </head>
       <body className="bg-light-gray dark:bg-dark-bg">
-        <AppContextProvider>
-          <NavigationStateProvider>
-            <ClientLayout>{children}</ClientLayout>
-            <ToastProvider /> {/* Use ToastProvider here */}
-          </NavigationStateProvider>
-        </AppContextProvider>
+        <QueryProvider>
+          <AppContextProvider>
+            <NavigationStateProvider>
+              <ClientLayout>{children}</ClientLayout>
+              <ToastProvider /> {/* Use ToastProvider here */}
+            </NavigationStateProvider>
+          </AppContextProvider>
+        </QueryProvider>
       </body>
     </html>
   );

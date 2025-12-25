@@ -23,6 +23,7 @@ import RecordHeader from "../../../components/RecordHeader";
 import { useAppContext } from "../../../context/AppContext";
 import toast from "react-hot-toast";
 import ConfirmModal from "../../../components/ConfirmModal";
+import { useBookData } from "../../../hooks/useBookData";
 
 // --- Reusable Form Components with new styles ---
 
@@ -457,7 +458,12 @@ const BookRecordPage = () => {
   const supabase = createClient();
   const { user, books, setBooks } = useAppContext();
 
-  const [book, setBook] = useState<BookWithReview | null>(null);
+  // Use TanStack Query hook for data fetching with caching
+  const { data: queriedBook, isLoading: isBookLoading } = useBookData(id, user);
+
+  // Use queriedBook directly instead of copying to local state
+  const book = queriedBook;
+
   const [review, setReview] = useState<Partial<UserBook>>({});
 
   const [isSaving, setIsSaving] = useState(false);
@@ -638,117 +644,77 @@ const BookRecordPage = () => {
     galleryInputRef.current?.click();
   };
 
-      const DRAFT_KEY = `book-record-draft-${id}`;
-  
-    const processMemos = useCallback((memosArray: any[] | undefined): Memo[] => {
-      if (!memosArray) return [];
-      return memosArray
-        .map(m => {
-          if (typeof m === 'string') {
-            return { text: m, createdAt: new Date().toISOString() };
-          }
-          if (typeof m === 'object' && m !== null) {
-            if ('text' in m && typeof (m as any).text === 'string' &&
-                'createdAt' in m && typeof (m as any).createdAt === 'string') {
-              return m as Memo;
-            }
-            if ('text' in m && typeof (m as any).text === 'string') {
-              console.warn("Malformed memo object found (missing createdAt), providing default:", m);
-              return { text: (m as any).text, createdAt: new Date().toISOString() };
-            }
-          }
-          console.warn("Unexpected memo format, returning empty memo:", m);
-          return null;
-        })
-        .filter((m): m is Memo => m !== null);
-    }, []); // No dependencies for processMemos
-  
-    // This ref stores the "clean" state of the review, as a string.
-    const initialReviewState = useRef<string>("");
+  const DRAFT_KEY = `book-record-draft-${id}`;
 
-    // This is the main data-loading and state-syncing effect.
-    // It runs on initial load and after a save (because `books` changes).
-    useEffect(() => {
-      const fetchBook = async () => {
-        if (!user || !id) return;
-
-        let bookData: BookWithReview | null = books.find((b) => b.id === id) || null;
-
-        if (!bookData) {
-          // Fetch from DB if not in context
-          const { data, error } = await supabase
-            .from("user_books")
-            .select(`*, books(*)`)
-            .eq("book_id", id)
-            .eq("user_id", user?.id)
-            .single();
-
-          if (error || !data) {
-            toast.error("책 정보를 불러오는데 실패했습니다.");
-            console.error("Error fetching book:", error);
-            router.push("/bookshelf/All");
-            return;
-          }
-
-          const { books: dbBookData, ...reviewData } = data;
-          const formattedBook: BookWithReview = {
-            id: dbBookData.id,
-            isbn13: dbBookData.isbn13,
-            title: dbBookData.title,
-            author: dbBookData.author,
-            category: dbBookData.category,
-            description: dbBookData.description,
-            coverImageUrl: dbBookData.cover_image_url,
-            review: reviewData,
-          };
-          bookData = formattedBook;
+  const processMemos = useCallback((memosArray: any[] | undefined): Memo[] => {
+    if (!memosArray) return [];
+    return memosArray
+      .map(m => {
+        if (typeof m === 'string') {
+          return { text: m, createdAt: new Date().toISOString() };
         }
-        
-        if (!bookData) return;
-
-        setBook(bookData);
-
-        // Draft logic takes precedence on first load
-        const savedDraft = sessionStorage.getItem(DRAFT_KEY);
-        if (savedDraft) {
-          try {
-            const draftReview = JSON.parse(savedDraft);
-            const normalizedDraft = {
-              ...draftReview,
-              memos: processMemos(draftReview.memos),
-            };
-            // Set both the live and initial state from the draft
-            setReview(normalizedDraft);
-            initialReviewState.current = JSON.stringify(normalizedDraft);
-            return; // Exit after loading draft
-          } catch (e) {
-            console.error("Failed to parse draft:", e);
-            sessionStorage.removeItem(DRAFT_KEY);
+        if (typeof m === 'object' && m !== null) {
+          if ('text' in m && typeof (m as any).text === 'string' &&
+              'createdAt' in m && typeof (m as any).createdAt === 'string') {
+            return m as Memo;
+          }
+          if ('text' in m && typeof (m as any).text === 'string') {
+            console.warn("Malformed memo object found (missing createdAt), providing default:", m);
+            return { text: (m as any).text, createdAt: new Date().toISOString() };
           }
         }
+        console.warn("Unexpected memo format, returning empty memo:", m);
+        return null;
+      })
+      .filter((m): m is Memo => m !== null);
+  }, []); // No dependencies for processMemos
 
-        // If no draft, or after a save, reset state from book data
-        const reviewFromBook = bookData.review || {};
-        const formatDate = (date: string | undefined) =>
-          date ? new Date(date).toISOString().split("T")[0] : undefined;
-        
-        const normalizedReview = {
-          ...reviewFromBook,
-          start_date: formatDate(reviewFromBook.start_date),
-          end_date: formatDate(reviewFromBook.end_date),
-          memorable_quotes: (reviewFromBook.memorable_quotes || []).map((q) =>
-            typeof q === "string" ? { quote: q, page: "", thought: "" } : q
-          ),
-          memos: processMemos(reviewFromBook.memos),
+  // This ref stores the "clean" state of the review, as a string.
+  const initialReviewState = useRef<string>("");
+  const isInitialized = useRef<boolean>(false);
+
+  // Initialize review state only once when book data is available
+  useEffect(() => {
+    if (!book || isInitialized.current) return;
+
+    // Draft logic takes precedence on first load
+    const savedDraft = sessionStorage.getItem(DRAFT_KEY);
+    if (savedDraft) {
+      try {
+        const draftReview = JSON.parse(savedDraft);
+        const normalizedDraft = {
+          ...draftReview,
+          memos: processMemos(draftReview.memos),
         };
+        setReview(normalizedDraft);
+        initialReviewState.current = JSON.stringify(normalizedDraft);
+        isInitialized.current = true;
+        return;
+      } catch (e) {
+        console.error("Failed to parse draft:", e);
+        sessionStorage.removeItem(DRAFT_KEY);
+      }
+    }
 
-        // Set both the live state and the initial state to the same normalized value
-        setReview(normalizedReview);
-        initialReviewState.current = JSON.stringify(normalizedReview);
-      };
+    // Initialize from book data
+    const reviewFromBook = book.review || {};
+    const formatDate = (date: string | undefined) =>
+      date ? new Date(date).toISOString().split("T")[0] : undefined;
+    
+    const normalizedReview = {
+      ...reviewFromBook,
+      start_date: formatDate(reviewFromBook.start_date),
+      end_date: formatDate(reviewFromBook.end_date),
+      memorable_quotes: (reviewFromBook.memorable_quotes || []).map((q) =>
+        typeof q === "string" ? { quote: q, page: "", thought: "" } : q
+      ),
+      memos: processMemos(reviewFromBook.memos),
+    };
 
-      fetchBook();
-    }, [id, user, books]); // Effect depends on the global books context
+    setReview(normalizedReview);
+    initialReviewState.current = JSON.stringify(normalizedReview);
+    isInitialized.current = true;
+  }, [book, DRAFT_KEY, processMemos]);
 
     // This effect handles dirty checking and saving drafts
     useEffect(() => {
@@ -965,7 +931,7 @@ const BookRecordPage = () => {
 
       if (reviewError) throw reviewError;
 
-      // ONLY update the context. This will trigger the main state-sync useEffect.
+      // Update the context to trigger cache invalidation
       setBooks((currentBooks) => {
         const existingIndex = currentBooks.findIndex(
           (b) => b.id === finalBook.id
@@ -978,6 +944,9 @@ const BookRecordPage = () => {
         return [...currentBooks, finalBook];
       });
 
+      // Update the initial state to reflect the saved data
+      initialReviewState.current = JSON.stringify(finalReview);
+      
       // Clear draft after successful save
       sessionStorage.removeItem(DRAFT_KEY);
     };
