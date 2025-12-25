@@ -1,6 +1,6 @@
 import { Tabs } from "expo-router";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
-import { BookshelfIcon, ChartBarIcon, SearchIcon, ChatBubbleIcon } from "../../components/Icons";
+import { BookIcon, BookshelfIcon, ChartBarIcon, SearchIcon, TrendingUpIcon } from "../../components/Icons";
 import { Feather } from "@expo/vector-icons";
 
 export default function TabLayout() {
@@ -43,7 +43,7 @@ export default function TabLayout() {
         name="index"
         options={{
           title: "내 책장",
-          tabBarIcon: ({ color }) => <BookshelfIcon color={color} size={24} />,
+          tabBarIcon: ({ color }) => <BookIcon color={color} size={24} />,
         }}
       />
       <Tabs.Screen
@@ -57,7 +57,7 @@ export default function TabLayout() {
         name="chat"
         options={{
           title: "AI 채팅",
-          tabBarIcon: ({ color }) => <ChatBubbleIcon color={color} size={24} />,
+          tabBarIcon: ({ color }) => <TrendingUpIcon color={color} size={24} />,
         }}
       />
     </Tabs>

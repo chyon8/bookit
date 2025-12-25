@@ -35,6 +35,9 @@ export default function Home() {
 
   const filterOptions = ["All", ReadingStatus.Reading, ReadingStatus.Finished, ReadingStatus.WantToRead] as const;
   
+  // Sub-filter for Finished tab (완독 vs 중단)
+  const [subFilter, setSubFilter] = useState<"Finished" | "Dropped">("Finished");
+
   const readingStatusKorean: Record<string, string> = {
     All: "전체",
     [ReadingStatus.Reading]: "읽는 중",
@@ -68,21 +71,7 @@ export default function Home() {
     return counts;
   }, [userBooks]);
 
-  // Group books for "All" view
-  const groupedBooks = useMemo(() => {
-    if (statusFilter !== "All" || !userBooks) return null;
-    
-    const groups: Record<string, UserBook[]> = {};
-    for (const book of userBooks) {
-      const status = book.status;
-      if (status) {
-        if (!groups[status]) groups[status] = [];
-        groups[status].push(book);
-      }
-    }
-    return groups;
-  }, [userBooks, statusFilter]);
-
+  // Extract Genres
   const [filterSheetVisible, setFilterSheetVisible] = useState(false);
   const [filters, setFilters] = useState<{
     sort: SortOption;
@@ -112,15 +101,41 @@ export default function Home() {
     
     let result = userBooks.filter(book => {
       // 1. Status Filter
-      if (statusFilter !== "All" && book.status !== statusFilter) return false;
+      if (statusFilter === "Finished") {
+        // Apply sub-filter for 완독 vs 중단
+        if (subFilter === "Finished" && book.status !== ReadingStatus.Finished) return false;
+        if (subFilter === "Dropped" && book.status !== ReadingStatus.Dropped) return false;
+      } else if (statusFilter !== "All" && book.status !== statusFilter) {
+        return false;
+      }
       
       // 2. Search
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
-        if (!(
+        
+        // Check title and author
+        const basicMatch = 
           book.books.title.toLowerCase().includes(query) || 
-          book.books.author?.toLowerCase().includes(query)
-        )) return false;
+          book.books.author?.toLowerCase().includes(query);
+        
+        if (basicMatch) return true;
+
+        // Check one-line review
+        if (book.one_line_review?.toLowerCase().includes(query)) return true;
+
+        // Check overall impression
+        if (book.overall_impression?.toLowerCase().includes(query)) return true;
+
+        // Check memos
+        if (book.memos?.some(memo => memo.text.toLowerCase().includes(query))) return true;
+
+        // Check memorable quotes
+        if (book.memorable_quotes?.some(mq => 
+          mq.quote.toLowerCase().includes(query) || 
+          mq.thought.toLowerCase().includes(query)
+        )) return true;
+
+        return false;
       }
 
       // 3. Detailed Filters
@@ -153,7 +168,22 @@ export default function Home() {
     });
 
     return result;
-  }, [userBooks, statusFilter, searchQuery, filters]);
+  }, [userBooks, statusFilter, subFilter, searchQuery, filters]);
+
+  // Group books for "All" view (using filtered list)
+  const groupedBooks = useMemo(() => {
+    if (statusFilter !== "All" || !filteredBooksAll) return null;
+    
+    const groups: Record<string, UserBook[]> = {};
+    for (const book of filteredBooksAll) {
+      const status = book.status;
+      if (status) {
+        if (!groups[status]) groups[status] = [];
+        groups[status].push(book);
+      }
+    }
+    return groups;
+  }, [filteredBooksAll, statusFilter]);
 
   // Sliced books for pagination
   const displayedBooks = useMemo(() => {
@@ -332,7 +362,39 @@ export default function Home() {
             })}
           </View>
 
-          {/* Secondary Filter Buttons */}
+          {/* Sub-Tabs for 완독 Tab (완독/중단) */}
+          {statusFilter === "Finished" && (
+            <View style={styles.subTabsContainer}>
+              <TouchableOpacity 
+                onPress={() => setSubFilter("Finished")}
+                style={[
+                  styles.subTab, 
+                  subFilter === "Finished" && styles.subTabActive
+                ]}
+              >
+                <Text style={[
+                  styles.subTabText,
+                  subFilter === "Finished" && styles.subTabTextActive
+                ]}>
+                  완독 ({statusCounts[ReadingStatus.Finished] || 0})
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                onPress={() => setSubFilter("Dropped")}
+                style={[
+                  styles.subTab, 
+                  subFilter === "Dropped" && styles.subTabActive
+                ]}
+              >
+                <Text style={[
+                  styles.subTabText,
+                  subFilter === "Dropped" && styles.subTabTextActive
+                ]}>
+                  중단 ({statusCounts[ReadingStatus.Dropped] || 0})
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
           <View style={styles.secondaryFilterContainer}>
             <TouchableOpacity 
                 style={styles.filterButton}
@@ -509,6 +571,34 @@ const styles = StyleSheet.create({
   filterTabTextActive: {
     fontWeight: 'bold',
     color: '#4ADE80',
+  },
+  subTabsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+    gap: 8,
+  },
+  subTab: {
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: 24,
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  subTabActive: {
+    backgroundColor: '#DCFCE7',
+    borderColor: '#4ADE80',
+  },
+  subTabText: {
+    fontSize: 14,
+    color: '#64748B',
+    fontWeight: '500',
+  },
+  subTabTextActive: {
+    color: '#15803D',
+    fontWeight: 'bold',
   },
   secondaryFilterContainer: {
     flexDirection: 'row',

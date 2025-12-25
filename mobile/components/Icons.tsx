@@ -60,3 +60,7 @@ export const PencilIcon = ({ className, size = 20, color = "black" }: { classNam
 export const PlusIcon = ({ className, size = 20, color = "black" }: { className?: string; size?: number; color?: string }) => (
   <Feather name="plus" size={size} color={color} className={className} />
 );
+
+export const TrendingUpIcon = ({ className, size = 20, color = "black" }: { className?: string; size?: number; color?: string }) => (
+  <Feather name="trending-up" size={size} color={color} className={className} />
+);
