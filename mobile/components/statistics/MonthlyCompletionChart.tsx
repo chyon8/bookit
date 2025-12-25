@@ -8,10 +8,6 @@ import {
 } from "react-native";
 import { 
   format, 
-  subMonths, 
-  eachMonthOfInterval, 
-  startOfMonth, 
-  isSameMonth 
 } from "date-fns";
 import { ko } from "date-fns/locale";
 import { UserBook, ReadingStatus } from "../../hooks/useBooks";
@@ -29,39 +25,33 @@ export default function MonthlyCompletionChart({ books, theme }: MonthlyCompleti
   const [timeRange, setTimeRange] = useState<TimeRange>("12");
 
   const chartData = useMemo(() => {
-    const now = new Date();
-    let startDate: Date;
-    
-    if (timeRange === "all") {
-      const finishedBooks = books.filter(b => b.status === ReadingStatus.Finished && b.end_date);
-      if (finishedBooks.length === 0) {
-        startDate = subMonths(now, 11);
-      } else {
-        const dates = finishedBooks.map(b => new Date(b.end_date!).getTime());
-        startDate = new Date(Math.min(...dates));
-      }
-    } else {
-      startDate = subMonths(now, parseInt(timeRange) - 1);
-    }
+    const monthlyMap = new Map<number, number>();
 
-    const months = eachMonthOfInterval({
-      start: startOfMonth(startDate),
-      end: startOfMonth(now),
+    books.forEach((book) => {
+      if (book.status === ReadingStatus.Finished && book.end_date) {
+        const date = new Date(book.end_date);
+        if (!isNaN(date.getTime())) {
+          const key = new Date(date.getFullYear(), date.getMonth()).getTime();
+          monthlyMap.set(key, (monthlyMap.get(key) || 0) + 1);
+        }
+      }
     });
 
-    return months.map(month => {
-      const count = books.filter(book => 
-        book.status === ReadingStatus.Finished && 
-        book.end_date && 
-        isSameMonth(new Date(book.end_date), month)
-      ).length;
+    const sortedMonthly = Array.from(monthlyMap.entries()).sort(
+      (a, b) => a[0] - b[0]
+    );
 
+    const monthlySlice =
+      timeRange === "all"
+        ? sortedMonthly
+        : sortedMonthly.slice(-(parseInt(timeRange)));
+
+    return monthlySlice.map(([timestamp, count]) => {
+      const date = new Date(timestamp);
       return {
-        label: format(month, "yy년 M월", { locale: ko }),
-        shortLabel: format(month, "M월"),
-        yearLabel: format(month, "yy년"),
+        label: format(date, "yy년 M월", { locale: ko }),
         value: count,
-        date: month
+        timestamp
       };
     });
   }, [books, timeRange]);
@@ -73,21 +63,22 @@ export default function MonthlyCompletionChart({ books, theme }: MonthlyCompleti
   return (
     <View style={styles.card}>
       <View style={styles.header}>
-        <Text style={styles.title}>월별 완독 수 ({timeRange === 'all' ? '전체' : `최근 ${timeRange}개월`})</Text>
-      </View>
-
-      <View style={styles.tabContainer}>
-        {(["6", "12", "all"] as TimeRange[]).map((range) => (
-          <TouchableOpacity
-            key={range}
-            onPress={() => setTimeRange(range)}
-            style={[styles.tab, timeRange === range && styles.activeTab]}
-          >
-            <Text style={[styles.tabText, timeRange === range && styles.activeTabText]}>
-              {range === "all" ? "전체" : `${range}개월`}
-            </Text>
-          </TouchableOpacity>
-        ))}
+        <View style={styles.titleRow}>
+            <Text style={styles.title}>월별 완독 수 ({timeRange === 'all' ? '전체' : `최근 ${timeRange}개월`})</Text>
+        </View>
+        <View style={styles.tabContainer}>
+            {(["6", "12", "all"] as TimeRange[]).map((range) => (
+            <TouchableOpacity
+                key={range}
+                onPress={() => setTimeRange(range)}
+                style={[styles.tab, timeRange === range && styles.activeTab]}
+            >
+                <Text style={[styles.tabText, timeRange === range && styles.activeTabText]}>
+                {range === "all" ? "전체" : `${range}개월`}
+                </Text>
+            </TouchableOpacity>
+            ))}
+        </View>
       </View>
 
       <View style={styles.chartArea}>
@@ -98,9 +89,8 @@ export default function MonthlyCompletionChart({ books, theme }: MonthlyCompleti
           ))}
         </View>
 
-        {/* Bars */}
+        {/* Bars and Grid */}
         <View style={styles.barsContainer}>
-          {/* Grid Lines */}
           <View style={styles.gridLines}>
             {[1, 2, 3, 4].map((_, i) => (
               <View key={i} style={styles.gridLine} />
@@ -108,27 +98,35 @@ export default function MonthlyCompletionChart({ books, theme }: MonthlyCompleti
           </View>
 
           <View style={styles.barsWrapper}>
-            {chartData.map((item, index) => (
-              <View key={index} style={styles.barColumn}>
-                <View style={styles.barTrack}>
-                  <View 
-                    style={[
-                      styles.bar, 
-                      { height: `${(item.value / roundedMax) * 100}%` }
-                    ]} 
-                  />
+            {chartData.map((item, index) => {
+              // Show label for every few bars depending on density
+              const labelInterval = Math.max(1, Math.floor(chartData.length / 4));
+              const showLabel = index % labelInterval === 0 || index === chartData.length - 1;
+
+              return (
+                <View key={index} style={styles.barColumn}>
+                  <View style={styles.barTrack}>
+                    <View 
+                      style={[
+                        styles.bar, 
+                        { height: `${(item.value / roundedMax) * 100}%` }
+                      ]} 
+                    />
+                  </View>
+                  <View style={styles.xLabelWrapper}>
+                    {showLabel ? (
+                      <Text style={styles.xLabel} numberOfLines={1}>
+                        {item.label}
+                      </Text>
+                    ) : (
+                        <View style={styles.dot} />
+                    )}
+                  </View>
                 </View>
-              </View>
-            ))}
+              );
+            })}
           </View>
         </View>
-      </View>
-
-      {/* X Axis labels (Simplified for mobile) */}
-      <View style={styles.xAxis}>
-        {chartData.filter((_, i) => i % Math.max(1, Math.floor(chartData.length / 4)) === 0).map((item, i) => (
-          <Text key={i} style={styles.xLabel}>{item.label}</Text>
-        ))}
       </View>
     </View>
   );
@@ -147,7 +145,10 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   header: {
-    marginBottom: 16,
+    marginBottom: 20,
+  },
+  titleRow: {
+      marginBottom: 12,
   },
   title: {
     fontSize: 18,
@@ -157,19 +158,18 @@ const styles = StyleSheet.create({
   tabContainer: {
     flexDirection: 'row',
     gap: 8,
-    marginBottom: 24,
   },
   tab: {
-    paddingVertical: 6,
-    paddingHorizontal: 16,
-    borderRadius: 20,
+    paddingVertical: 4,
+    paddingHorizontal: 12,
+    borderRadius: 16,
     backgroundColor: '#F1F5F9',
   },
   activeTab: {
     backgroundColor: '#1E293B',
   },
   tabText: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '600',
     color: '#64748B',
   },
@@ -178,27 +178,30 @@ const styles = StyleSheet.create({
   },
   chartArea: {
     flexDirection: 'row',
-    height: 180,
+    height: 240,
   },
   yAxis: {
     justifyContent: 'space-between',
     paddingRight: 12,
-    paddingBottom: 4,
+    paddingBottom: 40,
   },
   yTick: {
     fontSize: 12,
     color: '#94A3B8',
     textAlign: 'right',
-    width: 20,
+    width: 25,
   },
   barsContainer: {
     flex: 1,
     position: 'relative',
   },
   gridLines: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 40,
     justifyContent: 'space-between',
-    paddingBottom: 4,
   },
   gridLine: {
     height: 1,
@@ -208,18 +211,16 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'flex-end',
-    justifyContent: 'space-around',
-    paddingHorizontal: 4,
+    justifyContent: 'space-between',
   },
   barColumn: {
     flex: 1,
     alignItems: 'center',
     height: '100%',
-    justifyContent: 'flex-end',
   },
   barTrack: {
-    width: '60%',
-    height: '100%',
+    width: '70%',
+    height: 200,
     justifyContent: 'flex-end',
   },
   bar: {
@@ -228,14 +229,22 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 6,
     width: '100%',
   },
-  xAxis: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingLeft: 32,
-    marginTop: 8,
+  xLabelWrapper: {
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
   },
   xLabel: {
-    fontSize: 10,
+    fontSize: 9,
     color: '#94A3B8',
+    textAlign: 'center',
+    transform: [{ rotate: '-15deg' }], // Slight rotation for overlap
+  },
+  dot: {
+    width: 2,
+    height: 2,
+    borderRadius: 1,
+    backgroundColor: '#E2E8F0',
   }
 });
