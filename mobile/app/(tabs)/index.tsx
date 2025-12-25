@@ -16,6 +16,7 @@ import { BookCard } from "../../components/BookCard";
 import { Stack, useRouter } from "expo-router";
 import { SearchIcon, XMarkIcon, SparklesIcon, ChevronDownIcon } from "../../components/Icons";
 import { RandomNoteModal, Note } from "../../components/RandomNoteModal";
+import { FilterSheet, SortOption } from "../../components/FilterSheet";
 
 const { width: screenWidth } = Dimensions.get('window');
 const CARD_WIDTH = (screenWidth - 44) / 2; // 2 columns: (Screen - 32px padding - 12px gap) / 2
@@ -82,19 +83,77 @@ export default function Home() {
     return groups;
   }, [userBooks, statusFilter]);
 
+  const [filterSheetVisible, setFilterSheetVisible] = useState(false);
+  const [filters, setFilters] = useState<{
+    sort: SortOption;
+    reread: boolean | null;
+    month: string | null;
+    genre: string | null;
+  }>({
+    sort: "date_desc",
+    reread: null,
+    month: null,
+    genre: null
+  });
+
+  // Extract Genres
+  const genres = useMemo(() => {
+    if (!userBooks) return [];
+    const g = new Set<string>();
+    userBooks.forEach(b => {
+        if (b.books.category) g.add(b.books.category);
+    });
+    return Array.from(g);
+  }, [userBooks]);
+
   // Filter books logic
   const filteredBooksAll = useMemo(() => {
     if (!userBooks) return [];
-    return userBooks.filter(book => {
+    
+    let result = userBooks.filter(book => {
+      // 1. Status Filter
       if (statusFilter !== "All" && book.status !== statusFilter) return false;
+      
+      // 2. Search
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
-        return book.books.title.toLowerCase().includes(query) || 
-               book.books.author?.toLowerCase().includes(query);
+        if (!(
+          book.books.title.toLowerCase().includes(query) || 
+          book.books.author?.toLowerCase().includes(query)
+        )) return false;
       }
+
+      // 3. Detailed Filters
+      if (filters.reread && !book.is_rereading) return false;
+      if (filters.genre && book.books.category !== filters.genre) return false;
+      if (filters.month && book.end_date) {
+         const date = new Date(book.end_date);
+         if ((date.getMonth() + 1).toString() !== filters.month) return false;
+      }
+
       return true;
     });
-  }, [userBooks, statusFilter, searchQuery]);
+
+    // 4. Sort
+    result.sort((a, b) => {
+        switch (filters.sort) {
+            case "date_asc":
+                return new Date(a.start_date || a.books.id).getTime() - new Date(b.start_date || b.books.id).getTime();
+            case "date_desc":
+                return new Date(b.start_date || b.books.id).getTime() - new Date(a.start_date || a.books.id).getTime();
+            case "rating_desc": 
+                return (b.rating || 0) - (a.rating || 0);
+            case "rating_asc":
+                return (a.rating || 0) - (b.rating || 0);
+            case "title_asc":
+                return a.books.title.localeCompare(b.books.title);
+            default:
+                return 0;
+        }
+    });
+
+    return result;
+  }, [userBooks, statusFilter, searchQuery, filters]);
 
   // Sliced books for pagination
   const displayedBooks = useMemo(() => {
@@ -275,17 +334,31 @@ export default function Home() {
 
           {/* Secondary Filter Buttons */}
           <View style={styles.secondaryFilterContainer}>
-            <TouchableOpacity style={styles.filterButton}>
+            <TouchableOpacity 
+                style={styles.filterButton}
+                onPress={() => setFilters({ sort: "date_desc", reread: null, month: null, genre: null })}
+            >
               <Text style={styles.filterButtonText}>초기화</Text>
             </TouchableOpacity>
             
-            <TouchableOpacity style={styles.filterButton}>
+            <TouchableOpacity 
+                style={styles.filterButton}
+                onPress={() => setFilterSheetVisible(true)}
+            >
               <Text style={styles.filterButtonText}>상세 필터</Text>
               <ChevronDownIcon size={16} color="#4B5563" />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.filterButton}>
-              <Text style={styles.filterButtonText}>최신 추가순</Text>
+            <TouchableOpacity 
+                style={styles.filterButton}
+                onPress={() => setFilterSheetVisible(true)}
+            >
+              <Text style={styles.filterButtonText}>
+                {filters.sort === "date_desc" ? "최신 추가순" : 
+                 filters.sort === "date_asc" ? "오래된순" : 
+                 filters.sort === "rating_desc" ? "별점 높은순" : 
+                 filters.sort === "rating_asc" ? "별점 낮은순" : "제목순"}
+              </Text>
               <ChevronDownIcon size={16} color="#4B5563" />
             </TouchableOpacity>
           </View>
@@ -341,6 +414,14 @@ export default function Home() {
         onPrev={() => setCurrentNoteIndex((prev) => (prev - 1 + shuffledNotes.length) % shuffledNotes.length)}
         currentIndex={currentNoteIndex}
         totalNotes={shuffledNotes.length}
+      />
+
+      <FilterSheet 
+        visible={filterSheetVisible} 
+        onClose={() => setFilterSheetVisible(false)}
+        initialFilters={filters}
+        onApply={setFilters}
+        genres={genres}
       />
     </View>
   );

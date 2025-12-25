@@ -20,13 +20,14 @@ import { ChevronLeftIcon, PlusIcon, ChevronDownIcon } from "../../components/Ico
 import { StarRating } from "../../components/StarRating";
 import { QuoteCard } from "../../components/QuoteCard";
 import { MemoCard } from "../../components/MemoCard";
-import { BlurView } from "expo-blur"; // You need to install expo-blur if not present, otherwise use a semi-transparent view
-
-// Mocking useAppContext mostly for the 'user' ID. Assuming we have a way to get user.
-// For now, hardcoding or fetching session.
+import { BlurView } from "expo-blur"; 
 import { supabase } from "../../lib/supabase";
+import { BookRecordSkeleton } from "../../components/BookRecordSkeleton";
 
 export default function BookRecordScreen() {
+  // ... existing code ...
+  
+
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [user, setUser] = useState<any>(null);
@@ -58,6 +59,10 @@ export default function BookRecordScreen() {
     const current = JSON.stringify(review);
     setIsDirty(current !== initialReviewState.current);
   }, [review]);
+
+  if (isLoading || !book) {
+    return <BookRecordSkeleton />;
+  }
 
   const handleSave = async () => {
     if (!review || !book) return;
@@ -161,11 +166,7 @@ export default function BookRecordScreen() {
   };
 
   if (isLoading || !book) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#4ADE80" />
-      </View>
-    );
+    return <BookRecordSkeleton />;
   }
 
   const statusOptions = {

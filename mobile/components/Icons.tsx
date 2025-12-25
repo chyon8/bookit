@@ -8,6 +8,14 @@ export const TrashIcon = ({ className, size = 20, color = "white" }: { className
   <Feather name="trash-2" size={size} color={color} className={className} />
 );
 
+export const BookIcon = ({ className, size = 20, color = "black" }: { className?: string; size?: number; color?: string }) => (
+  <Feather name="book" size={size} color={color} className={className} />
+);
+
+export const BookOpenIcon = ({ className, size = 20, color = "black" }: { className?: string; size?: number; color?: string }) => (
+  <Feather name="book-open" size={size} color={color} className={className} />
+);
+
 // Add others as needed matching web names
 export const SearchIcon = ({ className, size = 20, color = "gray" }: { className?: string; size?: number; color?: string }) => (
   <Feather name="search" size={size} color={color} className={className} />

@@ -15,6 +15,7 @@ export interface Book {
   cover_image_url: string;
   description: string;
   isbn13: string;
+  category?: string;
 }
 
 export interface MemorableQuote {
