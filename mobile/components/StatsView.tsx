@@ -10,8 +10,14 @@ import {
   Platform,
   UIManager
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { UserBook, ReadingStatus } from "../hooks/useBooks";
 import { BookOpenIcon, BookIcon, ChartBarIcon, StarIcon } from "./Icons";
+import ReadingCalendar from "./statistics/ReadingCalendar";
+import MonthlyCompletionChart from "./statistics/MonthlyCompletionChart";
+import StarDistributionChart from "./statistics/StarDistributionChart";
+import GenreChart from "./statistics/GenreChart";
+import TopAuthorsList from "./statistics/TopAuthorsList";
 
 if (
   Platform.OS === 'android' &&
@@ -23,11 +29,10 @@ if (
 const { width } = Dimensions.get("window");
 
 type Tab = "overview" | "habits" | "genres" | "wishlist";
-type Theme = "light" | "dark";
 
 interface StatsViewProps {
   books: UserBook[];
-  theme: Theme;
+  theme: "light" | "dark";
 }
 
 // --- Components ---
@@ -74,7 +79,6 @@ const CustomBarChart = ({ data, color }: { data: { name: string; value: number }
 export default function StatsView({ books, theme }: StatsViewProps) {
   const [activeTab, setActiveTab] = useState<Tab>("overview");
 
-  // --- Logic from Web ---
   const processedStats = useMemo(() => {
     const stats = {
       totalBooks: books.length,
@@ -83,12 +87,6 @@ export default function StatsView({ books, theme }: StatsViewProps) {
       finishedThisMonth: 0,
       avgRating: "0.0",
       readingStatusData: [] as { name: string; value: number }[],
-      ratingDistributionData: [] as { name: string; value: number }[],
-      categoryData: [] as { name: string; value: number }[],
-      authorData: [] as { name: string; value: number }[], // Changed 'count' to 'value' for consistency
-      wishlist: {
-        categoryData: [] as { name: string; value: number }[],
-      },
     };
 
     if (!books || books.length === 0) return stats;
@@ -96,10 +94,6 @@ export default function StatsView({ books, theme }: StatsViewProps) {
     let totalRating = 0;
     let ratedBooksCount = 0;
     const statusCounts: Record<string, number> = {};
-    const ratingCounts: Record<string, number> = {};
-    const categoryCounts: Record<string, number> = {};
-    const wishlistCategoryCounts: Record<string, number> = {};
-    const authorCounts: Record<string, number> = {};
 
     const currentMonth = new Date().getMonth();
     const currentYear = new Date().getFullYear();
@@ -114,8 +108,6 @@ export default function StatsView({ books, theme }: StatsViewProps) {
         if (book.rating && book.rating > 0) {
             totalRating += book.rating;
             ratedBooksCount++;
-            const r = Math.round(book.rating * 2) / 2;
-            ratingCounts[r] = (ratingCounts[r] || 0) + 1;
         }
 
         if (book.end_date) {
@@ -124,24 +116,9 @@ export default function StatsView({ books, theme }: StatsViewProps) {
                 stats.finishedThisMonth++;
             }
         }
-        
-        const cat = book.books.category || "Uncategorized"; // Assuming category is on book.books? Need to check type.
-        // Waiting for type check, assuming it is on UserBook or Book. 
-        // Based on useBooks.ts: UserBook has 'books' which has 'title', 'author', etc. UserBook has 'rating', 'status'.
-        // Actually, 'category' might be missing in useBooks.ts interfaces. I added 'category' to 'BookWithReview' but 'UserBook.books' might not have it.
-        // I will double check useBooks.ts. If missing, I'll assume "General".
-      }
-
-      const author = book.books.author?.split('(')[0].trim() || "Unknown";
-      if (status === ReadingStatus.Finished) {
-          authorCounts[author] = (authorCounts[author] || 0) + 1;
       }
 
       if (status === ReadingStatus.Reading) stats.currentlyReading++;
-      
-      if (status === ReadingStatus.WantToRead) {
-         // Wishlist logic
-      }
     });
 
     if (ratedBooksCount > 0) {
@@ -149,20 +126,9 @@ export default function StatsView({ books, theme }: StatsViewProps) {
     }
 
     stats.readingStatusData = Object.entries(statusCounts).map(([k, v]) => ({ name: k, value: v }));
-    stats.ratingDistributionData = Object.entries(ratingCounts)
-        .map(([k, v]) => ({ name: `${k}점`, value: v }))
-        .sort((a,b) => parseFloat(a.name) - parseFloat(b.name));
-    
-    // Sort Author Data
-    stats.authorData = Object.entries(authorCounts)
-        .map(([k,v]) => ({ name: k, value: v }))
-        .sort((a,b) => b.value - a.value)
-        .slice(0, 5);
 
     return stats;
   }, [books]);
-
-  // --- Render ---
 
   const renderTabButton = (tab: Tab, label: string) => (
     <TouchableOpacity 
@@ -177,19 +143,21 @@ export default function StatsView({ books, theme }: StatsViewProps) {
   );
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+    <SafeAreaView style={styles.container}>
       {/* Tab Navigation */}
-      <View style={styles.tabContainer}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {renderTabButton("overview", "개요")}
-            {renderTabButton("habits", "독서 습관")}
-            {renderTabButton("genres", "장르 & 저자")}
-            {renderTabButton("wishlist", "위시리스트")}
-        </ScrollView>
+      <View style={styles.tabContainerWrapper}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabContainer} contentContainerStyle={styles.tabContentContainer}>
+              {renderTabButton("overview", "개요")}
+              {renderTabButton("habits", "독서 습관")}
+              {renderTabButton("genres", "장르 & 저자")}
+              {renderTabButton("wishlist", "위시리스트")}
+          </ScrollView>
       </View>
 
-      {/* Content */}
-      <View style={styles.content}>
+      <ScrollView 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContentContainer}
+      >
         {activeTab === "overview" && (
             <View style={styles.section}>
                 <View style={styles.grid}>
@@ -199,7 +167,7 @@ export default function StatsView({ books, theme }: StatsViewProps) {
                     <StatCard title="이번 달" value={processedStats.finishedThisMonth} description={`${processedStats.currentlyReading}권 읽는 중`} icon={<ChartBarIcon size={20} color="#64748B"/>} />
                 </View>
 
-                <View style={styles.card}>
+                <View style={styles.simpleCard}>
                     <Text style={styles.cardTitle}>내 서재 현황</Text>
                      <CustomBarChart 
                         data={processedStats.readingStatusData.map(d => ({
@@ -216,19 +184,16 @@ export default function StatsView({ books, theme }: StatsViewProps) {
 
         {activeTab === "habits" && (
             <View style={styles.section}>
-                <View style={styles.card}>
-                    <Text style={styles.cardTitle}>별점 분포</Text>
-                    <CustomBarChart data={processedStats.ratingDistributionData} color="#FACC15" />
-                </View>
+                <ReadingCalendar books={books} theme={theme} />
+                <MonthlyCompletionChart books={books} theme={theme} />
+                <StarDistributionChart books={books} theme={theme} />
             </View>
         )}
 
         {activeTab === "genres" && (
              <View style={styles.section}>
-                <View style={styles.card}>
-                    <Text style={styles.cardTitle}>완독한 책 저자 Top 5</Text>
-                    <CustomBarChart data={processedStats.authorData} color="#38BDF8" />
-                </View>
+                <GenreChart books={books} theme={theme} />
+                <TopAuthorsList books={books} theme={theme} />
             </View>
         )}
         
@@ -237,21 +202,27 @@ export default function StatsView({ books, theme }: StatsViewProps) {
                 <Text style={styles.placeholderText}>준비 중입니다.</Text>
             </View>
         )}
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#F8FAFC',
   },
-  contentContainer: {
-    padding: 16,
-    paddingBottom: 40,
+  tabContainerWrapper: {
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
   },
   tabContainer: {
-    marginBottom: 24,
+    paddingHorizontal: 16,
+  },
+  tabContentContainer: {
+    paddingRight: 32,
   },
   tabButton: {
     paddingVertical: 8,
@@ -270,6 +241,10 @@ const styles = StyleSheet.create({
   activeTabText: {
     color: '#FFFFFF',
   },
+  scrollContentContainer: {
+    padding: 16,
+    paddingBottom: 40,
+  },
   section: {
     gap: 16,
   },
@@ -279,7 +254,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   statCard: {
-    width: (width - 32 - 12) / 2, // 2 columns
+    width: (width - 32 - 12) / 2,
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 16,
@@ -313,33 +288,29 @@ const styles = StyleSheet.create({
     color: '#94A3B8',
     marginTop: 4,
   },
-  card: {
+  simpleCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: 32, // Matches new components
+    padding: 24,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
-    shadowRadius: 2,
+    shadowRadius: 12,
     elevation: 2,
   },
   cardTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 16,
-    color: '#0F172A',
-  },
-  content: {
-    minHeight: 200,
+    color: '#1E293B',
   },
   centerPlaceholder: {
     alignItems: 'center',
-    padding: 40,
+    padding: 100,
   },
   placeholderText: {
     color: '#94A3B8',
   },
-  // Chart
   chartContainer: {
     gap: 12,
   },
@@ -356,14 +327,14 @@ const styles = StyleSheet.create({
   },
   barWrapper: {
     flex: 1,
-    height: 8,
+    height: 12,
     backgroundColor: '#F1F5F9',
-    borderRadius: 4,
+    borderRadius: 6,
     overflow: 'hidden',
   },
   bar: {
     height: '100%',
-    borderRadius: 4,
+    borderRadius: 6,
   },
   barValue: {
     width: 30,
