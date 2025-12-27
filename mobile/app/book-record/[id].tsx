@@ -294,9 +294,9 @@ export default function BookRecordScreen() {
 
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true, // Crop option for better OCR
-        quality: 1, // High quality for OCR
-        base64: true, // Request base64 directly
+        allowsEditing: false, // Customized in ScanPreviewModal
+        quality: 1, 
+        base64: true, 
       });
 
       if (!result.canceled) {
@@ -321,9 +321,9 @@ export default function BookRecordScreen() {
       }
 
       const result = await ImagePicker.launchCameraAsync({
-        allowsEditing: true,
+        allowsEditing: false,
         quality: 1,
-        base64: true, // Request base64 directly
+        base64: true, 
       });
 
       if (!result.canceled) {
@@ -418,6 +418,9 @@ export default function BookRecordScreen() {
         onScan={handleScan}
         isScanning={isScanning}
         error={scanError}
+        onUpdateImage={(uri, base64) => {
+            setScanImageBase64(base64);
+        }}
       />
       
       {/* Custom Header */}

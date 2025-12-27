@@ -15,6 +15,8 @@ import {
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { XMarkIcon } from './Icons';
+import { ImageCropper } from './ImageCropper';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 interface ScanPreviewModalProps {
   isVisible: boolean;
@@ -25,6 +27,7 @@ interface ScanPreviewModalProps {
   onScan: () => void;
   isScanning: boolean;
   error?: string | null;
+  onUpdateImage?: (uri: string, base64: string) => void;
 }
 
 export function ScanPreviewModal({
@@ -35,14 +38,37 @@ export function ScanPreviewModal({
   imageUri,
   onScan,
   isScanning,
-  error
+  error,
+  onUpdateImage
 }: ScanPreviewModalProps) {
   const [text, setText] = React.useState(scannedText);
+  const [isCropping, setIsCropping] = React.useState(false);
+  const [displayImageUri, setDisplayImageUri] = React.useState<string | null>(null);
   const { colors, isDark } = useTheme();
 
   React.useEffect(() => {
     setText(scannedText);
   }, [scannedText]);
+
+  React.useEffect(() => {
+    // When imageUri changes (and is not null), start cropping mode
+    if (imageUri) {
+        setDisplayImageUri(imageUri);
+        setIsCropping(true);
+    }
+  }, [imageUri]);
+
+  const handleCropComplete = ({ uri, base64 }: { uri: string; base64?: string }) => {
+    setDisplayImageUri(uri);
+    setIsCropping(false);
+    if (onUpdateImage && base64) {
+        onUpdateImage(uri, base64);
+    }
+  };
+  
+  const handleCropCancel = () => {
+    onClose();
+  };
 
   return (
     <Modal
@@ -54,7 +80,7 @@ export function ScanPreviewModal({
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
           <Text style={[styles.headerTitle, { color: colors.text }]}>
-            {text ? "텍스트 확인 및 수정" : "이미지 확인"}
+            {isCropping ? "영역 선택" : (text ? "텍스트 확인 및 수정" : "이미지 확인")}
           </Text>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
             <XMarkIcon size={24} color={colors.textMuted} />
@@ -65,16 +91,33 @@ export function ScanPreviewModal({
           behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles.content}
         >
-          <ScrollView contentContainerStyle={styles.scrollContent}>
+          <ScrollView 
+            contentContainerStyle={styles.scrollContent}
+            scrollEnabled={!isCropping}
+          >
             {/* Image Preview */}
-            {imageUri && (
-              <View style={[styles.imageContainer, { backgroundColor: isDark ? colors.border : '#F1F5F9', borderColor: colors.border }]}>
-                <Image
-                  source={{ uri: imageUri }}
-                  style={styles.image}
-                  resizeMode="contain"
-                />
+            {isCropping && displayImageUri ? (
+              <View style={{ height: 500 }}>
+                <GestureHandlerRootView style={{ flex: 1 }}>
+                 <ImageCropper 
+                    imageUri={displayImageUri} 
+                    onCancel={handleCropCancel}
+                    onCrop={handleCropComplete}
+                 />
+                </GestureHandlerRootView>
               </View>
+            ) : (
+                <>
+                {displayImageUri && (
+                <View style={[styles.imageContainer, { backgroundColor: isDark ? colors.border : '#F1F5F9', borderColor: colors.border }]}>
+                    <Image
+                    source={{ uri: displayImageUri }}
+                    style={styles.image}
+                    resizeMode="contain"
+                    />
+                </View>
+                )}
+                </>
             )}
 
             {/* Error Message */}
@@ -106,9 +149,28 @@ export function ScanPreviewModal({
                   위 이미지에서 텍스트를 추출하시겠습니까?
                 </Text>
                 <TouchableOpacity
-                  onPress={onScan}
-                  disabled={isScanning}
-                  style={[styles.scanButton, isScanning && styles.disabledButton, { backgroundColor: colors.primary, shadowColor: colors.primary }]}
+                  onPress={() => {
+                        // Pass the cropped image base64 if possible, but ScanPreviewModal usually takes base64 
+                        // from props or we need to convert displayImageUri to base64?
+                        // The original logic relied on `scanImageBase64` from the parent.
+                        // Now we have cropped image URI. 
+                        // We must update the parent or handle it here. 
+                        // Since `onScan` is a void check, the parent `handleScan` uses `scanImageBase64`.
+                        // We need to pass the new image back to parent OR convert here.
+                        // Ideally: onApplyCrop should update parent state.
+                        // But wait, `onScan` is generic.
+                        // Let's modify logic: The ImageCropper returns a URI. 
+                        // We should probably convert that URI to base64 and call a new prop `onImageUpdate`?
+                        // Or, better: modify onScan to accept optional base64/uri?
+                        // For now, let's assume the existing flow needs adjustment.
+                        // We'll fix `book-record/[id].tsx` to accept the cropped image update.
+                        // Actually, we can just call `onScan` and let it fail? No.
+                        // We need `onScan` to work with the CROPPED image.
+                        // We'll add a prop `onUpdateImage` to ScanPreviewModal.
+                        onScan(); 
+                  }}
+                  disabled={isScanning || isCropping}
+                  style={[styles.scanButton, (isScanning || isCropping) && styles.disabledButton, { backgroundColor: colors.primary, shadowColor: colors.primary }]}
                 >
                   {isScanning ? (
                     <ActivityIndicator color="white" />

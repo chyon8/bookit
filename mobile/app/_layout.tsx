@@ -134,10 +134,14 @@ function AppContent() {
   );
 }
 
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+
 export default function Layout() {
   return (
     <ThemeProvider>
-      <AppContent />
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <AppContent />
+      </GestureHandlerRootView>
     </ThemeProvider>
   );
 }
