@@ -1,10 +1,12 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { 
   View, 
   Text, 
   StyleSheet, 
   Dimensions,
-  TouchableOpacity
+  TouchableOpacity,
+  Animated,
+  Easing
 } from "react-native";
 import { useTheme } from "../../context/ThemeContext";
 import { UserBook, ReadingStatus } from "../../hooks/useBooks";
@@ -14,6 +16,36 @@ const { width } = Dimensions.get("window");
 interface StarDistributionChartProps {
   books: UserBook[];
 }
+
+const AnimatedBar = ({ targetHeight, color, delay }: { targetHeight: string, color: string, delay: number }) => {
+  const animatedHeight = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    animatedHeight.setValue(0);
+    Animated.timing(animatedHeight, {
+      toValue: 1,
+      duration: 1000,
+      delay,
+      easing: Easing.out(Easing.exp),
+      useNativeDriver: false,
+    }).start();
+  }, [targetHeight]);
+
+  return (
+    <Animated.View 
+      style={[
+        styles.bar, 
+        { 
+          backgroundColor: color,
+          height: animatedHeight.interpolate({
+            inputRange: [0, 1],
+            outputRange: ['0%', targetHeight],
+          })
+        }
+      ]} 
+    />
+  );
+};
 
 export default function StarDistributionChart({ books }: StarDistributionChartProps) {
   const [selectedBar, setSelectedBar] = useState<number | null>(null);
@@ -90,19 +122,21 @@ export default function StarDistributionChart({ books }: StarDistributionChartPr
                       activeOpacity={0.8}
                       onPress={() => setSelectedBar(selectedBar === index ? null : index)}
                       style={[
-                        styles.bar, 
-                        { 
-                          height: `${(item.count / roundedMax) * 100}%`,
-                          backgroundColor: isDark ? colors.primary : '#334155'
-                        },
+                        styles.barWrapper, 
                         selectedBar === index && styles.activeBar
                       ]} 
-                    />
+                    >
+                      <AnimatedBar 
+                        targetHeight={`${(item.count / roundedMax) * 100}%`}
+                        color={isDark ? colors.primary : '#334155'}
+                        delay={index * 50}
+                      />
+                    </TouchableOpacity>
                     {selectedBar === index && (
                       <View style={[
                         styles.tooltip,
                         { 
-                          bottom: `${(item.count / roundedMax) * 100 + 12}%`,
+                          bottom: `${(item.count / roundedMax) * 100 + 12}%` as any,
                           backgroundColor: isDark ? colors.border : '#FFFFFF',
                           shadowColor: '#000'
                         }
@@ -191,6 +225,11 @@ const styles = StyleSheet.create({
   barTrack: {
     width: '80%', 
     height: 180,
+    justifyContent: 'flex-end',
+  },
+  barWrapper: {
+    width: '100%',
+    height: '100%',
     justifyContent: 'flex-end',
   },
   bar: {

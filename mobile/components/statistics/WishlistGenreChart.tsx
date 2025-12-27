@@ -1,10 +1,12 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { 
   View, 
   Text, 
   StyleSheet, 
   Dimensions,
-  TouchableOpacity
+  TouchableOpacity,
+  Animated,
+  Easing
 } from "react-native";
 import { useTheme } from "../../context/ThemeContext";
 import { UserBook, ReadingStatus } from "../../hooks/useBooks";
@@ -14,6 +16,36 @@ const { width } = Dimensions.get("window");
 interface WishlistGenreChartProps {
   books: UserBook[];
 }
+
+const AnimatedBar = ({ targetWidth, color, delay }: { targetWidth: string, color: string, delay: number }) => {
+  const animatedWidth = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    animatedWidth.setValue(0);
+    Animated.timing(animatedWidth, {
+      toValue: 1,
+      duration: 1000,
+      delay,
+      easing: Easing.out(Easing.exp),
+      useNativeDriver: false,
+    }).start();
+  }, [targetWidth]);
+
+  return (
+    <Animated.View 
+      style={[
+        styles.bar, 
+        { 
+          backgroundColor: color,
+          width: animatedWidth.interpolate({
+            inputRange: [0, 1],
+            outputRange: ['0%', targetWidth],
+          })
+        }
+      ]} 
+    />
+  );
+};
 
 export default function WishlistGenreChart({ books }: WishlistGenreChartProps) {
   const [selectedBar, setSelectedBar] = useState<number | null>(null);
@@ -94,34 +126,36 @@ export default function WishlistGenreChart({ books }: WishlistGenreChartProps) {
                   <Text style={[styles.label, { color: colors.textMuted }]} numberOfLines={1}>{item.name}</Text>
                   <View style={[styles.yTickMark, { backgroundColor: colors.border }]} />
                 </View>
-                 <View style={styles.barTrack}>
-                  <TouchableOpacity 
-                    activeOpacity={0.8}
-                    onPress={() => setSelectedBar(selectedBar === index ? null : index)}
-                    style={[
-                      styles.bar, 
-                      { 
-                        width: `${(item.value / roundedMax) * 100}%`,
-                        backgroundColor: isDark ? colors.primary : '#334155'
-                      },
-                      selectedBar === index && styles.activeBar
-                    ]} 
-                  />
-                  {selectedBar === index && (
-                    <View style={[
-                      styles.tooltip,
-                      { 
-                        left: `${(item.value / roundedMax) * 100}%`,
-                        marginLeft: -40, // Half of minWidth (80/2)
-                        backgroundColor: isDark ? colors.border : '#FFFFFF',
-                        shadowColor: '#000'
-                      }
-                    ]}>
-                      <Text style={[styles.tooltipDate, { color: colors.text }]}>{item.name}</Text>
-                      <Text style={[styles.tooltipCount, { color: colors.text }]}>권 : {item.value}</Text>
-                    </View>
-                  )}
-                </View>
+                  <View style={styles.barTrack}>
+                    <TouchableOpacity 
+                      activeOpacity={0.8}
+                      onPress={() => setSelectedBar(selectedBar === index ? null : index)}
+                      style={[
+                        styles.barWrapper, 
+                        selectedBar === index && styles.activeBar
+                      ]} 
+                    >
+                      <AnimatedBar 
+                        targetWidth={`${(item.value / roundedMax) * 100}%`}
+                        color={isDark ? colors.primary : '#334155'}
+                        delay={index * 100}
+                      />
+                    </TouchableOpacity>
+                    {selectedBar === index && (
+                      <View style={[
+                        styles.tooltip,
+                        { 
+                          left: `${(item.value / roundedMax) * 100}%` as any,
+                          marginLeft: -40, 
+                          backgroundColor: isDark ? colors.border : '#FFFFFF',
+                          shadowColor: '#000'
+                        }
+                      ]}>
+                        <Text style={[styles.tooltipDate, { color: colors.text }]}>{item.name}</Text>
+                        <Text style={[styles.tooltipCount, { color: colors.text }]}>권 : {item.value}</Text>
+                      </View>
+                    )}
+                  </View>
               </View>
             ))}
           </View>
@@ -233,6 +267,11 @@ const styles = StyleSheet.create({
     height: 32,
     justifyContent: 'center',
     paddingLeft: 0, 
+  },
+  barWrapper: {
+    width: '100%',
+    height: 24,
+    justifyContent: 'center',
   },
   bar: {
     height: 24, 

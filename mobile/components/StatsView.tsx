@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
 import { 
   View, 
   Text, 
@@ -8,7 +8,9 @@ import {
   Dimensions,
   LayoutAnimation,
   Platform,
-  UIManager
+  UIManager,
+  Animated,
+  Easing
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { G, Circle, Path } from 'react-native-svg';
@@ -41,6 +43,34 @@ interface StatsViewProps {
 
 import { useTheme } from "../context/ThemeContext";
 
+const AnimatedNumber = ({ value, duration = 1500 }: { value: string | number, duration?: number }) => {
+  const { colors } = useTheme();
+  const [displayValue, setDisplayValue] = useState(typeof value === 'number' ? 0 : '0');
+  const animValue = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const isFloat = typeof value === 'number' && value % 1 !== 0;
+    const targetValue = typeof value === 'number' ? value : parseFloat(value as string) || 0;
+    
+    animValue.setValue(0);
+    const listener = animValue.addListener(({ value: v }) => {
+      const current = isFloat ? (v * targetValue).toFixed(1) : Math.floor(v * targetValue).toString();
+      setDisplayValue(current);
+    });
+
+    Animated.timing(animValue, {
+      toValue: 1,
+      duration,
+      easing: Easing.out(Easing.exp),
+      useNativeDriver: false,
+    }).start();
+
+    return () => animValue.removeListener(listener);
+  }, [value]);
+
+  return <Text style={[styles.statCardValue, { color: colors.text }]}>{displayValue}</Text>;
+};
+
 const StatCard = ({ title, value, description, icon }: { title: string, value: string | number, description?: string, icon?: React.ReactNode }) => {
   const { colors } = useTheme();
   return (
@@ -50,23 +80,37 @@ const StatCard = ({ title, value, description, icon }: { title: string, value: s
         {icon && <View style={styles.iconContainer}>{icon}</View>}
       </View>
       <View style={styles.statCardContent}>
-        <Text style={[styles.statCardValue, { color: colors.text }]}>{value}</Text>
+        <AnimatedNumber value={value} />
         {description && <Text style={[styles.statCardDesc, { color: colors.textMuted }]}>{description}</Text>}
       </View>
     </View>
   );
 };
 
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+
 const DonutChart = ({ data }: { data: { name: string; value: number; color: string }[] }) => {
   const { colors, isDark } = useTheme();
   const total = data.reduce((acc, curr) => acc + curr.value, 0);
-  const size = 150; // Reduced from 200
-  const strokeWidth = 20; // Reduced from 25
+  const size = 150;
+  const strokeWidth = 20;
   const center = size / 2;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
 
-  let currentAngle = -90; // Start from top
+  const animValue = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    animValue.setValue(0);
+    Animated.timing(animValue, {
+      toValue: 1,
+      duration: 1500,
+      easing: Easing.out(Easing.exp),
+      useNativeDriver: false,
+    }).start();
+  }, [total]);
+
+  let cumulativePercentage = 0;
 
   return (
     <View style={styles.donutContainer}>
@@ -75,43 +119,29 @@ const DonutChart = ({ data }: { data: { name: string; value: number; color: stri
           <G rotation={0} origin={`${center}, ${center}`}>
             {data.map((item, index) => {
               const percentage = item.value / (total || 1);
-              const angle = percentage * 360;
-
-              const x1 = center + radius * Math.cos((currentAngle * Math.PI) / 180);
-              const y1 = center + radius * Math.sin((currentAngle * Math.PI) / 180);
-
-              currentAngle += angle;
-
-              const x2 = center + radius * Math.cos((currentAngle * Math.PI) / 180);
-              const y2 = center + radius * Math.sin((currentAngle * Math.PI) / 180);
-
-              const largeArcFlag = percentage > 0.5 ? 1 : 0;
-              const d = `M ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2}`;
-
-              if (percentage === 1) {
-                  return (
-                    <Circle
-                        key={index}
-                        cx={center}
-                        cy={center}
-                        r={radius}
-                        stroke={item.color}
-                        strokeWidth={strokeWidth}
-                        fill="none"
-                    />
-                  )
-              }
-
               if (percentage === 0) return null;
 
+              const strokeDashoffset = animValue.interpolate({
+                inputRange: [0, 1],
+                outputRange: [circumference, circumference - (percentage * circumference)],
+              });
+
+              const rotation = cumulativePercentage * 360 - 90;
+              cumulativePercentage += percentage;
+
               return (
-                <Path
+                <AnimatedCircle
                   key={index}
-                  d={d}
+                  cx={center}
+                  cy={center}
+                  r={radius}
                   stroke={item.color}
                   strokeWidth={strokeWidth}
                   fill="none"
+                  strokeDasharray={`${circumference} ${circumference}`}
+                  strokeDashoffset={strokeDashoffset}
                   strokeLinecap="round"
+                  transform={`rotate(${rotation} ${center} ${center})`}
                 />
               );
             })}

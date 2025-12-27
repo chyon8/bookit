@@ -1,10 +1,12 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { 
   View, 
   Text, 
   StyleSheet, 
   Dimensions,
-  TouchableOpacity
+  TouchableOpacity,
+  Animated,
+  Easing
 } from "react-native";
 import { useTheme } from "../../context/ThemeContext";
 import { UserBook, ReadingStatus } from "../../hooks/useBooks";
@@ -14,6 +16,36 @@ const { width } = Dimensions.get("window");
 interface GenreChartProps {
   books: UserBook[];
 }
+
+const AnimatedBar = ({ targetWidth, color, delay }: { targetWidth: string, color: string, delay: number }) => {
+  const animatedWidth = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    animatedWidth.setValue(0);
+    Animated.timing(animatedWidth, {
+      toValue: 1,
+      duration: 1000,
+      delay,
+      easing: Easing.out(Easing.exp),
+      useNativeDriver: false,
+    }).start();
+  }, [targetWidth]);
+
+  return (
+    <Animated.View 
+      style={[
+        styles.bar, 
+        { 
+          backgroundColor: color,
+          width: animatedWidth.interpolate({
+            inputRange: [0, 1],
+            outputRange: ['0%', targetWidth],
+          })
+        }
+      ]} 
+    />
+  );
+};
 
 export default function GenreChart({ books }: GenreChartProps) {
   const [selectedBar, setSelectedBar] = useState<number | null>(null);
@@ -37,8 +69,8 @@ export default function GenreChart({ books }: GenreChartProps) {
       .slice(0, 7); // Show top 7 genres
   }, [books]);
 
-  const maxValue = Math.max(...genreData.map(d => d.value), 100);
-  const roundedMax = Math.ceil(maxValue / 25) * 25;
+  const maxValue = Math.max(...genreData.map(d => d.value), 10); // Ensure at least 10 for empty state
+  const roundedMax = Math.ceil(maxValue / 25) * 25 || 25;
   const xAxisTicks = [0, roundedMax / 4, (roundedMax * 2) / 4, (roundedMax * 3) / 4, roundedMax];
 
   return (
@@ -68,48 +100,54 @@ export default function GenreChart({ books }: GenreChartProps) {
           <View style={[styles.axisBorders, { borderColor: colors.border }]} />
 
           <View style={styles.content}>
-            {genreData.map((item, index) => (
-              <View 
-                key={index} 
-                style={[
-                  styles.row,
-                  selectedBar === index && { zIndex: 100 }
-                ]}
-              >
-                <View style={styles.labelContainer}>
-                  <Text style={[styles.label, { color: colors.textMuted }]} numberOfLines={1}>{item.name}</Text>
-                  <View style={[styles.yTickMark, { backgroundColor: colors.border }]} />
+            {genreData.map((item, index) => {
+              const barWidth = `${(item.value / roundedMax) * 100}%`;
+              const barColor = isDark ? colors.primary : '#334155';
+              
+              return (
+                <View 
+                  key={index} 
+                  style={[
+                    styles.row,
+                    selectedBar === index && { zIndex: 100 }
+                  ]}
+                >
+                  <View style={styles.labelContainer}>
+                    <Text style={[styles.label, { color: colors.textMuted }]} numberOfLines={1}>{item.name}</Text>
+                    <View style={[styles.yTickMark, { backgroundColor: colors.border }]} />
+                  </View>
+                  <View style={styles.barTrack}>
+                    <TouchableOpacity 
+                      activeOpacity={0.8}
+                      onPress={() => setSelectedBar(selectedBar === index ? null : index)}
+                      style={[
+                        styles.barWrapper,
+                        selectedBar === index && styles.activeBar
+                      ]} 
+                    >
+                      <AnimatedBar 
+                        targetWidth={barWidth} 
+                        color={barColor} 
+                        delay={index * 100} 
+                      />
+                    </TouchableOpacity>
+                    {selectedBar === index && (
+                      <View style={[
+                        styles.tooltip,
+                        { 
+                          left: barWidth as any,
+                          backgroundColor: isDark ? colors.border : '#FFFFFF',
+                          shadowColor: '#000'
+                        }
+                      ]}>
+                        <Text style={[styles.tooltipDate, { color: colors.text }]}>{item.name}</Text>
+                        <Text style={[styles.tooltipCount, { color: colors.text }]}>권 : {item.value}</Text>
+                      </View>
+                    )}
+                  </View>
                 </View>
-                 <View style={styles.barTrack}>
-                  <TouchableOpacity 
-                    activeOpacity={0.8}
-                    onPress={() => setSelectedBar(selectedBar === index ? null : index)}
-                    style={[
-                      styles.bar, 
-                      { 
-                        width: `${(item.value / roundedMax) * 100}%`,
-                        backgroundColor: isDark ? colors.primary : '#334155'
-                      },
-                      selectedBar === index && styles.activeBar
-                    ]} 
-                  />
-                  {selectedBar === index && (
-                    <View style={[
-                      styles.tooltip,
-                      { 
-                        left: `${(item.value / roundedMax) * 100}%`,
-                        marginLeft: -40, // Half of minWidth (80/2)
-                        backgroundColor: isDark ? colors.border : '#FFFFFF',
-                        shadowColor: '#000'
-                      }
-                    ]}>
-                      <Text style={[styles.tooltipDate, { color: colors.text }]}>{item.name}</Text>
-                      <Text style={[styles.tooltipCount, { color: colors.text }]}>권 : {item.value}</Text>
-                    </View>
-                  )}
-                </View>
-              </View>
-            ))}
+              );
+            })}
           </View>
         </View>
 
@@ -123,7 +161,6 @@ export default function GenreChart({ books }: GenreChartProps) {
     </View>
   );
 }
-
 const styles = StyleSheet.create({
   card: {
     borderRadius: 32,
@@ -219,6 +256,11 @@ const styles = StyleSheet.create({
     height: 32,
     justifyContent: 'center',
     paddingLeft: 0, 
+  },
+  barWrapper: {
+    width: '100%',
+    height: 24,
+    justifyContent: 'center',
   },
   bar: {
     height: 24, 

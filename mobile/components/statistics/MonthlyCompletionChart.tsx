@@ -1,10 +1,12 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { 
   View, 
   Text, 
   TouchableOpacity, 
   StyleSheet, 
-  Dimensions 
+  Dimensions,
+  Animated,
+  Easing
 } from "react-native";
 import { 
   format, 
@@ -18,6 +20,36 @@ const { width } = Dimensions.get("window");
 interface MonthlyCompletionChartProps {
   books: UserBook[];
 }
+
+const AnimatedBar = ({ targetHeight, color, delay }: { targetHeight: string, color: string, delay: number }) => {
+  const animatedHeight = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    animatedHeight.setValue(0);
+    Animated.timing(animatedHeight, {
+      toValue: 1,
+      duration: 1000,
+      delay,
+      easing: Easing.out(Easing.exp),
+      useNativeDriver: false,
+    }).start();
+  }, [targetHeight]);
+
+  return (
+    <Animated.View 
+      style={[
+        styles.bar, 
+        { 
+          backgroundColor: color,
+          height: animatedHeight.interpolate({
+            inputRange: [0, 1],
+            outputRange: ['0%', targetHeight],
+          })
+        }
+      ]} 
+    />
+  );
+};
 
 type TimeRange = "6" | "12" | "all";
 
@@ -126,19 +158,21 @@ export default function MonthlyCompletionChart({ books }: MonthlyCompletionChart
                       activeOpacity={0.8}
                       onPress={() => setSelectedBar(selectedBar === index ? null : index)}
                       style={[
-                        styles.bar, 
-                        { 
-                          height: `${(item.value / roundedMax) * 100}%`,
-                          backgroundColor: isDark ? colors.primary : '#334155'
-                        },
+                        styles.barWrapper, 
                         selectedBar === index && styles.activeBar
                       ]} 
-                    />
+                    >
+                      <AnimatedBar 
+                        targetHeight={`${(item.value / roundedMax) * 100}%`}
+                        color={isDark ? colors.primary : '#334155'}
+                        delay={index * 50}
+                      />
+                    </TouchableOpacity>
                     {selectedBar === index && (
                       <View style={[
                         styles.tooltip,
                         { 
-                          bottom: `${(item.value / roundedMax) * 100 + 12}%`,
+                          bottom: `${(item.value / roundedMax) * 100 + 12}%` as any,
                           backgroundColor: isDark ? colors.border : '#FFFFFF',
                           shadowColor: '#000'
                         }
@@ -250,6 +284,11 @@ const styles = StyleSheet.create({
   barTrack: {
     width: '70%',
     height: 200,
+    justifyContent: 'flex-end',
+  },
+  barWrapper: {
+    width: '100%',
+    height: '100%',
     justifyContent: 'flex-end',
   },
   bar: {
