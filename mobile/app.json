@@ -30,6 +30,18 @@
     "plugins": [
       "expo-router",
       "expo-web-browser"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "c3b9cd4f-7689-4462-8360-6d50a114976c"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/c3b9cd4f-7689-4462-8360-6d50a114976c"
+    }
   }
 }
