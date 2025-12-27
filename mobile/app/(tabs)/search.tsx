@@ -8,7 +8,8 @@ import {
   FlatList, 
   SafeAreaView,
   Keyboard,
-  TouchableWithoutFeedback 
+  TouchableWithoutFeedback,
+  Platform
 } from "react-native";
 import { useRouter } from "expo-router";
 import { SearchIcon, XMarkIcon } from "../../components/Icons";
@@ -117,14 +118,8 @@ export default function Search() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>도서 검색</Text>
-        </View>
-      </TouchableWithoutFeedback>
-
-      <View style={styles.searchContainer}>
-        <View style={styles.searchBar}>
+      <View style={styles.content}>
+        <View style={styles.searchContainer}>
           <SearchIcon size={20} color="#94A3B8" />
           <TextInput
             style={styles.input}
@@ -141,10 +136,15 @@ export default function Search() {
             </TouchableOpacity>
           )}
         </View>
-      </View>
 
-      <View style={styles.content}>
-        {loading ? (
+        {error ? (
+          <View style={styles.centerContainer}>
+            <Text style={styles.errorText}>{error}</Text>
+            <TouchableOpacity onPress={() => searchBooks(query)} style={styles.retryButton}>
+               <Text style={styles.retryText}>다시 시도</Text>
+            </TouchableOpacity>
+          </View>
+        ) : loading ? (
           <BookSearchLoading />
         ) : (
           <FlatList
@@ -160,13 +160,7 @@ export default function Search() {
             ListEmptyComponent={
               query.length > 0 ? (
                 <Text style={styles.emptyText}>검색 결과가 없습니다.</Text>
-              ) : (
-                 <View style={styles.placeholderContainer}>
-                    <Text style={styles.placeholderText}>
-                        새로운 책을 검색하고{"\n"}내 책장에 추가하세요
-                    </Text>
-                 </View>
-              )
+              ) : null
             }
           />
         )}
@@ -180,59 +174,60 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F8FAFC',
   },
-  header: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#0F172A',
+  content: {
+    flex: 1,
+    paddingTop: 16,
   },
   searchContainer: {
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
-  },
-  searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F1F5F9',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#D1D5DB',
+    backgroundColor: '#FFFFFF',
   },
   input: {
     flex: 1,
-    marginLeft: 8,
+    marginLeft: 12,
     fontSize: 16,
     color: '#1E293B',
-  },
-  content: {
-    flex: 1,
+    paddingVertical: 8,
+    ...Platform.select({
+      web: {
+        outlineStyle: 'none',
+      },
+    }),
   },
   listContent: {
     padding: 16,
   },
   emptyText: {
-      textAlign: 'center',
-      marginTop: 40,
-      color: '#64748B',
-      fontSize: 14,
+    textAlign: 'center',
+    marginTop: 40,
+    color: '#64748B',
+    fontSize: 14,
   },
-  placeholderContainer: {
+  centerContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 100,
+    padding: 20,
   },
-  placeholderText: {
-    textAlign: 'center',
-    color: '#94A3B8',
+  errorText: {
+    color: '#EF4444',
+    marginBottom: 16,
     fontSize: 14,
-    lineHeight: 20,
+    textAlign: 'center',
+  },
+  retryButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    backgroundColor: '#F1F5F9',
+    borderRadius: 8,
+  },
+  retryText: {
+    color: '#475569',
+    fontWeight: '600',
   },
 });
