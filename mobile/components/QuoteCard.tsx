@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { TrashIcon, PencilIcon, XMarkIcon } from './Icons'; // Ensure PencilIcon is added
 import { MemorableQuote } from '../hooks/useBooks';
 
@@ -11,7 +11,9 @@ interface QuoteCardProps {
 }
 
 export const QuoteCard: React.FC<QuoteCardProps> = ({ quote, onDelete, onChange, initialIsEditing }) => {
-  const [isEditing, setIsEditing] = useState(initialIsEditing || !quote.quote);
+  const [isEditing, setIsEditing] = useState(initialIsEditing !== undefined ? initialIsEditing : !quote.quote);
+  const [quoteHeight, setQuoteHeight] = useState(60);
+  const [thoughtHeight, setThoughtHeight] = useState(40);
 
   if (isEditing) {
     return (
@@ -22,7 +24,13 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({ quote, onDelete, onChange,
             value={quote.quote}
             onChangeText={(text) => onChange('quote', text)}
             placeholder="인상 깊었던 문장"
-            style={[styles.input, styles.quoteInput]}
+            style={[
+              styles.input, 
+              styles.quoteInput, 
+              { height: Math.max(60, quoteHeight) },
+              Platform.OS === 'web' && ({ resize: 'vertical', overflow: 'hidden' } as any)
+            ]}
+            onContentSizeChange={(e) => setQuoteHeight(e.nativeEvent.contentSize.height)}
             autoFocus={!quote.quote}
           />
           <TouchableOpacity onPress={onDelete} style={styles.iconButton}>
@@ -38,10 +46,17 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({ quote, onDelete, onChange,
             keyboardType="numeric"
           />
           <TextInput
+            multiline
             value={quote.thought}
             onChangeText={(text) => onChange('thought', text)}
             placeholder="나의 생각"
-            style={[styles.input, styles.thoughtInput]}
+            style={[
+              styles.input, 
+              styles.thoughtInput, 
+              { height: Math.max(40, thoughtHeight) },
+              Platform.OS === 'web' && ({ resize: 'vertical', overflow: 'hidden' } as any)
+            ]}
+            onContentSizeChange={(e) => setThoughtHeight(e.nativeEvent.contentSize.height)}
           />
         </View>
         <View style={styles.footer}>
@@ -109,7 +124,6 @@ const styles = StyleSheet.create({
   },
   quoteInput: {
     flex: 1,
-    minHeight: 60,
     textAlignVertical: 'top',
   },
   pageInput: {

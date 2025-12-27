@@ -64,3 +64,11 @@ export const PlusIcon = ({ className, size = 20, color = "black" }: { className?
 export const TrendingUpIcon = ({ className, size = 20, color = "black" }: { className?: string; size?: number; color?: string }) => (
   <Feather name="trending-up" size={size} color={color} className={className} />
 );
+
+export const CameraIcon = ({ className, size = 20, color = "black" }: { className?: string; size?: number; color?: string }) => (
+  <Feather name="camera" size={size} color={color} className={className} />
+);
+
+export const PhotoIcon = ({ className, size = 20, color = "black" }: { className?: string; size?: number; color?: string }) => (
+  <Feather name="image" size={size} color={color} className={className} />
+);

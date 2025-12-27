@@ -14,15 +14,18 @@ import {
   ActivityIndicator
 } from "react-native";
 import { useLocalSearchParams, useRouter, Stack, useNavigation } from "expo-router";
+import * as ImagePicker from 'expo-image-picker';
 import { useBookData, useUpdateBookReview, useDeleteBook } from "../../hooks/useBookData";
 import { UserBook, ReadingStatus, MemorableQuote, Memo } from "../../hooks/useBooks";
-import { ChevronLeftIcon, TrashIcon } from "../../components/Icons";
+import { ChevronLeftIcon, TrashIcon, CameraIcon, PhotoIcon } from "../../components/Icons";
 import { StarRating } from "../../components/StarRating";
 import { QuoteCard } from "../../components/QuoteCard";
 import { MemoCard } from "../../components/MemoCard";
 import { supabase } from "../../lib/supabase";
 import { BookRecordSkeleton } from "../../components/BookRecordSkeleton";
 import { ConfirmModal } from "../../components/ConfirmModal";
+import { ScanPreviewModal } from "../../components/ScanPreviewModal";
+import { performOCR } from "../../utils/ocr";
 
 export default function BookRecordScreen() {
   const router = useRouter();
@@ -57,6 +60,15 @@ export default function BookRecordScreen() {
     isDestructive: false,
     onConfirm: () => {},
   });
+
+  // OCR State
+  const [isScanModalVisible, setIsScanModalVisible] = useState(false);
+  const [scannedText, setScannedText] = useState("");
+  const [scanImageUri, setScanImageUri] = useState<string | null>(null);
+  const [scanImageBase64, setScanImageBase64] = useState<string | null>(null);
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanError, setScanError] = useState<string | null>(null);
+  const [newlyAddedQuoteIndex, setNewlyAddedQuoteIndex] = useState<number | null>(null);
 
   const showConfirmModal = (
     title: string, 
@@ -204,10 +216,14 @@ export default function BookRecordScreen() {
   // Quote Handlers
   const addQuote = () => {
     const newQuote: MemorableQuote = { quote: "", page: "", thought: "" };
-    setReview(prev => ({
-      ...prev,
-      memorable_quotes: [...(prev.memorable_quotes || []), newQuote]
-    }));
+    setReview(prev => {
+      const newQuotes = [...(prev.memorable_quotes || []), newQuote];
+      setNewlyAddedQuoteIndex(newQuotes.length - 1);
+      return {
+        ...prev,
+        memorable_quotes: newQuotes
+      };
+    });
   };
 
   const updateQuote = (index: number, field: keyof MemorableQuote, value: string) => {
@@ -265,6 +281,107 @@ export default function BookRecordScreen() {
       );
   };
 
+  // OCR Logic
+  const handlePickImage = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('권한 필요', '이미지를 선택하기 위해 갤러리 접근 권한이 필요합니다.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true, // Crop option for better OCR
+        quality: 1, // High quality for OCR
+        base64: true, // Request base64 directly
+      });
+
+      if (!result.canceled) {
+        setScanImageUri(result.assets[0].uri);
+        setScanImageBase64(result.assets[0].base64 || null);
+        setScannedText("");
+        setScanError(null);
+        setIsScanModalVisible(true);
+      }
+    } catch (e) {
+      console.error(e);
+      Alert.alert('오류', '이미지를 불러오는 중 문제가 발생했습니다.');
+    }
+  };
+
+  const handleCamera = async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('권한 필요', '사진을 촬영하기 위해 카메라 접근 권한이 필요합니다.');
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        quality: 1,
+        base64: true, // Request base64 directly
+      });
+
+      if (!result.canceled) {
+        setScanImageUri(result.assets[0].uri);
+        setScanImageBase64(result.assets[0].base64 || null);
+        setScannedText("");
+        setScanError(null);
+        setIsScanModalVisible(true);
+      }
+    } catch (e) {
+      console.error(e);
+      Alert.alert('오류', '카메라를 실행하는 중 문제가 발생했습니다.');
+    }
+  };
+
+  const handleScan = async () => {
+    if (!scanImageBase64) {
+         setScanError("이미지 데이터를 불러올 수 없습니다.");
+         return;
+    }
+
+    setIsScanning(true);
+    setScanError(null);
+
+    try {
+      const result = await performOCR(scanImageBase64);
+
+      if (result.error) {
+        throw new Error(result.error);
+      }
+
+      setScannedText(result.text);
+    } catch (e: any) {
+      console.error(e);
+      setScanError(e.message || "OCR 처리 중 알 수 없는 오류가 발생했습니다.");
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
+  const handleApplyScan = (text: string) => {
+    // Add new quote
+    const newQuote: MemorableQuote = { quote: text, page: "", thought: "" };
+    setReview(prev => {
+      const newQuotes = [...(prev.memorable_quotes || []), newQuote];
+      setNewlyAddedQuoteIndex(newQuotes.length - 1);
+      return {
+        ...prev,
+        memorable_quotes: newQuotes
+      };
+    });
+    
+    setIsScanModalVisible(false);
+    setTimeout(() => {
+      setScanImageUri(null);
+      setScanImageBase64(null);
+      setScannedText("");
+    }, 500);
+  };
+
   const statusOptions = {
     [ReadingStatus.WantToRead]: "읽고 싶은",
     [ReadingStatus.Reading]: "읽는 중",
@@ -285,6 +402,17 @@ export default function BookRecordScreen() {
         confirmText={modalConfig.confirmText}
         cancelText={modalConfig.cancelText}
         isDestructive={modalConfig.isDestructive}
+      />
+
+      <ScanPreviewModal
+        isVisible={isScanModalVisible}
+        onClose={() => setIsScanModalVisible(false)}
+        onApply={handleApplyScan}
+        scannedText={scannedText}
+        imageUri={scanImageUri}
+        onScan={handleScan}
+        isScanning={isScanning}
+        error={scanError}
       />
       
       {/* Custom Header */}
@@ -391,44 +519,64 @@ export default function BookRecordScreen() {
             </View>
 
             {/* Quotes */}
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>인상 깊은 구절</Text>
-            </View>
-            
-            <TouchableOpacity onPress={addQuote} style={styles.addButton}>
-                <Text style={styles.addButtonText}>+ 인용구 추가</Text>
-            </TouchableOpacity>
+            <View style={styles.card}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>인상 깊은 구절</Text>
+              </View>
+              
+              <View style={styles.buttonContainer}>
+                <TouchableOpacity onPress={addQuote} style={styles.addButton}>
+                    <Text style={styles.addButtonIcon}>+</Text>
+                    <Text style={styles.addButtonText}>인용구 추가</Text>
+                </TouchableOpacity>
+                
+                <View style={styles.mediaButtonRow}>
+                  <TouchableOpacity onPress={handleCamera} style={styles.mediaButton}>
+                     <CameraIcon size={20} color="#4ADE80" />
+                     <Text style={styles.mediaButtonText}>카메라</Text>
+                  </TouchableOpacity>
 
-            <View style={styles.listContainer}>
-                {review.memorable_quotes?.map((quote, idx) => (
-                    <QuoteCard 
-                        key={idx}
-                        quote={quote}
-                        onChange={(field, val) => updateQuote(idx, field, val)}
-                        onDelete={() => deleteQuote(idx)}
-                    />
-                ))}
+                  <TouchableOpacity onPress={handlePickImage} style={styles.mediaButton}>
+                     <PhotoIcon size={20} color="#4ADE80" />
+                     <Text style={styles.mediaButtonText}>갤러리</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              <View style={styles.listContainer}>
+                  {review.memorable_quotes?.map((quote, idx) => (
+                      <QuoteCard 
+                          key={idx}
+                          quote={quote}
+                          onChange={(field, val) => updateQuote(idx, field, val)}
+                          onDelete={() => deleteQuote(idx)}
+                          initialIsEditing={idx === newlyAddedQuoteIndex}
+                      />
+                  ))}
+              </View>
             </View>
 
              {/* Memos */}
-             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>메모</Text>
-            </View>
-            
-            <TouchableOpacity onPress={addMemo} style={styles.addButton}>
-                <Text style={styles.addButtonText}>+ 메모 추가</Text>
-            </TouchableOpacity>
+             <View style={styles.card}>
+               <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>메모</Text>
+              </View>
+              
+              <TouchableOpacity onPress={addMemo} style={styles.addButton}>
+                  <Text style={styles.addButtonText}>+ 메모 추가</Text>
+              </TouchableOpacity>
 
-            <View style={styles.listContainer}>
-                {review.memos?.map((memo, idx) => (
-                    <MemoCard 
-                        key={idx}
-                        memo={memo}
-                        onChange={(val) => updateMemo(idx, val)}
-                        onDelete={() => deleteMemo(idx)}
-                    />
-                ))}
-            </View>
+              <View style={styles.listContainer}>
+                  {review.memos?.map((memo, idx) => (
+                      <MemoCard 
+                          key={idx}
+                          memo={memo}
+                          onChange={(val) => updateMemo(idx, val)}
+                          onDelete={() => deleteMemo(idx)}
+                      />
+                  ))}
+              </View>
+             </View>
 
             {/* Delete Button */}
             <TouchableOpacity 
@@ -657,20 +805,47 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#1E293B',
   },
+  buttonContainer: {
+    gap: 12,
+    marginBottom: 24,
+  },
   addButton: {
-    backgroundColor: '#ECFDF5',
+    backgroundColor: '#ECFDF5', // green-50
+    padding: 16,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  addButtonIcon: {
+    color: '#4ADE80',
+    fontSize: 20,
+    fontWeight: '300',
+  },
+  addButtonText: {
+    color: '#4ADE80', // green-400
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  mediaButtonRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  mediaButton: {
+    flex: 1,
+    flexDirection: 'row',
+    backgroundColor: '#F1F5F9', // gray-100
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#D1FAE5',
-    borderStyle: 'dashed',
+    justifyContent: 'center',
+    gap: 8,
   },
-  addButtonText: {
-    color: '#10B981', // green-600
+  mediaButtonText: {
+    color: '#0F172A',
     fontWeight: 'bold',
-    fontSize: 15,
+    fontSize: 16,
   },
   listContainer: {
     marginBottom: 16,

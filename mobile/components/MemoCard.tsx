@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { TrashIcon, PencilIcon } from './Icons';
 import { Memo } from '../hooks/useBooks';
 
@@ -11,6 +11,7 @@ interface MemoCardProps {
 
 export const MemoCard: React.FC<MemoCardProps> = ({ memo, onDelete, onChange }) => {
   const [isEditing, setIsEditing] = useState(memo.text === "");
+  const [memoHeight, setMemoHeight] = useState(80);
 
   const formattedDate = useMemo(() => {
     if (!memo.createdAt) return null;
@@ -36,7 +37,12 @@ export const MemoCard: React.FC<MemoCardProps> = ({ memo, onDelete, onChange }) 
           value={memo.text}
           onChangeText={onChange}
           placeholder="메모 내용"
-          style={styles.input}
+          style={[
+            styles.input, 
+            { height: Math.max(80, memoHeight) },
+            Platform.OS === 'web' && ({ resize: 'vertical', overflow: 'hidden' } as any)
+          ]}
+          onContentSizeChange={(e) => setMemoHeight(e.nativeEvent.contentSize.height)}
           autoFocus
         />
         <View style={styles.footer}>
@@ -99,7 +105,6 @@ const styles = StyleSheet.create({
     padding: 12,
     fontSize: 14,
     color: '#1E293B',
-    minHeight: 80,
     textAlignVertical: 'top',
     marginBottom: 12,
   },
