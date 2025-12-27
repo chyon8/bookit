@@ -464,7 +464,7 @@ export default function BookRecordScreen() {
             {/* Description Card */}
             <View style={[styles.card, { backgroundColor: colors.card }]}>
               <Text style={[styles.cardTitle, { color: colors.text }]}>책 소개</Text>
-              <Text style={[styles.bookDescription, { color: colors.textMuted }]} numberOfLines={isDirty ? undefined : 3}>
+              <Text style={[styles.bookDescription, { color: colors.textMuted }]}>
                 {book.description}
               </Text>
             </View>

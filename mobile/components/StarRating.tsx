@@ -19,28 +19,32 @@ export const StarRating: React.FC<StarRatingProps> = ({ rating, setRating, size 
         const isHalf = rating === starValue - 0.5;
 
         return (
-          <TouchableOpacity
-            key={starValue}
-            // Cycle: Full -> Half -> Clear (or lower)
-            onPress={() => {
-              if (rating === starValue) {
-                setRating(starValue - 0.5);
-              } else if (rating === starValue - 0.5) {
-                setRating(starValue - 1);
-              } else {
-                setRating(starValue);
-              }
-            }}
-            style={styles.starContainer}
-          >
-            {isFull ? (
-              <StarIcon size={size} color="#FACC15" />
-            ) : isHalf ? (
-              <HalfStarIcon size={size} color="#FACC15" />
-            ) : (
-              <EmptyStarIcon size={size} color={isDark ? colors.border : "#E2E8F0"} />
-            )}
-          </TouchableOpacity>
+          <View key={starValue} style={{ position: 'relative', width: size, height: size }}>
+            {/* The actual star icon */}
+            <View style={styles.starIconWrapper}>
+              {isFull ? (
+                <StarIcon size={size} color="#FACC15" />
+              ) : isHalf ? (
+                <HalfStarIcon size={size} color="#FACC15" />
+              ) : (
+                <EmptyStarIcon size={size} color={isDark ? colors.border : "#E2E8F0"} />
+              )}
+            </View>
+
+            {/* Hidden touch areas for left/right halves */}
+            <View style={StyleSheet.absoluteFill}>
+              <View style={{ flexDirection: 'row', flex: 1 }}>
+                <TouchableOpacity
+                  style={{ flex: 1 }}
+                  onPress={() => setRating(rating === starValue - 0.5 ? starValue - 1 : starValue - 0.5)}
+                />
+                <TouchableOpacity
+                  style={{ flex: 1 }}
+                  onPress={() => setRating(rating === starValue ? starValue - 0.5 : starValue)}
+                />
+              </View>
+            </View>
+          </View>
         );
       })}
     </View>
@@ -51,9 +55,11 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 8,
   },
-  starContainer: {
-    padding: 2,
+  starIconWrapper: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
