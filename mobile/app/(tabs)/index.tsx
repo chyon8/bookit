@@ -281,9 +281,11 @@ export default function Home() {
         onConfirm: async () => {
             try {
                 await deleteBookMutation.mutateAsync(id);
+                closeConfirmModal();
                 // Badge update will happen automatically due to cache invalidation in hook
             } catch (e) {
                 Alert.alert("오류", "삭제 중 문제가 발생했습니다.");
+                closeConfirmModal();
             }
         }
     });
