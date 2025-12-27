@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useTheme } from "../../context/ThemeContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import React, { useState } from "react";
 import { 
   BookIcon, 
   BookshelfIcon, 
@@ -12,6 +13,8 @@ import {
   ListIcon,
   SparkleChatIcon
 } from "../../components/Icons";
+import { ConfirmModal } from "../../components/ConfirmModal";
+import { supabase } from "../../lib/supabase";
 
 export default function TabLayout() {
   const router = useRouter();
@@ -19,95 +22,120 @@ export default function TabLayout() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = 70 + insets.bottom;
 
+  const [isLogoutModalVisible, setLogoutModalVisible] = useState(false);
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      setLogoutModalVisible(false);
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  };
+
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: true,
-        headerStyle: [styles.header, { 
-          backgroundColor: colors.card,
-          borderBottomColor: colors.border 
-        }],
-        headerTitleAlign: 'left',
-        headerTitle: () => (
-          <TouchableOpacity 
-            style={styles.headerTitleContainer}
-            onPress={() => router.push("/(tabs)")}
-          >
-            <BookshelfIcon size={28} color={colors.primary} />
-            <Text style={[styles.headerTitle, { color: colors.text }]}>Bookit</Text>
-          </TouchableOpacity>
-        ),
-        headerRight: () => (
-          <View style={styles.headerRight}>
+    <>
+      <Tabs
+        screenOptions={{
+          headerShown: true,
+          headerStyle: [styles.header, { 
+            backgroundColor: colors.card,
+            borderBottomColor: colors.border 
+          }],
+          headerTitleAlign: 'left',
+          headerTitle: () => (
             <TouchableOpacity 
-              style={styles.iconButton}
-              onPress={toggleTheme}
+              style={styles.headerTitleContainer}
+              onPress={() => router.push("/(tabs)")}
             >
-              <Feather 
-                name={isDark ? "sun" : "moon"} 
-                size={20} 
-                color={colors.textMuted} 
-              />
+              <BookshelfIcon size={28} color={colors.primary} />
+              <Text style={[styles.headerTitle, { color: colors.text }]}>Bookit</Text>
             </TouchableOpacity>
-            <View style={[styles.avatar, { backgroundColor: isDark ? colors.border : '#E5E7EB' }]}>
-              <Text style={[styles.avatarText, { color: colors.textMuted }]}>S</Text>
+          ),
+          headerRight: () => (
+            <View style={styles.headerRight}>
+              <TouchableOpacity 
+                style={styles.iconButton}
+                onPress={toggleTheme}
+              >
+                <Feather 
+                  name={isDark ? "sun" : "moon"} 
+                  size={20} 
+                  color={colors.textMuted} 
+                />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setLogoutModalVisible(true)}>
+                <View style={[styles.avatar, { backgroundColor: isDark ? colors.border : '#E5E7EB' }]}>
+                  <Text style={[styles.avatarText, { color: colors.textMuted }]}>S</Text>
+                </View>
+              </TouchableOpacity>
             </View>
-          </View>
-        ),
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textMuted,
-        tabBarStyle: { 
-          backgroundColor: colors.card,
-          borderTopColor: colors.border,
-          height: tabBarHeight,
-          paddingBottom: insets.bottom > 0 ? insets.bottom : 12,
-          paddingTop: 12,
-          borderTopWidth: 1,
-          elevation: 20,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: -4 },
-          shadowOpacity: isDark ? 0.4 : 0.08,
-          shadowRadius: 15,
-        },
-        tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: '600',
-          marginTop: 4,
-        },
-        tabBarIconStyle: {
-          marginTop: 0,
-        }
-      }}
-    >
-      <Tabs.Screen
-        name="search"
-        options={{
-          title: "검색",
-          tabBarIcon: ({ color }) => <SearchIcon color={color} size={24} />,
+          ),
+          tabBarActiveTintColor: colors.primary,
+          tabBarInactiveTintColor: colors.textMuted,
+          tabBarStyle: { 
+            backgroundColor: colors.card,
+            borderTopColor: colors.border,
+            height: tabBarHeight,
+            paddingBottom: insets.bottom > 0 ? insets.bottom : 12,
+            paddingTop: 12,
+            borderTopWidth: 1,
+            elevation: 20,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: -4 },
+            shadowOpacity: isDark ? 0.4 : 0.08,
+            shadowRadius: 15,
+          },
+          tabBarLabelStyle: {
+            fontSize: 12,
+            fontWeight: '600',
+            marginTop: 4,
+          },
+          tabBarIconStyle: {
+            marginTop: 0,
+          }
         }}
+      >
+        <Tabs.Screen
+          name="search"
+          options={{
+            title: "검색",
+            tabBarIcon: ({ color }) => <SearchIcon color={color} size={24} />,
+          }}
+        />
+        <Tabs.Screen
+          name="index"
+          options={{
+            title: "내 책장",
+            tabBarIcon: ({ color }) => <ListIcon color={color} size={24} />,
+          }}
+        />
+        <Tabs.Screen
+          name="stats"
+          options={{
+            title: "통계",
+            tabBarIcon: ({ color }) => <ChartBarIcon color={color} size={24} />,
+          }}
+        />
+        <Tabs.Screen
+          name="chat"
+          options={{
+            title: "AI 채팅",
+            tabBarIcon: ({ color }) => <SparkleChatIcon color={color} size={24} />,
+          }}
+        />
+      </Tabs>
+
+      <ConfirmModal
+        isVisible={isLogoutModalVisible}
+        title="로그아웃"
+        message="정말 로그아웃 하시겠습니까?"
+        onConfirm={handleLogout}
+        onCancel={() => setLogoutModalVisible(false)}
+        confirmText="로그아웃"
+        isDestructive={true}
       />
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: "내 책장",
-          tabBarIcon: ({ color }) => <ListIcon color={color} size={24} />,
-        }}
-      />
-      <Tabs.Screen
-        name="stats"
-        options={{
-          title: "통계",
-          tabBarIcon: ({ color }) => <ChartBarIcon color={color} size={24} />,
-        }}
-      />
-      <Tabs.Screen
-        name="chat"
-        options={{
-          title: "AI 채팅",
-          tabBarIcon: ({ color }) => <SparkleChatIcon color={color} size={24} />,
-        }}
-      />
-    </Tabs>
+    </>
   );
 }
 
