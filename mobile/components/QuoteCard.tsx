@@ -54,13 +54,17 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({ quote, onDelete, onChange,
   }
 
   return (
-    <TouchableOpacity 
-      style={styles.card} 
-      onPress={() => setIsEditing(true)}
-      activeOpacity={0.8}
-    >
+    <View style={styles.card}>
       <View style={styles.row}>
         <Text style={styles.quoteText}>{quote.quote}</Text>
+        <View style={styles.cardActions}>
+          <TouchableOpacity onPress={() => setIsEditing(true)} style={styles.iconButton}>
+            <PencilIcon size={18} color="#64748B" />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={onDelete} style={styles.iconButton}>
+            <TrashIcon size={18} color="#EF4444" />
+          </TouchableOpacity>
+        </View>
       </View>
       {(quote.page || quote.thought) && (
         <View style={styles.metaContainer}>
@@ -68,7 +72,7 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({ quote, onDelete, onChange,
           {!!quote.thought && <Text style={styles.thoughtText}>💭 {quote.thought}</Text>}
         </View>
       )}
-    </TouchableOpacity>
+    </View>
   );
 };
 
@@ -146,5 +150,9 @@ const styles = StyleSheet.create({
   thoughtText: {
     fontSize: 13,
     color: '#334155',
+  },
+  cardActions: {
+    flexDirection: 'row',
+    gap: 12,
   },
 });

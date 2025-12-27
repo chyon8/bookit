@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { 
   View, 
   Text, 
@@ -13,21 +13,18 @@ import {
   Alert,
   ActivityIndicator
 } from "react-native";
-import { useLocalSearchParams, useRouter, Stack } from "expo-router";
+import { useLocalSearchParams, useRouter, Stack, useNavigation } from "expo-router";
 import { useBookData, useUpdateBookReview } from "../../hooks/useBookData";
 import { UserBook, ReadingStatus, MemorableQuote, Memo } from "../../hooks/useBooks";
-import { ChevronLeftIcon, PlusIcon, ChevronDownIcon } from "../../components/Icons";
+import { ChevronLeftIcon } from "../../components/Icons";
 import { StarRating } from "../../components/StarRating";
 import { QuoteCard } from "../../components/QuoteCard";
 import { MemoCard } from "../../components/MemoCard";
-import { BlurView } from "expo-blur"; 
 import { supabase } from "../../lib/supabase";
 import { BookRecordSkeleton } from "../../components/BookRecordSkeleton";
+import { ConfirmModal } from "../../components/ConfirmModal";
 
 export default function BookRecordScreen() {
-  // ... existing code ...
-  
-
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [user, setUser] = useState<any>(null);
@@ -45,9 +42,46 @@ export default function BookRecordScreen() {
   const [review, setReview] = useState<Partial<UserBook>>({});
   const [isDirty, setIsDirty] = useState(false);
   const initialReviewState = useRef<string>("");
+  const isSaving = useRef(false);
+  const navigation = useNavigation();
+
+  // Modal State
+  const [modalConfig, setModalConfig] = useState({
+    isVisible: false,
+    title: "",
+    message: "",
+    confirmText: "확인",
+    cancelText: "취소",
+    isDestructive: false,
+    onConfirm: () => {},
+  });
+
+  const showConfirmModal = (
+    title: string, 
+    message: string, 
+    onConfirm: () => void,
+    options: { confirmText?: string; cancelText?: string; isDestructive?: boolean } = {}
+  ) => {
+    setModalConfig({
+      isVisible: true,
+      title,
+      message,
+      onConfirm: () => {
+        onConfirm();
+        setModalConfig(prev => ({ ...prev, isVisible: false }));
+      },
+      confirmText: options.confirmText || "확인",
+      cancelText: options.cancelText || "취소",
+      isDestructive: options.isDestructive || false,
+    });
+  };
+
+  const closeModal = () => {
+    setModalConfig(prev => ({ ...prev, isVisible: false }));
+  };
 
   useEffect(() => {
-    if (book) {
+    if (book && !initialReviewState.current) {
       setReview(book.review);
       initialReviewState.current = JSON.stringify(book.review);
     }
@@ -60,6 +94,28 @@ export default function BookRecordScreen() {
     setIsDirty(current !== initialReviewState.current);
   }, [review]);
 
+  // Handle all back navigation (swipe, system back, etc.)
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', (e) => {
+      // If no changes or we're saving, don't show alert
+      if (!isDirty || isSaving.current) {
+        return;
+      }
+
+      // Prevent default behavior
+      e.preventDefault();
+
+      showConfirmModal(
+        "저장되지 않은 변경사항",
+        "수정 중인 내용이 저장되지 않았습니다. 정말 나가시겠습니까?",
+        () => navigation.dispatch(e.data.action),
+        { confirmText: "나가기", cancelText: "계속 수정", isDestructive: true }
+      );
+    });
+
+    return unsubscribe;
+  }, [navigation, isDirty]);
+
   if (isLoading || !book) {
     return <BookRecordSkeleton />;
   }
@@ -67,28 +123,36 @@ export default function BookRecordScreen() {
   const handleSave = async () => {
     if (!review || !book) return;
     try {
+      isSaving.current = true;
       await updateReviewMutation.mutateAsync({
         reviewId: book.review.id,
         reviewData: review,
       });
-      router.back();
+      if (router.canGoBack()) {
+        router.back();
+      } else {
+        router.replace('/');
+      }
     } catch (e) {
+      isSaving.current = false;
       Alert.alert("오류", "저장 중 문제가 발생했습니다.");
     }
   };
 
   const handleBack = () => {
-    if (isDirty) {
-      Alert.alert(
-        "저장되지 않은 변경사항",
-        "변경사항이 사라집니다. 정말 나가시겠습니까?",
-        [
-          { text: "취소", style: "cancel" },
-          { text: "나가기", style: "destructive", onPress: () => router.back() }
-        ]
-      );
+    if (isDirty && !isSaving.current) {
+      // Manual trigger fallback
+      if (router.canGoBack()) {
+        router.back(); 
+      } else {
+         router.replace('/');
+      }
     } else {
-      router.back();
+       if (router.canGoBack()) {
+        router.back();
+      } else {
+        router.replace('/');
+      }
     }
   };
 
@@ -133,11 +197,18 @@ export default function BookRecordScreen() {
   };
 
   const deleteQuote = (index: number) => {
-    setReview(prev => {
-      const quotes = [...(prev.memorable_quotes || [])];
-      quotes.splice(index, 1);
-      return { ...prev, memorable_quotes: quotes };
-    });
+    showConfirmModal(
+      "삭제 확인",
+      "정말 삭제하시겠습니까?",
+      () => {
+        setReview(prev => {
+           const quotes = [...(prev.memorable_quotes || [])];
+           quotes.splice(index, 1);
+           return { ...prev, memorable_quotes: quotes };
+        });
+      },
+      { confirmText: "삭제", isDestructive: true }
+    );
   };
 
   // Memo Handlers
@@ -158,16 +229,19 @@ export default function BookRecordScreen() {
   };
 
   const deleteMemo = (index: number) => {
-    setReview(prev => {
-      const memos = [...(prev.memos || [])];
-      memos.splice(index, 1);
-      return { ...prev, memos: memos };
-    });
+    showConfirmModal(
+        "삭제 확인",
+        "정말 삭제하시겠습니까?",
+        () => {
+          setReview(prev => {
+            const memos = [...(prev.memos || [])];
+            memos.splice(index, 1);
+            return { ...prev, memos: memos };
+          });
+        },
+        { confirmText: "삭제", isDestructive: true }
+      );
   };
-
-  if (isLoading || !book) {
-    return <BookRecordSkeleton />;
-  }
 
   const statusOptions = {
     [ReadingStatus.WantToRead]: "읽고 싶은",
@@ -180,13 +254,28 @@ export default function BookRecordScreen() {
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
       
+      <ConfirmModal
+        isVisible={modalConfig.isVisible}
+        title={modalConfig.title}
+        message={modalConfig.message}
+        onConfirm={modalConfig.onConfirm}
+        onCancel={closeModal}
+        confirmText={modalConfig.confirmText}
+        cancelText={modalConfig.cancelText}
+        isDestructive={modalConfig.isDestructive}
+      />
+      
       {/* Custom Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={handleBack} style={styles.headerButton}>
           <ChevronLeftIcon size={24} color="#1E293B" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>독서 기록</Text>
-        <TouchableOpacity onPress={handleSave} style={styles.headerButton}>
+        <TouchableOpacity 
+          onPress={handleSave} 
+          style={styles.headerButton}
+          disabled={!isDirty}
+        >
           <Text style={[styles.saveButton, !isDirty && styles.disabledSave]}>저장</Text>
         </TouchableOpacity>
       </View>
@@ -196,35 +285,34 @@ export default function BookRecordScreen() {
         style={styles.flex1}
       >
         <ScrollView contentContainerStyle={styles.scrollContent}>
-          
           {/* Top Section with Blur Background */}
-          {/* Note: React Native implementation of blur might differ. 
-              Using simple absolute view with opacity if BlurView fails. 
-              Using View for simplicty first. */}
           <View style={styles.topSection}>
             <Image 
               source={{ uri: book.coverImageUrl }} 
-              style={[StyleSheet.absoluteFill, styles.backgroundImage]} 
-              blurRadius={10} 
+              style={[styles.backgroundImage, StyleSheet.absoluteFill]} 
+              blurRadius={10}
             />
-            <View style={[StyleSheet.absoluteFill, styles.overlay]} />
-
+            <View style={[styles.overlay, StyleSheet.absoluteFill]} />
+            
             <View style={styles.bookInfoContainer}>
               <View style={styles.coverWrapper}>
-                <Image source={{ uri: book.coverImageUrl }} style={styles.coverImage} resizeMode="cover" />
+                <Image 
+                  source={{ uri: book.coverImageUrl }} 
+                  style={styles.coverImage}
+                  resizeMode="cover"
+                />
               </View>
               <Text style={styles.bookTitle}>{book.title}</Text>
               <Text style={styles.bookAuthor}>{book.author}</Text>
             </View>
           </View>
 
-          {/* White Content Area */}
           <View style={styles.contentArea}>
             
             {/* Description Card */}
             <View style={styles.card}>
               <Text style={styles.cardTitle}>책 소개</Text>
-              <Text style={styles.bookDescription} numberOfLines={isDirty ? 3 : undefined}>
+              <Text style={styles.bookDescription} numberOfLines={isDirty ? undefined : 3}>
                 {book.description}
               </Text>
             </View>

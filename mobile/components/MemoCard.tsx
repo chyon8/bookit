@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
-import { TrashIcon } from './Icons';
+import { TrashIcon, PencilIcon } from './Icons';
 import { Memo } from '../hooks/useBooks';
 
 interface MemoCardProps {
@@ -26,6 +26,7 @@ export const MemoCard: React.FC<MemoCardProps> = ({ memo, onDelete, onChange }) 
       return "날짜 오류";
     }
   }, [memo.createdAt]);
+
 
   if (isEditing) {
     return (
@@ -54,16 +55,24 @@ export const MemoCard: React.FC<MemoCardProps> = ({ memo, onDelete, onChange }) 
   }
 
   return (
-    <TouchableOpacity 
-      style={styles.card} 
-      onPress={() => setIsEditing(true)}
-      activeOpacity={0.8}
-    >
-      <Text style={styles.memoText}>{memo.text}</Text>
+    <View style={styles.card}>
+      <View style={styles.memoHeader}>
+        <View style={styles.flex1}>
+          <Text style={styles.memoText}>{memo.text}</Text>
+        </View>
+        <View style={styles.cardActions}>
+          <TouchableOpacity onPress={() => setIsEditing(true)} style={styles.iconButton}>
+            <PencilIcon size={18} color="#64748B" />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={onDelete} style={styles.iconButton}>
+            <TrashIcon size={18} color="#EF4444" />
+          </TouchableOpacity>
+        </View>
+      </View>
       {formattedDate && (
         <Text style={styles.footerDate}>{formattedDate}</Text>
       )}
-    </TouchableOpacity>
+    </View>
   );
 };
 
@@ -132,5 +141,21 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#1E293B',
     lineHeight: 22,
+  },
+  memoHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 8,
+  },
+  cardActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  iconButton: {
+    padding: 4,
+  },
+  flex1: {
+    flex: 1,
   },
 });
