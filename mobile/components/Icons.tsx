@@ -4,6 +4,14 @@ export const StarIcon = ({ className, size = 20, color = "black" }: { className?
   <FontAwesome name="star" size={size} color={color} className={className} />
 );
 
+export const HalfStarIcon = ({ className, size = 20, color = "black" }: { className?: string; size?: number; color?: string }) => (
+  <FontAwesome name="star-half-full" size={size} color={color} className={className} />
+);
+
+export const EmptyStarIcon = ({ className, size = 20, color = "black" }: { className?: string; size?: number; color?: string }) => (
+  <FontAwesome name="star-o" size={size} color={color} className={className} />
+);
+
 export const TrashIcon = ({ className, size = 20, color = "white" }: { className?: string; size?: number; color?: string }) => (
   <Feather name="trash-2" size={size} color={color} className={className} />
 );

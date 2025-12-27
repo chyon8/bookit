@@ -24,6 +24,7 @@ import {
 import { ko } from "date-fns/locale";
 import { UserBook, ReadingStatus } from "../../hooks/useBooks";
 import { ChevronLeftIcon, ChevronRightIcon, XMarkIcon } from "../Icons";
+import { RatingDisplay } from "../RatingDisplay";
 import { useRouter } from "expo-router";
 
 const { width } = Dimensions.get("window");
@@ -113,13 +114,6 @@ export default function ReadingCalendar({ books, theme }: ReadingCalendarProps) 
     handleCloseModal();
   };
 
-  const renderStars = (rating: number) => {
-    return Array.from({ length: 5 }).map((_, i) => (
-      <Text key={i} style={styles.star}>
-        {i < rating ? "★" : "☆"}
-      </Text>
-    ));
-  };
 
   const weekDays = ["일", "월", "화", "수", "목", "금", "토"];
 
@@ -258,9 +252,7 @@ export default function ReadingCalendar({ books, theme }: ReadingCalendarProps) 
                     </Text>
                     <View style={styles.ratingContainer}>
                       {book.rating && book.rating > 0 ? (
-                        <View style={styles.stars}>
-                          {renderStars(Math.round(book.rating))}
-                        </View>
+                        <RatingDisplay rating={book.rating} size={14} />
                       ) : (
                         <Text style={styles.noRating}>No rating</Text>
                       )}
