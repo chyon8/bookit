@@ -605,7 +605,7 @@ const styles = StyleSheet.create({
   },
   subTabsContainer: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
     gap: 8,

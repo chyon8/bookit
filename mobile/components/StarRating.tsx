@@ -21,8 +21,16 @@ export const StarRating: React.FC<StarRatingProps> = ({ rating, setRating, size 
         return (
           <TouchableOpacity
             key={starValue}
-            // For mobile interaction, we cycle through full stars for simplicity
-            onPress={() => setRating(rating === starValue ? 0 : starValue)}
+            // Cycle: Full -> Half -> Clear (or lower)
+            onPress={() => {
+              if (rating === starValue) {
+                setRating(starValue - 0.5);
+              } else if (rating === starValue - 0.5) {
+                setRating(starValue - 1);
+              } else {
+                setRating(starValue);
+              }
+            }}
             style={styles.starContainer}
           >
             {isFull ? (
