@@ -113,9 +113,8 @@ export function useUpdateBookReview() {
       return reviewData;
     },
     onSuccess: (_, variables) => {
-      // Invalidate and refetch
-      queryClient.invalidateQueries({ queryKey: bookKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: bookKeys.details() });
+      // Invalidate the base key to ensure consistency and real-time updates everywhere
+      queryClient.invalidateQueries({ queryKey: bookKeys.all });
     },
   });
 }
@@ -214,9 +213,9 @@ export function useAddBookToLibrary() {
 
       return { book: finalBookData, review: upsertedReview };
     },
-    onSuccess: () => {
-       queryClient.invalidateQueries({ queryKey: bookKeys.lists() });
-       queryClient.invalidateQueries({ queryKey: bookKeys.details() });
-    },
+     onSuccess: () => {
+       // Invalidate the base key to ensure the search results badge updates instantly
+       queryClient.invalidateQueries({ queryKey: bookKeys.all });
+     },
   });
 }

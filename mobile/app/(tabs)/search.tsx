@@ -185,8 +185,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     ...Platform.select({
       web: {
-        // @ts-ignore
-        outlineStyle: 'none',
+        // Remove outlineStyle as it's not a standard RN property and causes type errors
       },
     }),
   },

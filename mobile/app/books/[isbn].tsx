@@ -118,10 +118,9 @@ export default function BookPreviewScreen() {
            userId: user.id
        });
 
-       Alert.alert("성공", "내 서재에 추가되었습니다.", [
-           { text: "확인", onPress: () => router.back() }
-       ]);
-       
+       // Close window immediately after successful save
+       router.back();
+        
     } catch (e) {
         Alert.alert("오류", "저장 중 문제가 발생했습니다.");
     }
