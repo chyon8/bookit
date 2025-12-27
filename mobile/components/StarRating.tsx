@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
-import { StarIcon } from './Icons'; // Assuming you have this or will update Icons.tsx
+import { useTheme } from '../context/ThemeContext';
+import { StarIcon, HalfStarIcon, EmptyStarIcon } from './Icons';
 
 interface StarRatingProps {
   rating: number;
@@ -9,24 +10,28 @@ interface StarRatingProps {
 }
 
 export const StarRating: React.FC<StarRatingProps> = ({ rating, setRating, size = 32 }) => {
+  const { colors, isDark } = useTheme();
+
   return (
     <View style={styles.container}>
       {[1, 2, 3, 4, 5].map((starValue) => {
-        const isFilled = rating >= starValue;
+        const isFull = rating >= starValue;
         const isHalf = rating === starValue - 0.5;
 
         return (
           <TouchableOpacity
             key={starValue}
+            // For mobile interaction, we cycle through full stars for simplicity
             onPress={() => setRating(rating === starValue ? 0 : starValue)}
             style={styles.starContainer}
           >
-            <StarIcon 
-              size={size} 
-              color={isFilled || isHalf ? "#FACC15" : "#E2E8F0"} // Yellow-400 : Gray-200
-            />
-            {/* You might want a custom HalfStar icon for precision, 
-                but for now full stars are the main interaction on mobile */}
+            {isFull ? (
+              <StarIcon size={size} color="#FACC15" />
+            ) : isHalf ? (
+              <HalfStarIcon size={size} color="#FACC15" />
+            ) : (
+              <EmptyStarIcon size={size} color={isDark ? colors.border : "#E2E8F0"} />
+            )}
           </TouchableOpacity>
         );
       })}

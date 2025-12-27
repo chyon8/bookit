@@ -9,8 +9,11 @@ interface HorizontalBookCardProps {
   onDelete: (id: string, title: string) => void;
 }
 
+import { useTheme } from "../context/ThemeContext";
+
 export function HorizontalBookCard({ book, onPress, onDelete }: HorizontalBookCardProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const { colors, isDark } = useTheme();
 
   return (
     <TouchableOpacity 
@@ -25,7 +28,7 @@ export function HorizontalBookCard({ book, onPress, onDelete }: HorizontalBookCa
         onPressOut: () => setIsHovered(false),
       })}
     >
-      <View style={styles.imageContainer}>
+      <View style={[styles.imageContainer, { backgroundColor: isDark ? colors.border : '#E5E7EB' }]}>
         <Image
           source={{ uri: book.books.cover_image_url }}
           style={styles.bookImage}
@@ -33,7 +36,7 @@ export function HorizontalBookCard({ book, onPress, onDelete }: HorizontalBookCa
         />
         {isHovered && (
           <TouchableOpacity 
-            style={styles.deleteIconButtonSmall} 
+            style={[styles.deleteIconButtonSmall, { backgroundColor: isDark ? 'rgba(30, 41, 59, 0.9)' : 'rgba(255, 255, 255, 0.9)' }]} 
             onPress={(e) => {
               e.stopPropagation();
               onDelete(book.id, book.books.title);
@@ -45,8 +48,8 @@ export function HorizontalBookCard({ book, onPress, onDelete }: HorizontalBookCa
         )}
       </View>
       <View style={styles.cardTextContainer}>
-        <Text style={styles.bookTitle} numberOfLines={2}>{book.books.title}</Text>
-        <Text style={styles.bookAuthor} numberOfLines={1}>
+        <Text style={[styles.bookTitle, { color: colors.text }]} numberOfLines={2}>{book.books.title}</Text>
+        <Text style={[styles.bookAuthor, { color: colors.textMuted }]} numberOfLines={1}>
           {book.books.author?.split("(지은이")[0].trim()}
         </Text>
       </View>
@@ -89,11 +92,9 @@ const styles = StyleSheet.create({
   bookTitle: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#03314B',
     marginBottom: 4,
   },
   bookAuthor: {
     fontSize: 12,
-    color: '#475569',
   },
 });

@@ -10,6 +10,7 @@ import Animated, {
   Easing,
   cancelAnimation
 } from 'react-native-reanimated';
+import { useTheme } from '../context/ThemeContext';
 
 const Book = ({ 
   delay, 
@@ -101,6 +102,8 @@ const Book = ({
 };
 
 export const BookSearchLoading = ({ message = "책을 찾고 있어요..." }: { message?: string }) => {
+  const { colors } = useTheme();
+
   return (
     <View style={styles.container}>
       <View style={styles.loader}>
@@ -109,7 +112,7 @@ export const BookSearchLoading = ({ message = "책을 찾고 있어요..." }: { 
         <Book delay={500} color="#82c4a8" height={80} left={120} />
         <View style={styles.shelf} />
       </View>
-      <Text style={styles.text}>{message}</Text>
+      <Text style={[styles.text, { color: colors.textMuted }]}>{message}</Text>
     </View>
   );
 };
@@ -154,6 +157,5 @@ const styles = StyleSheet.create({
     marginTop: 32,
     fontSize: 18,
     fontWeight: '600',
-    color: '#6B7280', // gray-500
   },
 });

@@ -10,8 +10,11 @@ interface BookCardProps {
   showStatusBadge?: boolean;
 }
 
+import { useTheme } from "../context/ThemeContext";
+
 export function BookCard({ book, onSelect, onDelete, showStatusBadge }: BookCardProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const { colors, isDark } = useTheme();
 
   const handleSelect = () => {
     onSelect?.(book);
@@ -38,7 +41,7 @@ export function BookCard({ book, onSelect, onDelete, showStatusBadge }: BookCard
 
       return (
         <View style={styles.statusContainer}>
-          <Text style={styles.readingStatus}>{diffDays}일째 읽는중</Text>
+          <Text style={[styles.readingStatus, { color: colors.primary }]}>{diffDays}일째 읽는중</Text>
         </View>
       );
     }
@@ -46,7 +49,7 @@ export function BookCard({ book, onSelect, onDelete, showStatusBadge }: BookCard
     if (rating && rating > 0) {
       return (
         <View style={styles.statusContainer}>
-          <Text style={styles.ratingText}>{rating.toFixed(1)}</Text>
+          <Text style={[styles.ratingText, { color: colors.text }]}>{rating.toFixed(1)}</Text>
           <StarIcon size={16} color="#FACC15" />
         </View>
       );
@@ -69,7 +72,7 @@ export function BookCard({ book, onSelect, onDelete, showStatusBadge }: BookCard
       })}
     >
       {/* Image Container */}
-      <View style={styles.imageContainer}>
+      <View style={[styles.imageContainer, { backgroundColor: isDark ? colors.border : '#E5E7EB', borderColor: isDark ? colors.border : '#E5E7EB' }]}>
         {showStatusBadge && status === ReadingStatus.Dropped && (
           <View style={styles.droppedBadge}>
             <Text style={styles.droppedText}>중단</Text>
@@ -82,7 +85,7 @@ export function BookCard({ book, onSelect, onDelete, showStatusBadge }: BookCard
         />
         {isHovered && (
           <TouchableOpacity 
-            style={styles.deleteIconButton} 
+            style={[styles.deleteIconButton, { backgroundColor: isDark ? 'rgba(30, 41, 59, 0.9)' : 'rgba(255, 255, 255, 0.9)' }]} 
             onPress={handleDelete}
             activeOpacity={0.6}
           >
@@ -92,11 +95,11 @@ export function BookCard({ book, onSelect, onDelete, showStatusBadge }: BookCard
       </View>
       
       {/* Text Container */}
-      <View style={styles.textContainer}>
-        <Text style={styles.bookTitle} numberOfLines={2}>
+      <View style={[styles.textContainer, { backgroundColor: colors.background }]}>
+        <Text style={[styles.bookTitle, { color: colors.text }]} numberOfLines={2}>
           {book.books.title}
         </Text>
-        <Text style={styles.bookAuthor} numberOfLines={1}>
+        <Text style={[styles.bookAuthor, { color: colors.textMuted }]} numberOfLines={1}>
           {book.books.author?.split("(지은이")[0].trim()}
         </Text>
         {renderStatusInfo()}
@@ -139,17 +142,14 @@ const styles = StyleSheet.create({
   },
   textContainer: {
     padding: 8,
-    backgroundColor: '#FFFFFF',
   },
   bookTitle: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#03314B',
     marginBottom: 4,
   },
   bookAuthor: {
     fontSize: 12,
-    color: '#475569',
     marginBottom: 4,
   },
   statusContainer: {
@@ -165,12 +165,10 @@ const styles = StyleSheet.create({
   readingStatus: {
     fontSize: 13,
     fontWeight: 'bold',
-    color: '#4ADE80',
   },
   ratingText: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#03314B',
     marginRight: 4,
   },
   deleteIconButton: {

@@ -6,17 +6,18 @@ import {
   Dimensions,
   TouchableOpacity
 } from "react-native";
+import { useTheme } from "../../context/ThemeContext";
 import { UserBook, ReadingStatus } from "../../hooks/useBooks";
 
 const { width } = Dimensions.get("window");
 
 interface GenreChartProps {
   books: UserBook[];
-  theme: "light" | "dark";
 }
 
-export default function GenreChart({ books, theme }: GenreChartProps) {
+export default function GenreChart({ books }: GenreChartProps) {
   const [selectedBar, setSelectedBar] = useState<number | null>(null);
+  const { colors, isDark } = useTheme();
 
   const genreData = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -41,9 +42,9 @@ export default function GenreChart({ books, theme }: GenreChartProps) {
   const xAxisTicks = [0, roundedMax / 4, (roundedMax * 2) / 4, (roundedMax * 3) / 4, roundedMax];
 
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, { backgroundColor: colors.card }]}>
       <View style={styles.header}>
-        <Text style={styles.title}>완독한 책 장르</Text>
+        <Text style={[styles.title, { color: colors.text }]}>완독한 책 장르</Text>
       </View>
 
       <View style={styles.chartArea}>
@@ -59,12 +60,12 @@ export default function GenreChart({ books, theme }: GenreChartProps) {
           {/* X Axis Ticks - Only at bottom */}
           <View style={styles.xAxisTicks}>
             {xAxisTicks.map((_, i) => (
-              <View key={i} style={styles.xTickMark} />
+              <View key={i} style={[styles.xTickMark, { backgroundColor: colors.border }]} />
             ))}
           </View>
 
           {/* Axis borders - hide top */}
-          <View style={styles.axisBorders} />
+          <View style={[styles.axisBorders, { borderColor: colors.border }]} />
 
           <View style={styles.content}>
             {genreData.map((item, index) => (
@@ -76,8 +77,8 @@ export default function GenreChart({ books, theme }: GenreChartProps) {
                 ]}
               >
                 <View style={styles.labelContainer}>
-                  <Text style={styles.label} numberOfLines={1}>{item.name}</Text>
-                  <View style={styles.yTickMark} />
+                  <Text style={[styles.label, { color: colors.textMuted }]} numberOfLines={1}>{item.name}</Text>
+                  <View style={[styles.yTickMark, { backgroundColor: colors.border }]} />
                 </View>
                  <View style={styles.barTrack}>
                   <TouchableOpacity 
@@ -85,7 +86,10 @@ export default function GenreChart({ books, theme }: GenreChartProps) {
                     onPress={() => setSelectedBar(selectedBar === index ? null : index)}
                     style={[
                       styles.bar, 
-                      { width: `${(item.value / roundedMax) * 100}%` },
+                      { 
+                        width: `${(item.value / roundedMax) * 100}%`,
+                        backgroundColor: isDark ? colors.primary : '#334155'
+                      },
                       selectedBar === index && styles.activeBar
                     ]} 
                   />
@@ -94,11 +98,13 @@ export default function GenreChart({ books, theme }: GenreChartProps) {
                       styles.tooltip,
                       { 
                         left: `${(item.value / roundedMax) * 100}%`,
-                        marginLeft: -40 // Half of minWidth (80/2)
+                        marginLeft: -40, // Half of minWidth (80/2)
+                        backgroundColor: isDark ? colors.border : '#FFFFFF',
+                        shadowColor: '#000'
                       }
                     ]}>
-                      <Text style={styles.tooltipDate}>{item.name}</Text>
-                      <Text style={styles.tooltipCount}>권 : {item.value}</Text>
+                      <Text style={[styles.tooltipDate, { color: colors.text }]}>{item.name}</Text>
+                      <Text style={[styles.tooltipCount, { color: colors.text }]}>권 : {item.value}</Text>
                     </View>
                   )}
                 </View>
@@ -110,7 +116,7 @@ export default function GenreChart({ books, theme }: GenreChartProps) {
         {/* X Axis at bottom */}
         <View style={styles.xAxis}>
             {xAxisTicks.map((tick, i) => (
-              <Text key={i} style={styles.xTick}>{tick}</Text>
+              <Text key={i} style={[styles.xTick, { color: colors.textMuted }]}>{tick}</Text>
             ))}
         </View>
       </View>
@@ -120,10 +126,8 @@ export default function GenreChart({ books, theme }: GenreChartProps) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 32,
     padding: 24,
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
     shadowRadius: 12,
@@ -136,7 +140,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#1E293B',
   },
   chartArea: {
     paddingLeft: 4,
@@ -149,22 +152,22 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    left: 70, // Reducd offset to match new shorter label width
+    left: 70, 
     right: 0,
     zIndex: 0,
-    overflow: 'hidden', // Hide any potential top overflow
-    marginTop: 1, // Slight offset to avoid top border touch
+    overflow: 'hidden', 
+    marginTop: 1, 
   },
   gridLine: {
     width: 1,
-    backgroundColor: 'transparent', // Removed as requested ("very faint or removed")
+    backgroundColor: 'transparent',
     height: '100%',
   },
   xAxisTicks: {
     ...StyleSheet.absoluteFillObject,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    left: 70, // Match label width
+    left: 70, 
     right: 0,
     bottom: 0,
     height: 4, 
@@ -174,67 +177,60 @@ const styles = StyleSheet.create({
   xTickMark: {
     width: 1,
     height: 4,
-    backgroundColor: '#CBD5E1', // Softer tick color
   },
   axisBorders: {
     ...StyleSheet.absoluteFillObject,
     borderLeftWidth: 1,
     borderBottomWidth: 1,
-    borderColor: '#CBD5E1', 
-    left: 70, // Match label width
+    left: 70, 
     zIndex: 2, 
     pointerEvents: 'none',
   },
   content: {
     zIndex: 1,
     gap: 12, 
-    paddingVertical: 4, // Minimized padding
+    paddingVertical: 4, 
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 0, // No gap, controlled by padding/margin in labelContainer
+    gap: 0, 
   },
   labelContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    width: 70, // Reduced from 80 to minimize gap
+    width: 70, 
     justifyContent: 'flex-end',
-    paddingRight: 2, // Minimal space
+    paddingRight: 2, 
   },
   label: {
     fontSize: 12,
-    color: '#64748B',
     textAlign: 'right',
-    marginRight: 2, // Minimal gap
+    marginRight: 2, 
   },
   yTickMark: {
     width: 4,
     height: 1,
-    backgroundColor: '#CBD5E1', 
     position: 'absolute',
-    right: -2, // Align with axis
+    right: -2, 
   },
   barTrack: {
     flex: 1,
     height: 32,
     justifyContent: 'center',
-    paddingLeft: 0, // Removed padding to stick bar to axis
+    paddingLeft: 0, 
   },
   bar: {
-    height: 24, // Slightly thicker for better visual weight
-    backgroundColor: '#334155',
-    borderTopRightRadius: 6, // Softer rounding
+    height: 24, 
+    borderTopRightRadius: 6, 
     borderBottomRightRadius: 6,
   },
   activeBar: {
-    backgroundColor: '#1E293B',
     opacity: 0.8,
   },
   tooltip: {
     position: 'absolute',
     top: -45, 
-    backgroundColor: '#FFFFFF',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
@@ -242,33 +238,28 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     zIndex: 20,
     minWidth: 80,
-    // left is dynamic now
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 8,
     elevation: 4,
   },
-  tooltipDate: { // Reusing date style name for category
-    color: '#1E293B',
+  tooltipDate: { 
     fontSize: 12,
     fontWeight: '600',
     marginBottom: 2,
   },
   tooltipCount: {
-    color: '#1E293B',
     fontSize: 13,
     fontWeight: 'bold',
   },
   xAxis: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingLeft: 70, // Matched label width
-    marginTop: 4, // Minimal margin
+    paddingLeft: 70, 
+    marginTop: 4, 
   },
   xTick: {
     fontSize: 10,
-    color: '#94A3B8',
     width: 20,
     textAlign: 'center',
   }

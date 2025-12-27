@@ -1,16 +1,19 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { ChatBubbleIcon } from "../../components/Icons";
+import { useTheme } from "../../context/ThemeContext";
 
 export default function Chat() {
+  const { colors } = useTheme();
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.content}>
         <View style={styles.iconContainer}>
-          <ChatBubbleIcon size={48} color="#9CA3AF" />
+          <ChatBubbleIcon size={48} color={colors.textMuted} />
         </View>
-        <Text style={styles.title}>AI 채팅</Text>
-        <Text style={styles.subtitle}>
+        <Text style={[styles.title, { color: colors.text }]}>AI 채팅</Text>
+        <Text style={[styles.subtitle, { color: colors.textMuted }]}>
           AI와 함께 책에 대해 이야기해보세요
         </Text>
       </View>
@@ -21,7 +24,6 @@ export default function Chat() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
   },
   content: {
     flex: 1,
@@ -35,12 +37,10 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#03314B',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 14,
-    color: '#475569',
     textAlign: 'center',
   },
 });

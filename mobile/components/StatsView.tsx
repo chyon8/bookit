@@ -35,25 +35,30 @@ type Tab = "overview" | "habits" | "genres" | "wishlist";
 
 interface StatsViewProps {
   books: UserBook[];
-  theme: "light" | "dark";
 }
 
 // --- Components ---
 
-const StatCard = ({ title, value, description, icon }: { title: string, value: string | number, description?: string, icon?: React.ReactNode }) => (
-  <View style={styles.statCard}>
-    <View style={styles.statCardHeader}>
-      <Text style={styles.statCardTitle}>{title}</Text>
-      {icon && <View style={styles.iconContainer}>{icon}</View>}
+import { useTheme } from "../context/ThemeContext";
+
+const StatCard = ({ title, value, description, icon }: { title: string, value: string | number, description?: string, icon?: React.ReactNode }) => {
+  const { colors } = useTheme();
+  return (
+    <View style={[styles.statCard, { backgroundColor: colors.card }]}>
+      <View style={styles.statCardHeader}>
+        <Text style={[styles.statCardTitle, { color: colors.textMuted }]}>{title}</Text>
+        {icon && <View style={styles.iconContainer}>{icon}</View>}
+      </View>
+      <View style={styles.statCardContent}>
+        <Text style={[styles.statCardValue, { color: colors.text }]}>{value}</Text>
+        {description && <Text style={[styles.statCardDesc, { color: colors.textMuted }]}>{description}</Text>}
+      </View>
     </View>
-    <View style={styles.statCardContent}>
-      <Text style={styles.statCardValue}>{value}</Text>
-      {description && <Text style={styles.statCardDesc}>{description}</Text>}
-    </View>
-  </View>
-);
+  );
+};
 
 const DonutChart = ({ data }: { data: { name: string; value: number; color: string }[] }) => {
+  const { colors, isDark } = useTheme();
   const total = data.reduce((acc, curr) => acc + curr.value, 0);
   const size = 150; // Reduced from 200
   const strokeWidth = 20; // Reduced from 25
@@ -71,15 +76,15 @@ const DonutChart = ({ data }: { data: { name: string; value: number; color: stri
             {data.map((item, index) => {
               const percentage = item.value / (total || 1);
               const angle = percentage * 360;
-              
+
               const x1 = center + radius * Math.cos((currentAngle * Math.PI) / 180);
               const y1 = center + radius * Math.sin((currentAngle * Math.PI) / 180);
-              
+
               currentAngle += angle;
-              
+
               const x2 = center + radius * Math.cos((currentAngle * Math.PI) / 180);
               const y2 = center + radius * Math.sin((currentAngle * Math.PI) / 180);
-              
+
               const largeArcFlag = percentage > 0.5 ? 1 : 0;
               const d = `M ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2}`;
 
@@ -112,16 +117,17 @@ const DonutChart = ({ data }: { data: { name: string; value: number; color: stri
             })}
           </G>
         </Svg>
-        <View style={styles.donutCenterLabel}>
-            <Text style={styles.donutCenterValue}>{total}권</Text>
+        <View style={styles.donutCenter}>
+          <Text style={[styles.donutTotal, { color: colors.text }]}>{total}</Text>
+          <Text style={[styles.donutLabel, { color: colors.textMuted }]}>전체 도서</Text>
         </View>
       </View>
 
-      <View style={styles.legendContainer}>
+      <View style={styles.legend}>
         {data.map((item, index) => (
           <View key={index} style={styles.legendItem}>
-            <View style={[styles.legendColor, { backgroundColor: item.color }]} />
-            <Text style={styles.legendLabel}>{item.name}</Text>
+            <View style={[styles.legendDot, { backgroundColor: item.color }]} />
+            <Text style={[styles.legendText, { color: colors.text }]}>{item.name}</Text>
           </View>
         ))}
       </View>
@@ -131,8 +137,9 @@ const DonutChart = ({ data }: { data: { name: string; value: number; color: stri
 
 // --- Main Component ---
 
-export default function StatsView({ books, theme }: StatsViewProps) {
+export default function StatsView({ books }: StatsViewProps) {
   const [activeTab, setActiveTab] = useState<Tab>("overview");
+  const { colors, isDark } = useTheme();
 
   const processedStats = useMemo(() => {
     const stats = {
@@ -191,16 +198,24 @@ export default function StatsView({ books, theme }: StatsViewProps) {
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
         setActiveTab(tab);
       }}
-      style={[styles.tabButton, activeTab === tab && styles.activeTabButton]}
+      style={[
+        styles.tabButton, 
+        { backgroundColor: isDark ? colors.border : '#F1F5F9' },
+        activeTab === tab && { backgroundColor: isDark ? colors.primary : '#1E293B' }
+      ]}
     >
-        <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>{label}</Text>
+        <Text style={[
+          styles.tabText, 
+          { color: colors.textMuted },
+          activeTab === tab && { color: isDark ? '#000000' : '#FFFFFF' }
+        ]}>{label}</Text>
     </TouchableOpacity>
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Tab Navigation */}
-      <View style={styles.tabContainerWrapper}>
+      <View style={[styles.tabContainerWrapper, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabContainer} contentContainerStyle={styles.tabContentContainer}>
               {renderTabButton("overview", "개요")}
               {renderTabButton("habits", "독서 습관")}
@@ -216,14 +231,14 @@ export default function StatsView({ books, theme }: StatsViewProps) {
         {activeTab === "overview" && (
             <View style={styles.section}>
                 <View style={styles.grid}>
-                    <StatCard title="총 보유" value={processedStats.totalBooks} icon={<BookIcon size={20} color="#64748B"/>} />
-                    <StatCard title="완독" value={processedStats.totalFinished} icon={<BookOpenIcon size={20} color="#64748B"/>} />
-                    <StatCard title="평균 별점" value={processedStats.avgRating} icon={<StarIcon size={20} color="#64748B"/>} />
-                    <StatCard title="이번 달" value={processedStats.finishedThisMonth} description={`${processedStats.currentlyReading}권 읽는 중`} icon={<ChartBarIcon size={20} color="#64748B"/>} />
+                    <StatCard title="총 보유" value={processedStats.totalBooks} icon={<BookIcon size={20} color={colors.textMuted}/>} />
+                    <StatCard title="완독" value={processedStats.totalFinished} icon={<BookOpenIcon size={20} color={colors.textMuted}/>} />
+                    <StatCard title="평균 별점" value={processedStats.avgRating} icon={<StarIcon size={20} color={colors.textMuted}/>} />
+                    <StatCard title="이번 달" value={processedStats.finishedThisMonth} description={`${processedStats.currentlyReading}권 읽는 중`} icon={<ChartBarIcon size={20} color={colors.textMuted}/>} />
                 </View>
 
-                <View style={styles.simpleCard}>
-                    <Text style={styles.cardTitle}>내 서재 현황</Text>
+                <View style={[styles.simpleCard, { backgroundColor: colors.card }]}>
+                    <Text style={[styles.cardTitle, { color: colors.text }]}>내 서재 현황</Text>
                      <DonutChart 
                         data={processedStats.readingStatusData.map(d => ({
                             name: d.name === "Reading" ? "읽는 중" : 
@@ -231,10 +246,10 @@ export default function StatsView({ books, theme }: StatsViewProps) {
                                   d.name === "Want to Read" ? "읽고 싶은" : 
                                   d.name === "Dropped" ? "중단" : d.name,
                             value: d.value,
-                            color: d.name === "Finished" ? "#334155" :
-                                   d.name === "Want to Read" ? "#94A3B8" :
+                            color: d.name === "Finished" ? (isDark ? "#4ADE80" : "#334155") :
+                                   d.name === "Want to Read" ? (isDark ? "#94A3B8" : "#94A3B8") :
                                    d.name === "Reading" ? "#22C55E" :
-                                   d.name === "Dropped" ? "#CBD5E1" : "#E2E8F0"
+                                   d.name === "Dropped" ? (isDark ? "#334155" : "#CBD5E1") : colors.border
                         }))} 
                     />
                 </View>
@@ -243,40 +258,37 @@ export default function StatsView({ books, theme }: StatsViewProps) {
 
         {activeTab === "habits" && (
             <View style={styles.section}>
-                <ReadingCalendar books={books} theme={theme} />
-                <MonthlyCompletionChart books={books} theme={theme} />
-                <StarDistributionChart books={books} theme={theme} />
+                <ReadingCalendar books={books} />
+                <MonthlyCompletionChart books={books} />
+                <StarDistributionChart books={books} />
             </View>
         )}
 
         {activeTab === "genres" && (
              <View style={styles.section}>
-                <GenreChart books={books} theme={theme} />
-                <TopAuthorsList books={books} theme={theme} />
+                <GenreChart books={books} />
+                <TopAuthorsList books={books} />
             </View>
         )}
         
         {activeTab === "wishlist" && (
              <View style={styles.section}>
-                <WishlistGenreChart books={books} theme={theme} />
-                <WishlistAuthorChart books={books} theme={theme} />
+                <WishlistGenreChart books={books} />
+                <WishlistAuthorChart books={books} />
             </View>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
   },
   tabContainerWrapper: {
-    backgroundColor: '#FFFFFF',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
   },
   tabContainer: {
     paddingHorizontal: 16,
@@ -288,18 +300,10 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 20,
-    backgroundColor: '#F1F5F9',
     marginRight: 8,
   },
-  activeTabButton: {
-    backgroundColor: '#1E293B',
-  },
   tabText: {
-    color: '#64748B',
     fontWeight: '600',
-  },
-  activeTabText: {
-    color: '#FFFFFF',
   },
   scrollContentContainer: {
     padding: 16,
@@ -315,7 +319,6 @@ const styles = StyleSheet.create({
   },
   statCard: {
     width: (width - 32 - 12) / 2,
-    backgroundColor: '#FFFFFF',
     borderRadius: 20,
     padding: 12,
     shadowColor: '#0F172A',
@@ -323,7 +326,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.04,
     shadowRadius: 12,
     elevation: 3,
-    minHeight: 90, // Reduced from 110
+    minHeight: 90,
     justifyContent: 'center',
     gap: 2,
   },
@@ -334,7 +337,6 @@ const styles = StyleSheet.create({
   },
   statCardTitle: {
     fontSize: 13,
-    color: '#64748B',
     fontWeight: '600',
     textAlign: 'center',
   },
@@ -343,27 +345,24 @@ const styles = StyleSheet.create({
     right: 0,
     top: 0,
     opacity: 0.08,
-    transform: [{ scale: 1.8 }], // Reduced from 2.2
+    transform: [{ scale: 1.8 }],
   },
   statCardContent: {
     alignItems: 'center',
     paddingTop: 0,
   },
   statCardValue: {
-    fontSize: 28, // Reduced from 36
+    fontSize: 28,
     fontWeight: '800',
-    color: '#1E293B',
     letterSpacing: -0.5,
   },
   statCardDesc: {
-    fontSize: 12, // Reduced from 13
-    color: '#94A3B8',
+    fontSize: 12,
     marginTop: 2,
     fontWeight: '500',
   },
   simpleCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 32, // Matches new components
+    borderRadius: 32,
     padding: 24,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -375,14 +374,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 16,
-    color: '#1E293B',
-  },
-  centerPlaceholder: {
-    alignItems: 'center',
-    padding: 100,
-  },
-  placeholderText: {
-    color: '#94A3B8',
   },
   donutContainer: {
     flexDirection: 'row',
@@ -396,18 +387,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  donutCenterLabel: {
+  donutCenter: {
     position: 'absolute',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  donutCenterValue: {
-    fontSize: 24, // Reduced from 32
+  donutTotal: {
+    fontSize: 24,
     fontWeight: '800',
-    color: '#1E293B',
     marginBottom: 0,
   },
-  legendContainer: {
+  donutLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  legend: {
     marginLeft: 16,
     gap: 10,
   },
@@ -416,14 +410,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  legendColor: {
-    width: 12, // Reduced from 14
+  legendDot: {
+    width: 12,
     height: 12,
     borderRadius: 3,
   },
-  legendLabel: {
-    fontSize: 14, // Reduced from 16
+  legendText: {
+    fontSize: 14,
     fontWeight: '600',
-    color: '#64748B',
+  },
+  legendValue: {
+    fontSize: 12,
+    fontWeight: '500',
   },
 });

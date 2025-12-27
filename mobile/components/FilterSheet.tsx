@@ -30,7 +30,10 @@ interface FilterSheetProps {
   genres: string[]; // Pass available genres
 }
 
+import { useTheme } from "../context/ThemeContext";
+
 export const FilterSheet = ({ visible, onClose, onApply, initialFilters, genres }: FilterSheetProps) => {
+  const { colors, isDark } = useTheme();
   const [sort, setSort] = useState<SortOption>(initialFilters.sort);
   const [reread, setReread] = useState<boolean | null>(initialFilters.reread);
   const [month, setMonth] = useState<string | null>(initialFilters.month);
@@ -53,12 +56,12 @@ export const FilterSheet = ({ visible, onClose, onApply, initialFilters, genres 
   return (
     <Modal visible={visible} animationType="slide" transparent>
       <View style={styles.overlay}>
-        <View style={styles.sheet}>
+        <View style={[styles.sheet, { backgroundColor: colors.card }]}>
             
-            <View style={styles.header}>
-                <Text style={styles.title}>필터 및 정렬</Text>
+            <View style={[styles.header, { borderBottomColor: colors.border }]}>
+                <Text style={[styles.title, { color: colors.text }]}>필터 및 정렬</Text>
                 <TouchableOpacity onPress={onClose}>
-                    <XMarkIcon size={24} color="#64748B" />
+                    <XMarkIcon size={24} color={colors.textMuted} />
                 </TouchableOpacity>
             </View>
             
@@ -66,7 +69,7 @@ export const FilterSheet = ({ visible, onClose, onApply, initialFilters, genres 
                 
                 {/* Sort Section */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>정렬 기준</Text>
+                    <Text style={[styles.sectionTitle, { color: colors.text }]}>정렬 기준</Text>
                     <View style={styles.chipContainer}>
                         {[
                             { id: "date_desc", label: "최신순" },
@@ -78,42 +81,66 @@ export const FilterSheet = ({ visible, onClose, onApply, initialFilters, genres 
                             <TouchableOpacity
                                 key={opt.id}
                                 onPress={() => setSort(opt.id as SortOption)}
-                                style={[styles.chip, sort === opt.id && styles.activeChip]}
+                                style={[
+                                  styles.chip, 
+                                  { backgroundColor: isDark ? colors.border : '#F1F5F9' },
+                                  sort === opt.id && { backgroundColor: isDark ? '#064E3B' : '#ECFDF5', borderColor: colors.primary }
+                                ]}
                             >
-                                <Text style={[styles.chipText, sort === opt.id && styles.activeChipText]}>{opt.label}</Text>
+                                <Text style={[
+                                  styles.chipText, 
+                                  { color: colors.textMuted },
+                                  sort === opt.id && { color: isDark ? colors.primary : '#15803D', fontWeight: '600' }
+                                ]}>{opt.label}</Text>
                             </TouchableOpacity>
                         ))}
                     </View>
                 </View>
 
-                <View style={styles.divider} />
+                <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
                 {/* Reread Section */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>N회차 읽기 상태</Text>
+                    <Text style={[styles.sectionTitle, { color: colors.text }]}>N회차 읽기 상태</Text>
                     <View style={styles.chipContainer}>
                         <TouchableOpacity
                             onPress={() => setReread(reread === true ? null : true)}
-                            style={[styles.chip, reread === true && styles.activeChip]}
+                            style={[
+                              styles.chip, 
+                              { backgroundColor: isDark ? colors.border : '#F1F5F9' },
+                              reread === true && { backgroundColor: isDark ? '#064E3B' : '#ECFDF5', borderColor: colors.primary }
+                            ]}
                         >
-                            <Text style={[styles.chipText, reread === true && styles.activeChipText]}>N회차 읽기만</Text>
+                            <Text style={[
+                              styles.chipText, 
+                              { color: colors.textMuted },
+                              reread === true && { color: isDark ? colors.primary : '#15803D', fontWeight: '600' }
+                            ]}>N회차 읽기만</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
                 
-                 <View style={styles.divider} />
+                 <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
                 {/* Month Section */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>월별 보기</Text>
+                    <Text style={[styles.sectionTitle, { color: colors.text }]}>월별 보기</Text>
                      <View style={styles.chipContainer}>
                         {months.map((m, i) => (
                              <TouchableOpacity
                                 key={m}
                                 onPress={() => setMonth(month === String(i+1) ? null : String(i+1))}
-                                style={[styles.chip, month === String(i+1) && styles.activeChip]}
+                                style={[
+                                  styles.chip, 
+                                  { backgroundColor: isDark ? colors.border : '#F1F5F9' },
+                                  month === String(i+1) && { backgroundColor: isDark ? '#064E3B' : '#ECFDF5', borderColor: colors.primary }
+                                ]}
                             >
-                                <Text style={[styles.chipText, month === String(i+1) && styles.activeChipText]}>{m}</Text>
+                                <Text style={[
+                                  styles.chipText, 
+                                  { color: colors.textMuted },
+                                  month === String(i+1) && { color: isDark ? colors.primary : '#15803D', fontWeight: '600' }
+                                ]}>{m}</Text>
                             </TouchableOpacity>
                         ))}
                      </View>
@@ -122,17 +149,25 @@ export const FilterSheet = ({ visible, onClose, onApply, initialFilters, genres 
                 {/* Genre Section - Optional, if available */}
                 {genres.length > 0 && (
                     <>
-                        <View style={styles.divider} />
+                        <View style={[styles.divider, { backgroundColor: colors.border }]} />
                         <View style={styles.section}>
-                            <Text style={styles.sectionTitle}>장르</Text>
+                            <Text style={[styles.sectionTitle, { color: colors.text }]}>장르</Text>
                             <View style={styles.chipContainer}>
                                 {genres.map((g) => (
                                     <TouchableOpacity
                                         key={g}
                                         onPress={() => setGenre(genre === g ? null : g)}
-                                        style={[styles.chip, genre === g && styles.activeChip]}
+                                        style={[
+                                          styles.chip, 
+                                          { backgroundColor: isDark ? colors.border : '#F1F5F9' },
+                                          genre === g && { backgroundColor: isDark ? '#064E3B' : '#ECFDF5', borderColor: colors.primary }
+                                        ]}
                                     >
-                                        <Text style={[styles.chipText, genre === g && styles.activeChipText]}>{g}</Text>
+                                        <Text style={[
+                                          styles.chipText, 
+                                          { color: colors.textMuted },
+                                          genre === g && { color: isDark ? colors.primary : '#15803D', fontWeight: '600' }
+                                        ]}>{g}</Text>
                                     </TouchableOpacity>
                                 ))}
                             </View>
@@ -142,12 +177,12 @@ export const FilterSheet = ({ visible, onClose, onApply, initialFilters, genres 
 
             </ScrollView>
 
-            <View style={styles.footer}>
-                 <TouchableOpacity onPress={handleReset} style={styles.resetButton}>
-                    <Text style={styles.resetText}>초기화</Text>
+            <View style={[styles.footer, { borderTopColor: colors.border }]}>
+                 <TouchableOpacity onPress={handleReset} style={[styles.resetButton, { backgroundColor: isDark ? colors.border : '#F1F5F9' }]}>
+                    <Text style={[styles.resetText, { color: colors.textMuted }]}>초기화</Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={handleApply} style={styles.applyButton}>
-                    <Text style={styles.applyText}>적용하기</Text>
+                <TouchableOpacity onPress={handleApply} style={[styles.applyButton, { backgroundColor: colors.text }]}>
+                    <Text style={[styles.applyText, { color: colors.card }]}>적용하기</Text>
                 </TouchableOpacity>
             </View>
 
@@ -164,7 +199,6 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   sheet: {
-    backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     height: '80%',
@@ -177,12 +211,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
   },
   title: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#0F172A',
   },
   content: {
     flex: 1,
@@ -193,7 +225,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#334155',
     marginBottom: 12,
   },
   chipContainer: {
@@ -205,56 +236,44 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#F1F5F9',
     borderWidth: 1,
     borderColor: 'transparent',
   },
   activeChip: {
-    backgroundColor: '#ECFDF5',
-    borderColor: '#4ADE80',
   },
   chipText: {
     fontSize: 14,
-    color: '#64748B',
   },
   activeChipText: {
-    color: '#15803D',
-    fontWeight: '600',
   },
   divider: {
     height: 1,
-    backgroundColor: '#F1F5F9',
   },
   footer: {
     flexDirection: 'row',
     padding: 20,
     gap: 12,
     borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
-    paddingBottom: 40, // Safe area
+    paddingBottom: 40,
   },
   resetButton: {
     flex: 1,
     paddingVertical: 14,
     borderRadius: 12,
-    backgroundColor: '#F1F5F9',
     alignItems: 'center',
   },
   resetText: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#64748B',
   },
   applyButton: {
     flex: 2,
     paddingVertical: 14,
     borderRadius: 12,
-    backgroundColor: '#0F172A',
     alignItems: 'center',
   },
   applyText: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#FFFFFF',
   }
 });

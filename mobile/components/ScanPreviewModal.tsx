@@ -13,6 +13,7 @@ import {
   ActivityIndicator,
   SafeAreaView
 } from 'react-native';
+import { useTheme } from '../context/ThemeContext';
 import { XMarkIcon } from './Icons';
 
 interface ScanPreviewModalProps {
@@ -37,6 +38,7 @@ export function ScanPreviewModal({
   error
 }: ScanPreviewModalProps) {
   const [text, setText] = React.useState(scannedText);
+  const { colors, isDark } = useTheme();
 
   React.useEffect(() => {
     setText(scannedText);
@@ -49,13 +51,13 @@ export function ScanPreviewModal({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>
             {text ? "텍스트 확인 및 수정" : "이미지 확인"}
           </Text>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <XMarkIcon size={24} color="#64748B" />
+            <XMarkIcon size={24} color={colors.textMuted} />
           </TouchableOpacity>
         </View>
 
@@ -66,7 +68,7 @@ export function ScanPreviewModal({
           <ScrollView contentContainerStyle={styles.scrollContent}>
             {/* Image Preview */}
             {imageUri && (
-              <View style={styles.imageContainer}>
+              <View style={[styles.imageContainer, { backgroundColor: isDark ? colors.border : '#F1F5F9', borderColor: colors.border }]}>
                 <Image
                   source={{ uri: imageUri }}
                   style={styles.image}
@@ -77,7 +79,7 @@ export function ScanPreviewModal({
 
             {/* Error Message */}
             {error && (
-              <View style={styles.errorContainer}>
+              <View style={[styles.errorContainer, { backgroundColor: isDark ? '#451a1a' : '#FEF2F2', borderColor: isDark ? '#7f1d1d' : '#FECACA' }]}>
                 <Text style={styles.errorText}>{error}</Text>
               </View>
             )}
@@ -85,27 +87,28 @@ export function ScanPreviewModal({
             {/* Text Area or Scan Button */}
             {text ? (
               <View style={styles.textContainer}>
-                <Text style={styles.helperText}>
+                <Text style={[styles.helperText, { color: colors.textMuted }]}>
                   필요한 부분을 선택하거나 수정하세요.
                 </Text>
                 <TextInput
                   value={text}
                   onChangeText={setText}
                   multiline
-                  style={styles.textArea}
+                  style={[styles.textArea, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
                   textAlignVertical="top"
                   placeholder="텍스트가 여기에 표시됩니다."
+                  placeholderTextColor={colors.textMuted}
                 />
               </View>
             ) : (
               <View style={styles.actionContainer}>
-                <Text style={styles.actionText}>
+                <Text style={[styles.actionText, { color: colors.textMuted }]}>
                   위 이미지에서 텍스트를 추출하시겠습니까?
                 </Text>
                 <TouchableOpacity
                   onPress={onScan}
                   disabled={isScanning}
-                  style={[styles.scanButton, isScanning && styles.disabledButton]}
+                  style={[styles.scanButton, isScanning && styles.disabledButton, { backgroundColor: colors.primary, shadowColor: colors.primary }]}
                 >
                   {isScanning ? (
                     <ActivityIndicator color="white" />
@@ -118,14 +121,14 @@ export function ScanPreviewModal({
           </ScrollView>
 
           {/* Footer Actions */}
-          <View style={styles.footer}>
-            <TouchableOpacity onPress={onClose} style={styles.cancelButton}>
-              <Text style={styles.cancelButtonText}>취소</Text>
+          <View style={[styles.footer, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
+            <TouchableOpacity onPress={onClose} style={[styles.cancelButton, { backgroundColor: isDark ? colors.border : '#F1F5F9' }]}>
+              <Text style={[styles.cancelButtonText, { color: colors.textMuted }]}>취소</Text>
             </TouchableOpacity>
             {text ? (
               <TouchableOpacity
                 onPress={() => onApply(text)}
-                style={styles.applyButton}
+                style={[styles.applyButton, { backgroundColor: colors.primary }]}
               >
                 <Text style={styles.applyButtonText}>인용구에 적용</Text>
               </TouchableOpacity>
@@ -140,7 +143,6 @@ export function ScanPreviewModal({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
   },
   header: {
     flexDirection: 'row',
@@ -149,13 +151,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
-    backgroundColor: '#FFFFFF',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#1E293B',
   },
   closeButton: {
     padding: 4,
@@ -168,13 +167,11 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   imageContainer: {
-    backgroundColor: '#F1F5F9',
     borderRadius: 12,
     overflow: 'hidden',
     height: 300,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
   },
   image: {
     width: '100%',
@@ -185,18 +182,14 @@ const styles = StyleSheet.create({
   },
   helperText: {
     fontSize: 14,
-    color: '#64748B',
     marginBottom: 8,
   },
   textArea: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
-    color: '#1E293B',
     minHeight: 200,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
     lineHeight: 24,
   },
   actionContainer: {
@@ -205,17 +198,14 @@ const styles = StyleSheet.create({
   },
   actionText: {
     fontSize: 16,
-    color: '#475569',
     marginBottom: 16,
   },
   scanButton: {
-    backgroundColor: '#4ADE80',
     paddingVertical: 16,
     paddingHorizontal: 32,
     borderRadius: 12,
     width: '100%',
     alignItems: 'center',
-    shadowColor: '#4ADE80',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
@@ -232,12 +222,10 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   errorContainer: {
-    backgroundColor: '#FEF2F2',
     padding: 12,
     borderRadius: 8,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#FECACA',
   },
   errorText: {
     color: '#EF4444',
@@ -246,28 +234,23 @@ const styles = StyleSheet.create({
   footer: {
     flexDirection: 'row',
     padding: 16,
-    backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
     gap: 12,
   },
   cancelButton: {
     flex: 1,
     paddingVertical: 14,
     borderRadius: 12,
-    backgroundColor: '#F1F5F9',
     alignItems: 'center',
   },
   cancelButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#475569',
   },
   applyButton: {
     flex: 2,
     paddingVertical: 14,
     borderRadius: 12,
-    backgroundColor: '#4ADE80',
     alignItems: 'center',
   },
   applyButtonText: {

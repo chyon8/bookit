@@ -11,6 +11,7 @@ import {
   Alert,
   Platform
 } from "react-native";
+import { useTheme } from "../../context/ThemeContext";
 import { useLocalSearchParams, useRouter, Stack } from "expo-router";
 import { ChevronLeftIcon } from "../../components/Icons";
 import { useAddBookToLibrary } from "../../hooks/useBookData";
@@ -25,6 +26,7 @@ export default function BookPreviewScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [existingBookId, setExistingBookId] = useState<string | null>(null);
   const [user, setUser] = useState<any>(null);
+  const { colors, isDark } = useTheme();
   
   const addBookMutation = useAddBookToLibrary();
 
@@ -144,13 +146,13 @@ export default function BookPreviewScreen() {
 
   if (isLoading || !book) {
       return (
-          <View style={styles.container}>
+          <View style={[styles.container, { backgroundColor: colors.background }]}>
              <Stack.Screen options={{ headerShown: false }} />
              
              {/* Background Skeleton */}
              <View style={styles.backgroundContainer}>
-                 <View style={[styles.backgroundImage, { backgroundColor: '#334155' }]} />
-                 <View style={styles.backgroundOverlay} />
+                 <View style={[styles.backgroundImage, { backgroundColor: isDark ? colors.background : '#334155' }]} />
+                 <View style={[styles.backgroundOverlay, { backgroundColor: isDark ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.3)' }]} />
              </View>
 
              <SafeAreaView style={styles.safeArea}>
@@ -165,22 +167,24 @@ export default function BookPreviewScreen() {
                      {/* Hero Section Skeleton */}
                      <View style={styles.heroSection}>
                          <View style={styles.coverShadow}>
-                           <View style={[styles.coverImage, { backgroundColor: '#475569' }]} />
+                           <View style={[styles.coverImage, { backgroundColor: colors.border }]} />
                          </View>
-                         <View style={{ width: '80%', height: 24, backgroundColor: '#475569', borderRadius: 4, marginBottom: 8 }} />
-                         <View style={{ width: '60%', height: 18, backgroundColor: '#475569', borderRadius: 4 }} />
+                         <View style={{ width: '80%', height: 24, backgroundColor: colors.border, borderRadius: 4, marginBottom: 8 }} />
+                         <View style={{ width: '60%', height: 18, backgroundColor: colors.border, borderRadius: 4 }} />
                      </View>
 
                      {/* Card Skeleton */}
-                     <View style={styles.cardContainer}>
+                     <View style={[styles.cardContainer, { backgroundColor: colors.card }]}>
                          <View style={styles.cardContent}>
-                             <View style={{ width: 80, height: 14, backgroundColor: '#E2E8F0', borderRadius: 4, marginBottom: 8 }} />
-                             <View style={{ width: 120, height: 20, backgroundColor: '#E2E8F0', borderRadius: 4, marginBottom: 24 }} />
+                             <View style={{ width: 80, height: 14, backgroundColor: colors.border, borderRadius: 4, marginBottom: 8 }} />
+                             <View style={{ width: 120, height: 20, backgroundColor: colors.border, borderRadius: 4, marginBottom: 24 }} />
                              
-                             <View style={styles.divider} />
+                             <View style={[styles.divider, { backgroundColor: colors.border }]} />
                              
-                             <View style={{ width: 80, height: 14, backgroundColor: '#E2E8F0', borderRadius: 4, marginBottom: 8 }} />
-                             <View style={{ width: '100%', height: 60, backgroundColor: '#E2E8F0', borderRadius: 4 }} />
+                             <View style={{ width: 60, height: 14, backgroundColor: colors.border, borderRadius: 4, marginBottom: 8 }} />
+                             <View style={{ width: '100%', height: 16, backgroundColor: colors.border, borderRadius: 4, marginBottom: 6 }} />
+                             <View style={{ width: '100%', height: 16, backgroundColor: colors.border, borderRadius: 4, marginBottom: 6 }} />
+                             <View style={{ width: '80%', height: 16, backgroundColor: colors.border, borderRadius: 4 }} />
                          </View>
                      </View>
                  </ScrollView>
@@ -190,7 +194,7 @@ export default function BookPreviewScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Stack.Screen options={{ headerShown: false }} />
       
       {/* Background Image with Blur */}
@@ -200,7 +204,7 @@ export default function BookPreviewScreen() {
             style={styles.backgroundImage} 
             blurRadius={20}
           />
-          <View style={styles.backgroundOverlay} />
+          <View style={[styles.backgroundOverlay, { backgroundColor: isDark ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.3)' }]} />
       </View>
 
       <SafeAreaView style={styles.safeArea}>
@@ -226,31 +230,31 @@ export default function BookPreviewScreen() {
               </View>
 
               {/* White Card Section */}
-              <View style={styles.cardContainer}>
+              <View style={[styles.cardContainer, { backgroundColor: colors.card }]}>
                   <View style={styles.cardContent}>
-                      <Text style={styles.label}>카테고리</Text>
-                      <Text style={styles.valueText}>{book.category}</Text>
+                      <Text style={[styles.label, { color: colors.textMuted }]}>카테고리</Text>
+                      <Text style={[styles.valueText, { color: colors.text }]}>{book.category}</Text>
 
-                      <View style={styles.divider} />
+                      <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
                       {book.description && (
                           <>
-                           <Text style={styles.label}>책 소개</Text>
-                           <Text style={styles.description}>{book.description}</Text>
-                           <View style={styles.divider} />
+                           <Text style={[styles.label, { color: colors.textMuted }]}>책 소개</Text>
+                           <Text style={[styles.description, { color: colors.text }]}>{book.description}</Text>
+                           <View style={[styles.divider, { backgroundColor: colors.border }]} />
                           </>
                       )}
 
                       <View style={styles.row}>
-                          <Text style={styles.label}>ISBN</Text>
-                          <Text style={styles.isbnText}>{book.isbn13}</Text>
+                          <Text style={[styles.label, { color: colors.textMuted }]}>ISBN</Text>
+                          <Text style={[styles.isbnText, { color: colors.textMuted }]}>{book.isbn13}</Text>
                       </View>
                   </View>
               </View>
           </ScrollView>
 
           {/* Bottom Button */}
-          <View style={styles.footer}>
+          <View style={[styles.footer, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
               {existingBookId ? (
                    <TouchableOpacity style={styles.actionButton} onPress={handleGoToRecord}>
                       <Text style={styles.actionButtonText}>기록 보러가기</Text>
@@ -275,7 +279,6 @@ export default function BookPreviewScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000',
   },
   backgroundContainer: {
       ...StyleSheet.absoluteFillObject,
@@ -286,7 +289,6 @@ const styles = StyleSheet.create({
   },
   backgroundOverlay: {
       ...StyleSheet.absoluteFillObject,
-      backgroundColor: 'rgba(0,0,0,0.3)',
   },
   safeArea: {
       flex: 1,
@@ -342,7 +344,6 @@ const styles = StyleSheet.create({
       textAlign: 'center',
   },
   cardContainer: {
-      backgroundColor: '#FFFFFF',
       borderTopLeftRadius: 24,
       borderTopRightRadius: 24,
       paddingTop: 32,
@@ -356,23 +357,19 @@ const styles = StyleSheet.create({
   label: {
       fontSize: 14,
       fontWeight: 'bold',
-      color: '#94A3B8',
       marginBottom: 8,
   },
   valueText: {
       fontSize: 18,
       fontWeight: "semibold",
-      color: '#0F172A',
       marginBottom: 0,
   },
   description: {
       fontSize: 16,
-      color: '#334155',
       lineHeight: 26,
   },
   divider: {
       height: 1,
-      backgroundColor: '#E2E8F0',
       marginVertical: 24,
   },
   row: {
@@ -382,7 +379,6 @@ const styles = StyleSheet.create({
   },
   isbnText: {
       fontSize: 16,
-      color: '#475569',
       fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
       fontWeight: '500',
   },
@@ -391,11 +387,9 @@ const styles = StyleSheet.create({
       bottom: 0,
       left: 0,
       right: 0,
-      backgroundColor: '#FFFFFF',
       padding: 16,
       paddingBottom: 32, // For safe area
       borderTopWidth: 1,
-      borderTopColor: '#F1F5F9',
   },
   actionButton: {
       backgroundColor: '#4ADE80',

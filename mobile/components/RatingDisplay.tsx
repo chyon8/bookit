@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { StarIcon, HalfStarIcon, EmptyStarIcon } from './Icons';
+import { useTheme } from '../context/ThemeContext';
 
 interface RatingDisplayProps {
   rating: number;
@@ -13,8 +14,11 @@ export const RatingDisplay: React.FC<RatingDisplayProps> = ({
   rating, 
   size = 16, 
   color = "#FBBF24", // Yellow-400
-  inactiveColor = "#E2E8F0" // Gray-200
+  inactiveColor: customInactiveColor
 }) => {
+  const { colors } = useTheme();
+  const inactiveColor = customInactiveColor || colors.border;
+
   return (
     <View style={styles.container}>
       {[1, 2, 3, 4, 5].map((i) => {

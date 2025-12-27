@@ -22,17 +22,16 @@ import {
   isSameMonth 
 } from "date-fns";
 import { ko } from "date-fns/locale";
+import { useTheme } from "../../context/ThemeContext";
 import { UserBook, ReadingStatus } from "../../hooks/useBooks";
 import { ChevronLeftIcon, ChevronRightIcon, XMarkIcon } from "../Icons";
 import { RatingDisplay } from "../RatingDisplay";
 import { useRouter } from "expo-router";
 
 const { width } = Dimensions.get("window");
-const CELL_SIZE = (width - 32 - 48) / 7; // Adjusted for padding and gaps
 
 interface ReadingCalendarProps {
   books: UserBook[];
-  theme: "light" | "dark";
 }
 
 interface DailyBook {
@@ -40,11 +39,12 @@ interface DailyBook {
   count: number;
 }
 
-export default function ReadingCalendar({ books, theme }: ReadingCalendarProps) {
+export default function ReadingCalendar({ books }: ReadingCalendarProps) {
   const router = useRouter();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const { colors, isDark } = useTheme();
 
   const calendarData = useMemo(() => {
     const monthStart = startOfMonth(currentDate);
@@ -118,19 +118,19 @@ export default function ReadingCalendar({ books, theme }: ReadingCalendarProps) 
   const weekDays = ["일", "월", "화", "수", "목", "금", "토"];
 
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, { backgroundColor: colors.card }]}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>독서 캘린더</Text>
-        <View style={styles.nav}>
+        <Text style={[styles.title, { color: colors.text }]}>독서 캘린더</Text>
+        <View style={[styles.nav, { backgroundColor: isDark ? colors.border : '#F8FAFC' }]}>
           <TouchableOpacity onPress={handlePreviousMonth} style={styles.navButton}>
-            <ChevronLeftIcon size={16} color="#64748B" />
+            <ChevronLeftIcon size={16} color={colors.textMuted} />
           </TouchableOpacity>
-          <Text style={styles.dateText}>
+          <Text style={[styles.dateText, { color: colors.text }]}>
             {format(currentDate, "yyyy년 M월", { locale: ko })}
           </Text>
           <TouchableOpacity onPress={handleNextMonth} style={styles.navButton}>
-            <ChevronRightIcon size={16} color="#64748B" />
+            <ChevronRightIcon size={16} color={colors.textMuted} />
           </TouchableOpacity>
         </View>
       </View>
@@ -140,7 +140,7 @@ export default function ReadingCalendar({ books, theme }: ReadingCalendarProps) 
         {/* Days Header */}
         <View style={styles.daysHeader}>
           {weekDays.map((day) => (
-            <Text key={day} style={styles.dayLabel}>{day}</Text>
+            <Text key={day} style={[styles.dayLabel, { color: colors.textMuted }]}>{day}</Text>
           ))}
         </View>
 
@@ -166,8 +166,8 @@ export default function ReadingCalendar({ books, theme }: ReadingCalendarProps) 
                 <View 
                   style={[
                     styles.cellContent,
-                    hasBooks ? styles.cellWithBook : styles.cellEmpty,
-                    isTodayDate && styles.todayCell
+                    hasBooks ? (isDark ? { backgroundColor: colors.border } : styles.cellWithBook) : (isDark ? { backgroundColor: colors.background } : styles.cellEmpty),
+                    isTodayDate && (isDark ? { backgroundColor: colors.primary } : styles.todayCell)
                   ]}
                 >
                   {hasBooks && dailyBook && (
@@ -184,15 +184,15 @@ export default function ReadingCalendar({ books, theme }: ReadingCalendarProps) 
                   <Text 
                     style={[
                       styles.dateNumber,
-                      isTodayDate ? styles.todayText : hasBooks ? styles.bookDateText : styles.emptyDateText
+                      isTodayDate ? (isDark ? { color: '#000' } : styles.todayText) : hasBooks ? styles.bookDateText : { color: colors.textMuted }
                     ]}
                   >
                     {format(day, "d")}
                   </Text>
 
                   {dailyBook && dailyBook.count > 1 && (
-                    <View style={styles.badge}>
-                      <Text style={styles.badgeText}>+{dailyBook.count - 1}</Text>
+                    <View style={[styles.badge, { backgroundColor: isDark ? colors.card : 'rgba(255, 255, 255, 0.95)' }]}>
+                      <Text style={[styles.badgeText, { color: colors.text }]}>+{dailyBook.count - 1}</Text>
                     </View>
                   )}
                 </View>
@@ -211,31 +211,31 @@ export default function ReadingCalendar({ books, theme }: ReadingCalendarProps) 
       >
         <View style={styles.modalOverlay}>
           <TouchableOpacity 
-            style={styles.modalBackdrop} 
+            style={[styles.modalBackdrop, { backgroundColor: isDark ? 'rgba(0,0,0,0.6)' : 'rgba(15, 23, 42, 0.2)' }]} 
             activeOpacity={1} 
             onPress={handleCloseModal}
           />
           
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { backgroundColor: colors.card, shadowColor: '#000' }]}>
             {/* Modal Header */}
-            <View style={styles.modalHeader}>
+            <View style={[styles.modalHeader, { backgroundColor: isDark ? colors.border : '#FAFAFA', borderBottomColor: colors.border }]}>
               <View>
-                <Text style={styles.modalSubtitle}>Read on</Text>
-                <Text style={styles.modalTitle}>
+                <Text style={[styles.modalSubtitle, { color: colors.textMuted }]}>Read on</Text>
+                <Text style={[styles.modalTitle, { color: colors.text }]}>
                   {selectedDate && format(selectedDate, "yyyy년 M월 d일", { locale: ko })}
                 </Text>
               </View>
-              <TouchableOpacity onPress={handleCloseModal} style={styles.closeButton}>
-                <XMarkIcon size={20} color="#64748B" />
+              <TouchableOpacity onPress={handleCloseModal} style={[styles.closeButton, { backgroundColor: colors.card, shadowColor: '#000' }]}>
+                <XMarkIcon size={20} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
 
             {/* Book List */}
-            <ScrollView style={styles.bookList} showsVerticalScrollIndicator={false}>
+            <ScrollView style={[styles.bookList, { backgroundColor: isDark ? colors.background : '#F8FAFC' }]} showsVerticalScrollIndicator={false}>
               {selectedDate && getBooksForDate(selectedDate).map((book) => (
                 <TouchableOpacity
                   key={book.id}
-                  style={styles.bookCard}
+                  style={[styles.bookCard, { backgroundColor: colors.card, shadowColor: '#000' }]}
                   onPress={() => handleBookClick(book)}
                 >
                   <Image 
@@ -244,21 +244,21 @@ export default function ReadingCalendar({ books, theme }: ReadingCalendarProps) 
                     resizeMode="cover"
                   />
                   <View style={styles.bookInfo}>
-                    <Text style={styles.bookTitle} numberOfLines={2}>
+                    <Text style={[styles.bookTitle, { color: colors.text }]} numberOfLines={2}>
                       {book.books.title}
                     </Text>
-                    <Text style={styles.bookAuthor} numberOfLines={1}>
+                    <Text style={[styles.bookAuthor, { color: colors.textMuted }]} numberOfLines={1}>
                       {book.books.author}
                     </Text>
                     <View style={styles.ratingContainer}>
                       {book.rating && book.rating > 0 ? (
                         <RatingDisplay rating={book.rating} size={14} />
                       ) : (
-                        <Text style={styles.noRating}>No rating</Text>
+                        <Text style={[styles.noRating, { color: colors.textMuted }]}>No rating</Text>
                       )}
                     </View>
                   </View>
-                  <ChevronRightIcon size={20} color="#94A3B8" />
+                  <ChevronRightIcon size={20} color={colors.textMuted} />
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -271,10 +271,8 @@ export default function ReadingCalendar({ books, theme }: ReadingCalendarProps) 
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 32,
     padding: 24,
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
     shadowRadius: 12,
@@ -290,12 +288,10 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#1E293B',
   },
   nav: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
     borderRadius: 20,
     padding: 4,
   },
@@ -305,7 +301,6 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1E293B',
     minWidth: 90,
     textAlign: 'center',
   },
@@ -321,7 +316,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 12,
     fontWeight: 'bold',
-    color: '#94A3B8',
   },
   cellsContainer: {
     flexDirection: 'row',
@@ -374,14 +368,10 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
   },
-  emptyDateText: {
-    color: '#94A3B8',
-  },
   badge: {
     position: 'absolute',
     bottom: 4,
     right: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 4,
     paddingHorizontal: 4,
     paddingVertical: 1,
@@ -390,9 +380,7 @@ const styles = StyleSheet.create({
   badgeText: {
     fontSize: 8,
     fontWeight: 'bold',
-    color: '#1E293B',
   },
-  // Modal Styles
   modalOverlay: {
     flex: 1,
     justifyContent: 'center',
@@ -401,16 +389,13 @@ const styles = StyleSheet.create({
   },
   modalBackdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(15, 23, 42, 0.2)',
   },
   modalContent: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 24,
     width: '100%',
     maxWidth: 450,
     maxHeight: '70%',
     overflow: 'hidden',
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 20 },
     shadowOpacity: 0.25,
     shadowRadius: 25,
@@ -423,13 +408,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-    backgroundColor: '#FAFAFA',
   },
   modalSubtitle: {
     fontSize: 10,
     fontWeight: 'bold',
-    color: '#94A3B8',
     textTransform: 'uppercase',
     letterSpacing: 1,
     marginBottom: 4,
@@ -437,16 +419,13 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#1E293B',
   },
   closeButton: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -454,16 +433,13 @@ const styles = StyleSheet.create({
   },
   bookList: {
     padding: 16,
-    backgroundColor: '#F8FAFC',
   },
   bookCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 16,
     marginBottom: 12,
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
@@ -482,28 +458,17 @@ const styles = StyleSheet.create({
   bookTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#1E293B',
     marginBottom: 4,
   },
   bookAuthor: {
     fontSize: 12,
-    color: '#64748B',
     marginBottom: 8,
   },
   ratingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  stars: {
-    flexDirection: 'row',
-    gap: 2,
-  },
-  star: {
-    fontSize: 14,
-    color: '#FBBF24',
-  },
   noRating: {
     fontSize: 12,
-    color: '#CBD5E1',
   },
 });

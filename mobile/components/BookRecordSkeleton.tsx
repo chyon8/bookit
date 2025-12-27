@@ -1,9 +1,11 @@
 import React, { useEffect, useRef } from "react";
 import { View, StyleSheet, Animated, Dimensions, SafeAreaView } from "react-native";
+import { useTheme } from "../context/ThemeContext";
 
 const { width } = Dimensions.get("window");
 
 export const BookRecordSkeleton = () => {
+  const { colors, isDark } = useTheme();
   const animatedValue = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -28,31 +30,34 @@ export const BookRecordSkeleton = () => {
     outputRange: [0.3, 0.7],
   });
 
+  const skeletonColor = isDark ? '#334155' : '#E2E8F0';
+  const skeletonMutedColor = isDark ? '#1E293B' : '#F1F5F9';
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header Skeleton */}
-      <View style={styles.header}>
-        <View style={styles.headerButton} />
-        <View style={styles.headerTitle} />
-        <View style={styles.headerButton} />
+      <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+        <View style={[styles.headerButton, { backgroundColor: skeletonColor }]} />
+        <View style={[styles.headerTitle, { backgroundColor: skeletonColor }]} />
+        <View style={[styles.headerButton, { backgroundColor: skeletonColor }]} />
       </View>
 
       <View style={styles.content}>
         {/* Banner Area */}
-        <Animated.View style={[styles.bannerArea, { opacity }]} />
+        <Animated.View style={[styles.bannerArea, { opacity, backgroundColor: isDark ? '#1E293B' : '#CBD5E1' }]} />
 
         {/* Book Info Overlay */}
         <View style={styles.bookInfoOverlay}>
-          <Animated.View style={[styles.coverImage, { opacity }]} />
-          <Animated.View style={[styles.titleLine, { opacity }]} />
-          <Animated.View style={[styles.authorLine, { opacity }]} />
+          <Animated.View style={[styles.coverImage, { opacity, backgroundColor: skeletonColor }]} />
+          <Animated.View style={[styles.titleLine, { opacity, backgroundColor: skeletonColor }]} />
+          <Animated.View style={[styles.authorLine, { opacity, backgroundColor: skeletonColor }]} />
         </View>
 
         {/* Content Cards */}
-        <View style={styles.cardContainer}>
-          <Animated.View style={[styles.card, { height: 120, opacity }]} />
-          <Animated.View style={[styles.card, { height: 80, opacity }]} />
-          <Animated.View style={[styles.card, { height: 150, opacity }]} />
+        <View style={[styles.cardContainer, { backgroundColor: colors.background }]}>
+          <Animated.View style={[styles.card, { height: 120, opacity, backgroundColor: colors.card }]} />
+          <Animated.View style={[styles.card, { height: 80, opacity, backgroundColor: colors.card }]} />
+          <Animated.View style={[styles.card, { height: 150, opacity, backgroundColor: colors.card }]} />
         </View>
       </View>
     </View>
@@ -62,7 +67,6 @@ export const BookRecordSkeleton = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
   },
   header: {
     flexDirection: 'row',
@@ -71,28 +75,23 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     paddingBottom: 16,
     paddingHorizontal: 16,
-    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
   },
   headerButton: {
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#E2E8F0',
   },
   headerTitle: {
     width: 100,
     height: 20,
     borderRadius: 4,
-    backgroundColor: '#E2E8F0',
   },
   content: {
     flex: 1,
   },
   bannerArea: {
     height: 280,
-    backgroundColor: '#CBD5E1', 
     width: '100%',
   },
   bookInfoOverlay: {
@@ -107,33 +106,28 @@ const styles = StyleSheet.create({
     width: 120,
     height: 180,
     borderRadius: 8,
-    backgroundColor: '#E2E8F0',
     marginBottom: 16,
   },
   titleLine: {
     width: 180,
     height: 24,
     borderRadius: 4,
-    backgroundColor: '#E2E8F0',
     marginBottom: 8,
   },
   authorLine: {
     width: 100,
     height: 16,
     borderRadius: 4,
-    backgroundColor: '#E2E8F0',
   },
   cardContainer: {
     marginTop: -20,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    backgroundColor: '#F8FAFC',
     paddingHorizontal: 16,
     paddingTop: 24,
     gap: 16,
   },
   card: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     width: '100%',
   },

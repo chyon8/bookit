@@ -18,7 +18,7 @@ interface RandomNoteModalProps {
   totalNotes: number;
 }
 
-const { width } = Dimensions.get('window');
+import { useTheme } from '../context/ThemeContext';
 
 export function RandomNoteModal({
   isVisible,
@@ -29,6 +29,8 @@ export function RandomNoteModal({
   currentIndex,
   totalNotes
 }: RandomNoteModalProps) {
+  const { colors, isDark } = useTheme();
+
   if (!currentNote) return null;
 
   const { book, note } = currentNote;
@@ -46,34 +48,37 @@ export function RandomNoteModal({
         onPress={onClose}
       >
         <TouchableOpacity 
-          style={styles.modalCard}
+          style={[
+            styles.modalCard, 
+            { backgroundColor: isDark ? colors.card : '#FDF1F1' }
+          ]}
           activeOpacity={1}
           onPress={e => e.stopPropagation()}
         >
           {/* Note Type Label */}
-          <Text style={styles.noteLabel}>{note.title}</Text>
+          <Text style={[styles.noteLabel, { color: colors.textMuted }]}>{note.title}</Text>
           
           {/* Note Content */}
           <ScrollView style={styles.contentScroll}>
-            <Text style={styles.noteContent}>{note.content}</Text>
+            <Text style={[styles.noteContent, { color: colors.text }]}>{note.content}</Text>
           </ScrollView>
 
           {/* Book Info */}
-          <TouchableOpacity style={styles.bookInfoContainer}>
-            <Text style={styles.bookTitle}>{book.books.title}</Text>
-            <Text style={styles.bookAuthor}>
+          <TouchableOpacity style={[styles.bookInfoContainer, { borderTopColor: colors.border }]}>
+            <Text style={[styles.bookTitle, { color: colors.text }]}>{book.books.title}</Text>
+            <Text style={[styles.bookAuthor, { color: colors.textMuted }]}>
               저자: {book.books.author?.split("(지은이")[0].trim()}
             </Text>
-            <Text style={styles.viewDetailsLink}>자세히 보기 →</Text>
+            <Text style={[styles.viewDetailsLink, { color: colors.primary }]}>자세히 보기 →</Text>
           </TouchableOpacity>
 
           {/* Navigation Controls */}
-          <View style={styles.navContainer}>
+          <View style={[styles.navContainer, { borderTopColor: colors.border }]}>
             <TouchableOpacity
               onPress={(e) => { e.stopPropagation(); onPrev(); }}
-              style={styles.navButton}
+              style={[styles.navButton, { backgroundColor: isDark ? colors.border : 'rgba(0, 0, 0, 0.05)' }]}
             >
-              <ChevronLeftIcon size={24} color="#4B5563" />
+              <ChevronLeftIcon size={24} color={colors.textMuted} />
             </TouchableOpacity>
             
             <Text style={styles.navCounter}>
@@ -82,9 +87,9 @@ export function RandomNoteModal({
             
             <TouchableOpacity
               onPress={(e) => { e.stopPropagation(); onNext(); }}
-              style={styles.navButton}
+              style={[styles.navButton, { backgroundColor: isDark ? colors.border : 'rgba(0, 0, 0, 0.05)' }]}
             >
-              <ChevronRightIcon size={24} color="#4B5563" />
+              <ChevronRightIcon size={24} color={colors.textMuted} />
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
@@ -102,7 +107,6 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   modalCard: {
-    backgroundColor: '#FDF1F1', // card-secondary from web
     padding: 24,
     borderRadius: 12,
     width: '100%',
@@ -117,7 +121,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     textTransform: 'uppercase',
-    color: '#475569',
     letterSpacing: 1,
     marginBottom: 16,
   },
@@ -128,30 +131,25 @@ const styles = StyleSheet.create({
   },
   noteContent: {
     fontSize: 18,
-    color: '#03314B',
     lineHeight: 28,
   },
   bookInfoContainer: {
     borderTopWidth: 1,
-    borderTopColor: 'rgba(0, 0, 0, 0.1)',
     paddingTop: 16,
     marginBottom: 16,
   },
   bookTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#03314B',
     marginBottom: 4,
   },
   bookAuthor: {
     fontSize: 14,
-    color: '#475569',
     marginBottom: 8,
   },
   viewDetailsLink: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#4ADE80',
   },
   navContainer: {
     flexDirection: 'row',
@@ -159,12 +157,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(0, 0, 0, 0.1)',
   },
   navButton: {
     padding: 8,
     borderRadius: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.05)',
   },
   navCounter: {
     fontSize: 14,

@@ -13,6 +13,7 @@ import {
   Alert,
   ActivityIndicator
 } from "react-native";
+import { useTheme } from "../../context/ThemeContext";
 import { useLocalSearchParams, useRouter, Stack, useNavigation } from "expo-router";
 import * as ImagePicker from 'expo-image-picker';
 import { useBookData, useUpdateBookReview, useDeleteBook } from "../../hooks/useBookData";
@@ -31,6 +32,7 @@ export default function BookRecordScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [user, setUser] = useState<any>(null);
+  const { colors, isDark } = useTheme();
 
   // Get user on mount
   useEffect(() => {
@@ -390,7 +392,7 @@ export default function BookRecordScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Stack.Screen options={{ headerShown: false }} />
       
       <ConfirmModal
@@ -416,11 +418,11 @@ export default function BookRecordScreen() {
       />
       
       {/* Custom Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={handleBack} style={styles.headerButton}>
-          <ChevronLeftIcon size={24} color="#1E293B" />
+          <ChevronLeftIcon size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>독서 기록</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>독서 기록</Text>
         <TouchableOpacity 
           onPress={handleSave} 
           style={styles.headerButton}
@@ -442,7 +444,7 @@ export default function BookRecordScreen() {
               style={[styles.backgroundImage, StyleSheet.absoluteFill]} 
               blurRadius={10}
             />
-            <View style={[styles.overlay, StyleSheet.absoluteFill]} />
+            <View style={[styles.overlay, StyleSheet.absoluteFill, { backgroundColor: isDark ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.3)' }]} />
             
             <View style={styles.bookInfoContainer}>
               <View style={styles.coverWrapper}>
@@ -457,18 +459,18 @@ export default function BookRecordScreen() {
             </View>
           </View>
 
-          <View style={styles.contentArea}>
+          <View style={[styles.contentArea, { backgroundColor: colors.background }]}>
             
             {/* Description Card */}
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>책 소개</Text>
-              <Text style={styles.bookDescription} numberOfLines={isDirty ? undefined : 3}>
+            <View style={[styles.card, { backgroundColor: colors.card }]}>
+              <Text style={[styles.cardTitle, { color: colors.text }]}>책 소개</Text>
+              <Text style={[styles.bookDescription, { color: colors.textMuted }]} numberOfLines={isDirty ? undefined : 3}>
                 {book.description}
               </Text>
             </View>
 
             {/* Rating */}
-            <View style={styles.card}>
+            <View style={[styles.card, { backgroundColor: colors.card }]}>
               <View style={styles.centerRow}>
                 <StarRating 
                   rating={review.rating || 0} 
@@ -478,8 +480,8 @@ export default function BookRecordScreen() {
             </View>
 
              {/* Status & Options */}
-            <View style={styles.card}>
-              <Text style={styles.label}>독서 상태</Text>
+            <View style={[styles.card, { backgroundColor: colors.card }]}>
+              <Text style={[styles.label, { color: colors.text }]}>독서 상태</Text>
               {/* Simple dropdown simulation */}
               <View style={styles.statusRow}>
                   {Object.entries(statusOptions).map(([key, label]) => (
@@ -488,57 +490,60 @@ export default function BookRecordScreen() {
                         onPress={() => handleStatusChange(key as ReadingStatus)}
                         style={[
                             styles.statusChip, 
-                            review.status === key && styles.activeStatusChip
+                            { backgroundColor: isDark ? colors.border : '#F1F5F9' },
+                            review.status === key && (isDark ? { backgroundColor: '#064E3B', borderColor: colors.primary, borderWidth: 1 } : styles.activeStatusChip)
                         ]}
                       >
                           <Text style={[
                               styles.statusText,
-                              review.status === key && styles.activeStatusText
+                              { color: colors.textMuted },
+                              review.status === key && (isDark ? { color: colors.primary, fontWeight: 'bold' } : styles.activeStatusText)
                           ]}>{label}</Text>
                       </TouchableOpacity>
                   ))}
               </View>
 
-              <Text style={styles.label}>한 줄 평</Text>
+              <Text style={[styles.label, { color: colors.text }]}>한 줄 평</Text>
               <TextInput 
-                style={styles.input}
+                style={[styles.input, { backgroundColor: isDark ? colors.border : '#F1F5F9', color: colors.text }]}
                 value={review.one_line_review || ""}
                 onChangeText={(text) => updateReview('one_line_review', text)}
                 placeholder="짧은 감상평을 남겨주세요"
+                placeholderTextColor={colors.textMuted}
               />
 
               <TouchableOpacity 
                 style={styles.checkboxRow}
                 onPress={() => updateReview('is_rereading', !review.is_rereading)}
               >
-                  <View style={[styles.checkbox, review.is_rereading && styles.checkboxChecked]}>
+                  <View style={[styles.checkbox, { borderColor: colors.border }, review.is_rereading && { backgroundColor: colors.primary, borderColor: colors.primary }]}>
                     {review.is_rereading && <Text style={styles.checkboxCheck}>✓</Text>}
                   </View>
-                  <Text style={styles.checkboxLabel}>다시 읽고 싶은 책으로 표시</Text>
+                  <Text style={[styles.checkboxLabel, { color: colors.textMuted }]}>다시 읽고 싶은 책으로 표시</Text>
               </TouchableOpacity>
             </View>
 
             {/* Quotes */}
-            <View style={styles.card}>
+            <View style={[styles.card, { backgroundColor: colors.card }]}>
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>인상 깊은 구절</Text>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>인상 깊은 구절</Text>
               </View>
               
               <View style={styles.buttonContainer}>
-                <TouchableOpacity onPress={addQuote} style={styles.addButton}>
-                    <Text style={styles.addButtonIcon}>+</Text>
-                    <Text style={styles.addButtonText}>인용구 추가</Text>
+                <TouchableOpacity onPress={addQuote} style={[styles.addButton, { backgroundColor: isDark ? colors.border : '#ECFDF5' }]}>
+                    <Text style={[styles.addButtonIcon, { color: colors.primary }]}>+</Text>
+                    <Text style={[styles.addButtonText, { color: colors.primary }]}>인용구 추가</Text>
                 </TouchableOpacity>
                 
                 <View style={styles.mediaButtonRow}>
-                  <TouchableOpacity onPress={handleCamera} style={styles.mediaButton}>
-                     <CameraIcon size={20} color="#4ADE80" />
-                     <Text style={styles.mediaButtonText}>카메라</Text>
+                  <TouchableOpacity onPress={handleCamera} style={[styles.mediaButton, { backgroundColor: isDark ? colors.border : '#F1F5F9' }]}>
+                     <CameraIcon size={20} color={colors.primary} />
+                     <Text style={[styles.mediaButtonText, { color: colors.text }]}>카메라</Text>
                   </TouchableOpacity>
 
-                  <TouchableOpacity onPress={handlePickImage} style={styles.mediaButton}>
-                     <PhotoIcon size={20} color="#4ADE80" />
-                     <Text style={styles.mediaButtonText}>갤러리</Text>
+                  <TouchableOpacity onPress={handlePickImage} style={[styles.mediaButton, { backgroundColor: isDark ? colors.border : '#F1F5F9' }]}>
+                     <PhotoIcon size={20} color={colors.primary} />
+                     <Text style={[styles.mediaButtonText, { color: colors.text }]}>갤러리</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -557,13 +562,13 @@ export default function BookRecordScreen() {
             </View>
 
              {/* Memos */}
-             <View style={styles.card}>
+             <View style={[styles.card, { backgroundColor: colors.card }]}>
                <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>메모</Text>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>메모</Text>
               </View>
               
-              <TouchableOpacity onPress={addMemo} style={styles.addButton}>
-                  <Text style={styles.addButtonText}>+ 메모 추가</Text>
+              <TouchableOpacity onPress={addMemo} style={[styles.addButton, { backgroundColor: isDark ? colors.border : '#ECFDF5' }]}>
+                  <Text style={[styles.addButtonText, { color: colors.primary }]}>+ 메모 추가</Text>
               </TouchableOpacity>
 
               <View style={styles.listContainer}>
@@ -581,7 +586,7 @@ export default function BookRecordScreen() {
             {/* Delete Button */}
             <TouchableOpacity 
                 onPress={handleDelete} 
-                style={styles.deleteButton}
+                style={[styles.deleteButton, { backgroundColor: isDark ? '#451a1a' : '#FEF2F2', borderColor: isDark ? '#7f1d1d' : '#FEE2E2' }]}
                 disabled={isDeleting.current}
             >
                 <TrashIcon size={20} color="#EF4444" />
@@ -600,7 +605,6 @@ export default function BookRecordScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
   },
   flex1: {
     flex: 1,
@@ -617,15 +621,12 @@ const styles = StyleSheet.create({
     paddingTop: 60, // Safe Area top approximation
     paddingBottom: 16,
     paddingHorizontal: 16,
-    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
     zIndex: 10,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#0F172A',
   },
   headerButton: {
     padding: 4,
@@ -655,7 +656,6 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   overlay: {
-    backgroundColor: 'rgba(0,0,0,0.3)',
   },
   bookInfoContainer: {
     alignItems: 'center',
@@ -696,12 +696,10 @@ const styles = StyleSheet.create({
     marginTop: -20, // Overlap
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    backgroundColor: '#F8FAFC',
     paddingHorizontal: 16,
     paddingTop: 24,
   },
   card: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 20,
     marginBottom: 16,
@@ -714,12 +712,10 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#1E293B',
     marginBottom: 8,
   },
   bookDescription: {
     fontSize: 14,
-    color: '#475569',
     lineHeight: 22,
   },
   centerRow: {
@@ -730,16 +726,13 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#334155',
     marginBottom: 8,
     marginTop: 16,
   },
   input: {
-    backgroundColor: '#F1F5F9',
     borderRadius: 8,
     padding: 12,
     fontSize: 14,
-    color: '#1E293B',
     marginBottom: 8,
   },
   statusRow: {
@@ -751,7 +744,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
-    backgroundColor: '#F1F5F9',
   },
   activeStatusChip: {
     backgroundColor: '#DCFCE7', // green-100
@@ -760,7 +752,6 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 13,
-    color: '#64748B',
   },
   activeStatusText: {
     color: '#15803D', // green-700
@@ -775,15 +766,12 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderWidth: 2,
-    borderColor: '#CBD5E1',
     borderRadius: 4,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 8,
   },
   checkboxChecked: {
-    backgroundColor: '#4ADE80',
-    borderColor: '#4ADE80',
   },
   checkboxCheck: {
     color: '#FFF',
@@ -792,7 +780,6 @@ const styles = StyleSheet.create({
   },
   checkboxLabel: {
     fontSize: 14,
-    color: '#475569',
   },
   
   // Lists
@@ -803,14 +790,12 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#1E293B',
   },
   buttonContainer: {
     gap: 12,
     marginBottom: 24,
   },
   addButton: {
-    backgroundColor: '#ECFDF5', // green-50
     padding: 16,
     borderRadius: 12,
     flexDirection: 'row',
@@ -819,12 +804,10 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   addButtonIcon: {
-    color: '#4ADE80',
     fontSize: 20,
     fontWeight: '300',
   },
   addButtonText: {
-    color: '#4ADE80', // green-400
     fontWeight: 'bold',
     fontSize: 16,
   },
@@ -835,7 +818,6 @@ const styles = StyleSheet.create({
   mediaButton: {
     flex: 1,
     flexDirection: 'row',
-    backgroundColor: '#F1F5F9', // gray-100
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
@@ -843,7 +825,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   mediaButtonText: {
-    color: '#0F172A',
     fontWeight: 'bold',
     fontSize: 16,
   },
@@ -859,8 +840,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#FEE2E2',
-    backgroundColor: '#FEF2F2',
     gap: 8,
   },
   deleteButtonText: {

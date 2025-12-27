@@ -10,20 +10,21 @@ import {
   format, 
 } from "date-fns";
 import { ko } from "date-fns/locale";
+import { useTheme } from "../../context/ThemeContext";
 import { UserBook, ReadingStatus } from "../../hooks/useBooks";
 
 const { width } = Dimensions.get("window");
 
 interface MonthlyCompletionChartProps {
   books: UserBook[];
-  theme: "light" | "dark";
 }
 
 type TimeRange = "6" | "12" | "all";
 
-export default function MonthlyCompletionChart({ books, theme }: MonthlyCompletionChartProps) {
+export default function MonthlyCompletionChart({ books }: MonthlyCompletionChartProps) {
   const [timeRange, setTimeRange] = useState<TimeRange>("12");
   const [selectedBar, setSelectedBar] = useState<number | null>(null);
+  const { colors, isDark } = useTheme();
 
   const chartData = useMemo(() => {
     const monthlyMap = new Map<number, number>();
@@ -62,19 +63,27 @@ export default function MonthlyCompletionChart({ books, theme }: MonthlyCompleti
   const yAxisTicks = [roundedMax, (roundedMax * 3) / 4, (roundedMax * 2) / 4, roundedMax / 4, 0];
 
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, { backgroundColor: colors.card }]}>
       <View style={styles.header}>
         <View style={styles.titleRow}>
-            <Text style={styles.title}>월별 완독 수 ({timeRange === 'all' ? '전체' : `최근 ${timeRange}개월`})</Text>
+            <Text style={[styles.title, { color: colors.text }]}>월별 완독 수 ({timeRange === 'all' ? '전체' : `최근 ${timeRange}개월`})</Text>
         </View>
         <View style={styles.tabContainer}>
             {(["6", "12", "all"] as TimeRange[]).map((range) => (
             <TouchableOpacity
                 key={range}
                 onPress={() => setTimeRange(range)}
-                style={[styles.tab, timeRange === range && styles.activeTab]}
+                style={[
+                  styles.tab, 
+                  { backgroundColor: isDark ? colors.border : '#F1F5F9' },
+                  timeRange === range && (isDark ? { backgroundColor: colors.primary } : styles.activeTab)
+                ]}
             >
-                <Text style={[styles.tabText, timeRange === range && styles.activeTabText]}>
+                <Text style={[
+                  styles.tabText, 
+                  { color: colors.textMuted },
+                  timeRange === range && (isDark ? { color: '#000' } : styles.activeTabText)
+                ]}>
                 {range === "all" ? "전체" : `${range}개월`}
                 </Text>
             </TouchableOpacity>
@@ -86,7 +95,7 @@ export default function MonthlyCompletionChart({ books, theme }: MonthlyCompleti
         {/* Y Axis */}
         <View style={styles.yAxis}>
           {yAxisTicks.map((tick, i) => (
-            <Text key={i} style={styles.yTick}>{tick}</Text>
+            <Text key={i} style={[styles.yTick, { color: colors.textMuted }]}>{tick}</Text>
           ))}
         </View>
 
@@ -94,7 +103,7 @@ export default function MonthlyCompletionChart({ books, theme }: MonthlyCompleti
         <View style={styles.barsContainer}>
           <View style={styles.gridLines}>
             {[1, 2, 3, 4].map((_, i) => (
-              <View key={i} style={styles.gridLine} />
+              <View key={i} style={[styles.gridLine, { backgroundColor: colors.border }]} />
             ))}
           </View>
 
@@ -118,23 +127,30 @@ export default function MonthlyCompletionChart({ books, theme }: MonthlyCompleti
                       onPress={() => setSelectedBar(selectedBar === index ? null : index)}
                       style={[
                         styles.bar, 
-                        { height: `${(item.value / roundedMax) * 100}%` },
+                        { 
+                          height: `${(item.value / roundedMax) * 100}%`,
+                          backgroundColor: isDark ? colors.primary : '#334155'
+                        },
                         selectedBar === index && styles.activeBar
                       ]} 
                     />
                     {selectedBar === index && (
                       <View style={[
                         styles.tooltip,
-                        { bottom: `${(item.value / roundedMax) * 100 + 12}%` }
+                        { 
+                          bottom: `${(item.value / roundedMax) * 100 + 12}%`,
+                          backgroundColor: isDark ? colors.border : '#FFFFFF',
+                          shadowColor: '#000'
+                        }
                       ]}>
-                        <Text style={styles.tooltipDate}>{item.label}</Text>
-                        <Text style={styles.tooltipCount}>권 : {item.value}</Text>
+                        <Text style={[styles.tooltipDate, { color: colors.text }]}>{item.label}</Text>
+                        <Text style={[styles.tooltipCount, { color: colors.text }]}>권 : {item.value}</Text>
                       </View>
                     )}
                   </View>
                   <View style={styles.xLabelWrapper}>
                     {showLabel ? (
-                      <Text style={styles.xLabel}>
+                      <Text style={[styles.xLabel, { color: colors.textMuted }]}>
                         {item.label}
                       </Text>
                     ) : (
@@ -153,10 +169,8 @@ export default function MonthlyCompletionChart({ books, theme }: MonthlyCompleti
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 32,
     padding: 24,
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
     shadowRadius: 12,
@@ -172,7 +186,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#1E293B',
   },
   tabContainer: {
     flexDirection: 'row',
@@ -182,7 +195,6 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     paddingHorizontal: 12,
     borderRadius: 16,
-    backgroundColor: '#F1F5F9',
   },
   activeTab: {
     backgroundColor: '#1E293B',
@@ -190,15 +202,14 @@ const styles = StyleSheet.create({
   tabText: {
     fontSize: 10,
     fontWeight: '600',
-    color: '#64748B',
   },
   activeTabText: {
     color: '#FFFFFF',
   },
   chartArea: {
     flexDirection: 'row',
-    height: 300, // Increased total height to accommodate tooltips
-    paddingTop: 40, // Add top padding for tooltips
+    height: 300, 
+    paddingTop: 40, 
   },
   yAxis: {
     justifyContent: 'space-between',
@@ -207,7 +218,6 @@ const styles = StyleSheet.create({
   },
   yTick: {
     fontSize: 12,
-    color: '#94A3B8',
     textAlign: 'right',
     width: 25,
   },
@@ -217,7 +227,7 @@ const styles = StyleSheet.create({
   },
   gridLines: {
     position: 'absolute',
-    top: 40, // Push grid down to match new padding
+    top: 40, 
     left: 0,
     right: 0,
     bottom: 50,
@@ -225,7 +235,6 @@ const styles = StyleSheet.create({
   },
   gridLine: {
     height: 1,
-    backgroundColor: '#F1F5F9',
   },
   barsWrapper: {
     flex: 1,
@@ -244,18 +253,15 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   bar: {
-    backgroundColor: '#334155',
     borderTopLeftRadius: 6,
     borderTopRightRadius: 6,
     width: '100%',
   },
   activeBar: {
-    backgroundColor: '#1E293B',
     opacity: 0.8,
   },
   tooltip: {
     position: 'absolute',
-    backgroundColor: '#FFFFFF',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
@@ -265,25 +271,22 @@ const styles = StyleSheet.create({
     minWidth: 80,
     left: '50%',
     marginLeft: -40,
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 8,
     elevation: 4,
   },
   tooltipDate: {
-    color: '#1E293B',
     fontSize: 12,
     fontWeight: '600',
     marginBottom: 2,
   },
   tooltipCount: {
-    color: '#1E293B',
     fontSize: 13,
     fontWeight: 'bold',
   },
   xLabelWrapper: {
-    height: 50, // Increased height for rotated labels
+    height: 50, 
     justifyContent: 'flex-start',
     alignItems: 'center',
     width: '100%',
@@ -291,12 +294,10 @@ const styles = StyleSheet.create({
   },
   xLabel: {
     fontSize: 8,
-    color: '#94A3B8',
     textAlign: 'center',
     transform: [{ rotate: '-45deg' }],
   },
   labelSpacer: {
     height: 1,
   },
-
 });

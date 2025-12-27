@@ -4,14 +4,15 @@ import {
   Text, 
   StyleSheet 
 } from "react-native";
+import { useTheme } from "../../context/ThemeContext";
 import { UserBook, ReadingStatus } from "../../hooks/useBooks";
 
 interface WishlistAuthorChartProps {
   books: UserBook[];
-  theme: "light" | "dark";
 }
 
-export default function WishlistAuthorChart({ books, theme }: WishlistAuthorChartProps) {
+export default function WishlistAuthorChart({ books }: WishlistAuthorChartProps) {
+  const { colors, isDark } = useTheme();
   const authorData = useMemo(() => {
     const counts: Record<string, number> = {};
     
@@ -30,33 +31,33 @@ export default function WishlistAuthorChart({ books, theme }: WishlistAuthorChar
 
   if (authorData.length === 0) {
       return (
-          <View style={styles.card}>
+          <View style={[styles.card, { backgroundColor: colors.card }]}>
               <View style={styles.header}>
-                <Text style={styles.title}>읽고 싶은 책 저자 Top 10</Text>
+                <Text style={[styles.title, { color: colors.text }]}>읽고 싶은 책 저자 Top 10</Text>
               </View>
               <View style={[styles.list, { height: 100, justifyContent: 'center', alignItems: 'center' }]}>
-                  <Text style={{ color: '#94A3B8' }}>데이터가 없습니다.</Text>
+                  <Text style={{ color: colors.textMuted }}>데이터가 없습니다.</Text>
               </View>
           </View>
       )
   }
 
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, { backgroundColor: colors.card }]}>
       <View style={styles.header}>
-        <Text style={styles.title}>읽고 싶은 책 저자 Top 10</Text>
+        <Text style={[styles.title, { color: colors.text }]}>읽고 싶은 책 저자 Top 10</Text>
       </View>
 
       <View style={styles.list}>
         {authorData.map((item, index) => (
           <View key={index} style={styles.row}>
             <View style={styles.rankContainer}>
-              <Text style={styles.rank}>{index + 1}</Text>
+              <Text style={[styles.rank, { color: colors.border }]}>{index + 1}</Text>
             </View>
-            <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
+            <Text style={[styles.name, { color: colors.text }]} numberOfLines={1}>{item.name}</Text>
             <View style={styles.countContainer}>
-              <Text style={styles.countValue}>{item.value}</Text>
-              <Text style={styles.countUnit}> 권</Text>
+              <Text style={[styles.countValue, { color: colors.text }]}>{item.value}</Text>
+              <Text style={[styles.countUnit, { color: colors.textMuted }]}> 권</Text>
             </View>
           </View>
         ))}
@@ -67,10 +68,8 @@ export default function WishlistAuthorChart({ books, theme }: WishlistAuthorChar
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 32,
     padding: 24,
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
     shadowRadius: 12,
@@ -83,7 +82,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#1E293B',
   },
   list: {
     gap: 16,
@@ -98,14 +96,12 @@ const styles = StyleSheet.create({
   rank: {
     fontSize: 18,
     fontStyle: 'italic',
-    color: '#CBD5E1',
     fontWeight: 'bold',
   },
   name: {
     flex: 1,
     fontSize: 15,
     fontWeight: '600',
-    color: '#334155',
   },
   countContainer: {
     flexDirection: 'row',
@@ -114,10 +110,8 @@ const styles = StyleSheet.create({
   countValue: {
     fontSize: 15,
     fontWeight: 'bold',
-    color: '#1E293B',
   },
   countUnit: {
     fontSize: 12,
-    color: '#94A3B8',
   }
 });

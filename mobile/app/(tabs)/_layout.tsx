@@ -1,34 +1,54 @@
-import { Tabs } from "expo-router";
+import { Tabs, useRouter } from "expo-router";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { BookIcon, BookshelfIcon, ChartBarIcon, SearchIcon, TrendingUpIcon } from "../../components/Icons";
 import { Feather } from "@expo/vector-icons";
+import { useTheme } from "../../context/ThemeContext";
 
 export default function TabLayout() {
+  const router = useRouter();
+  const { colors, toggleTheme, isDark } = useTheme();
+
   return (
     <Tabs
       screenOptions={{
         headerShown: true,
-        headerStyle: styles.header,
+        headerStyle: [styles.header, { 
+          backgroundColor: colors.card,
+          borderBottomColor: colors.border 
+        }],
         headerTitleAlign: 'left',
         headerTitle: () => (
-          <View style={styles.headerTitleContainer}>
-            <BookshelfIcon size={28} color="#4ADE80" />
-            <Text style={styles.headerTitle}>Bookit</Text>
-          </View>
+          <TouchableOpacity 
+            style={styles.headerTitleContainer}
+            onPress={() => router.push("/(tabs)")}
+          >
+            <BookshelfIcon size={28} color={colors.primary} />
+            <Text style={[styles.headerTitle, { color: colors.text }]}>Bookit</Text>
+          </TouchableOpacity>
         ),
         headerRight: () => (
           <View style={styles.headerRight}>
-            <TouchableOpacity style={styles.iconButton}>
-              <Feather name="moon" size={20} color="#6B7280" />
+            <TouchableOpacity 
+              style={styles.iconButton}
+              onPress={toggleTheme}
+            >
+              <Feather 
+                name={isDark ? "sun" : "moon"} 
+                size={20} 
+                color={colors.textMuted} 
+              />
             </TouchableOpacity>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>S</Text>
+            <View style={[styles.avatar, { backgroundColor: isDark ? colors.border : '#E5E7EB' }]}>
+              <Text style={[styles.avatarText, { color: colors.textMuted }]}>S</Text>
             </View>
           </View>
         ),
-        tabBarActiveTintColor: "#111827",
-        tabBarInactiveTintColor: "#9CA3AF",
-        tabBarStyle: styles.tabBar,
+        tabBarActiveTintColor: colors.text,
+        tabBarInactiveTintColor: colors.textMuted,
+        tabBarStyle: [styles.tabBar, { 
+          backgroundColor: colors.card,
+          borderTopColor: colors.border
+        }],
         tabBarLabelStyle: styles.tabBarLabel,
       }}
     >

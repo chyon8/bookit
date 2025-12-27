@@ -26,8 +26,11 @@ import { ConfirmModal } from "../../components/ConfirmModal";
 const { width: screenWidth } = Dimensions.get('window');
 const CARD_WIDTH = (screenWidth - 44) / 2; // 2 columns: (Screen - 32px padding - 12px gap) / 2
 
+import { useTheme } from "../../context/ThemeContext";
+
 export default function Home() {
   const router = useRouter();
+  const { colors, isDark } = useTheme();
   const { data: userBooks, isLoading, error } = useBooks();
   const deleteBookMutation = useDeleteBook();
 
@@ -307,8 +310,8 @@ export default function Home() {
     return (
       <View key={status} style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>
-            {title} <Text style={styles.sectionCount}>{books.length}</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            {title} <Text style={[styles.sectionCount, { color: colors.textMuted }]}>{books.length}</Text>
           </Text>
           {books.length > 10 && (
             <TouchableOpacity onPress={() => setStatusFilter(status)}>
@@ -327,49 +330,38 @@ export default function Home() {
     );
   };
 
-  if (isLoading) {
-    return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#4ADE80" />
-        <Text style={styles.loadingText}>Loading your library...</Text>
-      </View>
-    );
-  }
-
-
-
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <SafeAreaView style={styles.flex1}>
         <ScrollView style={styles.flex1} contentContainerStyle={styles.scrollContent}>
           
           {/* Search Bar & Random Button */}
           <View style={styles.searchContainer}>
-            <View style={styles.searchInputWrapper}>
-              <SearchIcon size={20} color="#9CA3AF" />
+            <View style={[styles.searchInputWrapper, { borderBottomColor: colors.border }]}>
+              <SearchIcon size={20} color={colors.textMuted} />
               <TextInput 
-                style={styles.searchInput}
+                style={[styles.searchInput, { color: colors.text }]}
                 placeholder="기록 검색..."
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={colors.textMuted}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
               />
               {searchQuery.length > 0 && (
                 <TouchableOpacity onPress={() => setSearchQuery("")}>
-                  <XMarkIcon size={20} color="#9CA3AF" />
+                  <XMarkIcon size={20} color={colors.textMuted} />
                 </TouchableOpacity>
               )}
             </View>
             <TouchableOpacity 
               onPress={handleShowRandomNote}
-              style={styles.sparklesButton}
+              style={[styles.sparklesButton, { backgroundColor: isDark ? colors.border : '#F1F5F9' }]}
             >
-              <SparklesIcon size={20} color="#4ADE80" />
+              <SparklesIcon size={20} color={colors.primary} />
             </TouchableOpacity>
           </View>
 
           {/* Filter Tabs */}
-          <View style={styles.filterTabsContainer}>
+          <View style={[styles.filterTabsContainer, { borderBottomColor: colors.border }]}>
             {filterOptions.map((status) => {
               const isActive = statusFilter === status;
               const count = statusCounts[status] || 0;
@@ -379,13 +371,14 @@ export default function Home() {
                   onPress={() => setStatusFilter(status)}
                   style={[
                     styles.filterTab,
-                    isActive && styles.filterTabActive
+                    isActive && { borderBottomColor: colors.primary }
                   ]}
                 >
                   <Text 
                     style={[
                       styles.filterTabText,
-                      isActive && styles.filterTabTextActive
+                      { color: colors.textMuted },
+                      isActive && { color: colors.primary, fontWeight: 'bold' }
                     ]}
                     numberOfLines={1}
                     adjustsFontSizeToFit
@@ -404,12 +397,14 @@ export default function Home() {
                 onPress={() => setSubFilter("Finished")}
                 style={[
                   styles.subTab, 
-                  subFilter === "Finished" && styles.subTabActive
+                  { backgroundColor: isDark ? colors.border : '#F1F5F9' },
+                  subFilter === "Finished" && { backgroundColor: isDark ? '#14532D' : '#DCFCE7', borderColor: colors.primary }
                 ]}
               >
                 <Text style={[
                   styles.subTabText,
-                  subFilter === "Finished" && styles.subTabTextActive
+                  { color: colors.textMuted },
+                  subFilter === "Finished" && { color: isDark ? colors.primary : '#15803D', fontWeight: 'bold' }
                 ]}>
                   완독 ({statusCounts[ReadingStatus.Finished] || 0})
                 </Text>
@@ -418,12 +413,14 @@ export default function Home() {
                 onPress={() => setSubFilter("Dropped")}
                 style={[
                   styles.subTab, 
-                  subFilter === "Dropped" && styles.subTabActive
+                  { backgroundColor: isDark ? colors.border : '#F1F5F9' },
+                  subFilter === "Dropped" && { backgroundColor: isDark ? '#7F1D1D' : '#FEE2E2', borderColor: '#EF4444' }
                 ]}
               >
                 <Text style={[
                   styles.subTabText,
-                  subFilter === "Dropped" && styles.subTabTextActive
+                  { color: colors.textMuted },
+                  subFilter === "Dropped" && { color: isDark ? '#F87171' : '#DC2626', fontWeight: 'bold' }
                 ]}>
                   중단 ({statusCounts[ReadingStatus.Dropped] || 0})
                 </Text>
@@ -432,31 +429,31 @@ export default function Home() {
           )}
           <View style={styles.secondaryFilterContainer}>
             <TouchableOpacity 
-                style={styles.filterButton}
+                style={[styles.filterButton, { backgroundColor: isDark ? colors.border : '#F1F5F9' }]}
                 onPress={() => setFilters({ sort: "date_desc", reread: null, month: null, genre: null })}
             >
-              <Text style={styles.filterButtonText}>초기화</Text>
+              <Text style={[styles.filterButtonText, { color: colors.text }]}>초기화</Text>
             </TouchableOpacity>
             
             <TouchableOpacity 
-                style={styles.filterButton}
+                style={[styles.filterButton, { backgroundColor: isDark ? colors.border : '#F1F5F9' }]}
                 onPress={() => setFilterSheetVisible(true)}
             >
-              <Text style={styles.filterButtonText}>상세 필터</Text>
-              <ChevronDownIcon size={16} color="#4B5563" />
+              <Text style={[styles.filterButtonText, { color: colors.text }]}>상세 필터</Text>
+              <ChevronDownIcon size={16} color={colors.textMuted} />
             </TouchableOpacity>
 
             <TouchableOpacity 
-                style={styles.filterButton}
+                style={[styles.filterButton, { backgroundColor: isDark ? colors.border : '#F1F5F9' }]}
                 onPress={() => setFilterSheetVisible(true)}
             >
-              <Text style={styles.filterButtonText}>
+              <Text style={[styles.filterButtonText, { color: colors.text }]}>
                 {filters.sort === "date_desc" ? "최신 추가순" : 
                  filters.sort === "date_asc" ? "오래된순" : 
                  filters.sort === "rating_desc" ? "별점 높은순" : 
                  filters.sort === "rating_asc" ? "별점 낮은순" : "제목순"}
               </Text>
-              <ChevronDownIcon size={16} color="#4B5563" />
+              <ChevronDownIcon size={16} color={colors.textMuted} />
             </TouchableOpacity>
           </View>
 
@@ -497,8 +494,8 @@ export default function Home() {
 
           {filteredBooksAll.length === 0 && statusFilter !== "All" && (
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyTitle}>책장이 비어있습니다</Text>
-              <Text style={styles.emptySubtitle}>검색 탭을 이용해 첫 책을 추가해보세요!</Text>
+              <Text style={[styles.emptyTitle, { color: colors.text }]}>책장이 비어있습니다</Text>
+              <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>검색 탭을 이용해 첫 책을 추가해보세요!</Text>
             </View>
           )}
         </ScrollView>
@@ -538,7 +535,6 @@ export default function Home() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
   },
   flex1: {
     flex: 1,
@@ -552,20 +548,16 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F8FAFC',
   },
   loadingText: {
     marginTop: 16,
-    color: '#94A3B8',
   },
   errorTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#EF4444',
     marginBottom: 8,
   },
   errorMessage: {
-    color: '#6B7280',
     textAlign: 'center',
   },
   searchContainer: {
@@ -579,7 +571,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
     paddingVertical: 8,
     paddingHorizontal: 8,
     gap: 8,
@@ -587,17 +578,14 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: '#03314B',
   },
   sparklesButton: {
     padding: 8,
     borderRadius: 20,
-    backgroundColor: '#F1F5F9',
   },
   filterTabsContainer: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
     marginBottom: 16,
   },
   filterTab: {
@@ -608,15 +596,12 @@ const styles = StyleSheet.create({
     borderBottomColor: 'transparent',
   },
   filterTabActive: {
-    borderBottomColor: '#4ADE80',
   },
   filterTabText: {
     fontSize: 12,
-    color: '#475569',
   },
   filterTabTextActive: {
     fontWeight: 'bold',
-    color: '#4ADE80',
   },
   subTabsContainer: {
     flexDirection: 'row',
@@ -629,21 +614,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 10,
     borderRadius: 24,
-    backgroundColor: '#F1F5F9',
     borderWidth: 1,
     borderColor: 'transparent',
   },
   subTabActive: {
-    backgroundColor: '#DCFCE7',
-    borderColor: '#4ADE80',
   },
   subTabText: {
     fontSize: 14,
-    color: '#64748B',
     fontWeight: '500',
   },
   subTabTextActive: {
-    color: '#15803D',
     fontWeight: 'bold',
   },
   secondaryFilterContainer: {
@@ -656,7 +636,6 @@ const styles = StyleSheet.create({
   filterButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F1F5F9',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
@@ -664,7 +643,6 @@ const styles = StyleSheet.create({
   },
   filterButtonText: {
     fontSize: 14,
-    color: '#1F2937',
     fontWeight: '500',
   },
   sectionsContainer: {
@@ -682,12 +660,10 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#03314B',
   },
   sectionCount: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#475569',
   },
   showAllButton: {
     fontSize: 12,
@@ -701,7 +677,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    gap: 12, // Keep gap for modern RN, but rely on space-between for main axis if calc is correct
+    gap: 12,
   },
   gridItem: {
     width: CARD_WIDTH,
@@ -731,11 +707,9 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#03314B',
     marginBottom: 8,
   },
   emptySubtitle: {
     fontSize: 14,
-    color: '#475569',
   },
 });

@@ -6,17 +6,18 @@ import {
   Dimensions,
   TouchableOpacity
 } from "react-native";
+import { useTheme } from "../../context/ThemeContext";
 import { UserBook, ReadingStatus } from "../../hooks/useBooks";
 
 const { width } = Dimensions.get("window");
 
 interface StarDistributionChartProps {
   books: UserBook[];
-  theme: "light" | "dark";
 }
 
-export default function StarDistributionChart({ books, theme }: StarDistributionChartProps) {
+export default function StarDistributionChart({ books }: StarDistributionChartProps) {
   const [selectedBar, setSelectedBar] = useState<number | null>(null);
+  const { colors, isDark } = useTheme();
 
   const distributionData = useMemo(() => {
     const counts: Record<number, number> = {};
@@ -35,7 +36,7 @@ export default function StarDistributionChart({ books, theme }: StarDistribution
       }
     });
 
-    // CRITICAL: Sort by rating to ensure correct bar order
+    // Sort by rating to ensure correct bar order
     return Object.entries(counts)
       .map(([rating, count]) => ({
         rating: parseFloat(rating),
@@ -49,16 +50,16 @@ export default function StarDistributionChart({ books, theme }: StarDistribution
   const yAxisTicks = [roundedMax, (roundedMax * 3) / 4, (roundedMax * 2) / 4, roundedMax / 4, 0];
 
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, { backgroundColor: colors.card }]}>
       <View style={styles.header}>
-        <Text style={styles.title}>별점 분포</Text>
+        <Text style={[styles.title, { color: colors.text }]}>별점 분포</Text>
       </View>
 
       <View style={styles.chartArea}>
         {/* Y Axis */}
         <View style={styles.yAxis}>
           {yAxisTicks.map((tick, i) => (
-            <Text key={i} style={styles.yTick}>{tick}</Text>
+            <Text key={i} style={[styles.yTick, { color: colors.textMuted }]}>{tick}</Text>
           ))}
         </View>
 
@@ -67,7 +68,7 @@ export default function StarDistributionChart({ books, theme }: StarDistribution
           {/* Grid Lines */}
           <View style={styles.gridLines}>
             {[1, 2, 3, 4].map((_, i) => (
-              <View key={i} style={styles.gridLine} />
+              <View key={i} style={[styles.gridLine, { backgroundColor: colors.border }]} />
             ))}
           </View>
 
@@ -90,27 +91,34 @@ export default function StarDistributionChart({ books, theme }: StarDistribution
                       onPress={() => setSelectedBar(selectedBar === index ? null : index)}
                       style={[
                         styles.bar, 
-                        { height: `${(item.count / roundedMax) * 100}%` },
+                        { 
+                          height: `${(item.count / roundedMax) * 100}%`,
+                          backgroundColor: isDark ? colors.primary : '#334155'
+                        },
                         selectedBar === index && styles.activeBar
                       ]} 
                     />
                     {selectedBar === index && (
                       <View style={[
                         styles.tooltip,
-                        { bottom: `${(item.count / roundedMax) * 100 + 12}%` }
+                        { 
+                          bottom: `${(item.count / roundedMax) * 100 + 12}%`,
+                          backgroundColor: isDark ? colors.border : '#FFFFFF',
+                          shadowColor: '#000'
+                        }
                       ]}>
-                        <Text style={styles.tooltipDate}>{item.rating.toFixed(1)}점</Text>
-                        <Text style={styles.tooltipCount}>권 : {item.count}</Text>
+                        <Text style={[styles.tooltipDate, { color: colors.text }]}>{item.rating.toFixed(1)}점</Text>
+                        <Text style={[styles.tooltipCount, { color: colors.text }]}>권 : {item.count}</Text>
                       </View>
                     )}
                   </View>
                   <View style={styles.xLabelWrapper}>
                     {showLabel ? (
-                      <Text style={styles.xLabel} numberOfLines={1}>
+                      <Text style={[styles.xLabel, { color: colors.textMuted }]} numberOfLines={1}>
                         {item.rating.toFixed(1)} <Text style={styles.starText}>★</Text>
                       </Text>
                     ) : (
-                        <View style={styles.dot} />
+                        <View style={[styles.dot, { backgroundColor: colors.border }]} />
                     )}
                   </View>
                 </View>
@@ -125,10 +133,8 @@ export default function StarDistributionChart({ books, theme }: StarDistribution
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 32,
     padding: 24,
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
     shadowRadius: 12,
@@ -141,20 +147,18 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#1E293B',
   },
   chartArea: {
     flexDirection: 'row',
-    height: 220, // Increased height for labels
+    height: 220, 
   },
   yAxis: {
     justifyContent: 'space-between',
     paddingRight: 12,
-    paddingBottom: 40, // Match bar bottom padding
+    paddingBottom: 40, 
   },
   yTick: {
     fontSize: 12,
-    color: '#94A3B8',
     textAlign: 'right',
     width: 25,
   },
@@ -167,12 +171,11 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    bottom: 40, // Match bar bottom padding
+    bottom: 40, 
     justifyContent: 'space-between',
   },
   gridLine: {
     height: 1,
-    backgroundColor: '#F1F5F9',
   },
   barsWrapper: {
     flex: 1,
@@ -186,23 +189,20 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   barTrack: {
-    width: '80%', // Thicker bars to match web
+    width: '80%', 
     height: 180,
     justifyContent: 'flex-end',
   },
   bar: {
-    backgroundColor: '#334155',
     borderTopLeftRadius: 6,
     borderTopRightRadius: 6,
     width: '100%',
   },
   activeBar: {
-    backgroundColor: '#1E293B',
     opacity: 0.8,
   },
   tooltip: {
     position: 'absolute',
-    backgroundColor: '#FFFFFF',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
@@ -212,20 +212,17 @@ const styles = StyleSheet.create({
     minWidth: 60,
     left: '50%',
     marginLeft: -30,
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 8,
     elevation: 4,
   },
   tooltipDate: {
-    color: '#1E293B',
     fontSize: 12,
     fontWeight: '600',
     marginBottom: 2,
   },
   tooltipCount: {
-    color: '#1E293B',
     fontSize: 13,
     fontWeight: 'bold',
   },
@@ -237,7 +234,6 @@ const styles = StyleSheet.create({
   },
   xLabel: {
     fontSize: 10,
-    color: '#94A3B8',
     textAlign: 'center',
   },
   starText: {
@@ -247,6 +243,5 @@ const styles = StyleSheet.create({
       width: 2,
       height: 2,
       borderRadius: 1,
-      backgroundColor: '#E2E8F0',
   }
 });

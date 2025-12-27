@@ -16,10 +16,13 @@ import { supabase } from "../lib/supabase";
 import type { Session } from "@supabase/supabase-js";
 import { BookshelfIcon } from "../components/Icons";
 
-export default function Layout() {
+import { ThemeProvider, useTheme } from "../context/ThemeContext";
+
+function AppContent() {
   const [queryClient] = useState(() => new QueryClient());
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { colors, isDark } = useTheme();
   
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -51,8 +54,8 @@ export default function Layout() {
 
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#4ADE80" />
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -61,13 +64,13 @@ export default function Layout() {
     return (
       <KeyboardAvoidingView 
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.loginContainer}
+        style={[styles.loginContainer, { backgroundColor: colors.background }]}
       >
-        <View style={styles.loginCard}>
+        <View style={[styles.loginCard, { backgroundColor: colors.card }]}>
           {/* Logo */}
           <View style={styles.logoContainer}>
-            <BookshelfIcon size={40} color="#4ADE80" />
-            <Text style={styles.logoText}>Bookit</Text>
+            <BookshelfIcon size={40} color={colors.primary} />
+            <Text style={[styles.logoText, { color: colors.text }]}>Bookit</Text>
           </View>
 
           {authError && (
@@ -77,11 +80,15 @@ export default function Layout() {
           )}
 
           {/* Email Input */}
-          <Text style={styles.inputLabel}>이메일 주소</Text>
+          <Text style={[styles.inputLabel, { color: colors.textMuted }]}>이메일 주소</Text>
           <TextInput
-            style={styles.textInput}
+            style={[styles.textInput, { 
+              backgroundColor: colors.card, 
+              borderColor: colors.border,
+              color: colors.text
+            }]}
             placeholder="you@example.com"
-            placeholderTextColor="#94A3B8"
+            placeholderTextColor={colors.textMuted}
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
@@ -89,11 +96,15 @@ export default function Layout() {
           />
 
           {/* Password Input */}
-          <Text style={styles.inputLabel}>비밀번호</Text>
+          <Text style={[styles.inputLabel, { color: colors.textMuted }]}>비밀번호</Text>
           <TextInput
-            style={styles.textInput}
+            style={[styles.textInput, { 
+              backgroundColor: colors.card, 
+              borderColor: colors.border,
+              color: colors.text
+            }]}
             placeholder="••••••••"
-            placeholderTextColor="#94A3B8"
+            placeholderTextColor={colors.textMuted}
             value={password}
             onChangeText={setPassword}
             secureTextEntry
@@ -103,7 +114,7 @@ export default function Layout() {
           <TouchableOpacity
             onPress={handleLogin}
             disabled={isSigningIn}
-            style={[styles.loginButton, isSigningIn && styles.loginButtonDisabled]}
+            style={[styles.loginButton, { backgroundColor: colors.primary }, isSigningIn && styles.loginButtonDisabled]}
           >
             {isSigningIn ? (
               <ActivityIndicator color="white" />
@@ -123,16 +134,22 @@ export default function Layout() {
   );
 }
 
+export default function Layout() {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
+  );
+}
+
 const styles = StyleSheet.create({
   loadingContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F8FAFC',
   },
   loginContainer: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 16,
@@ -140,7 +157,6 @@ const styles = StyleSheet.create({
   loginCard: {
     width: '100%',
     maxWidth: 400,
-    backgroundColor: '#FFFFFF',
     padding: 32,
     borderRadius: 12,
     shadowColor: '#000',
@@ -158,7 +174,6 @@ const styles = StyleSheet.create({
   logoText: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#03314B',
     marginLeft: 8,
   },
   errorContainer: {
@@ -175,21 +190,16 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#475569',
     marginBottom: 8,
   },
   textInput: {
     borderWidth: 1,
-    borderColor: '#E2E8F0',
     borderRadius: 8,
     padding: 16,
     marginBottom: 16,
     fontSize: 16,
-    color: '#03314B',
-    backgroundColor: '#FFFFFF',
   },
   loginButton: {
-    backgroundColor: '#4ADE80',
     paddingVertical: 16,
     borderRadius: 8,
     alignItems: 'center',

@@ -19,8 +19,11 @@ import { BookSearchLoading } from "../../components/BookSearchLoading";
 import { SearchBookCard } from "../../components/SearchBookCard";
 import { BookWithReview, useBooks, UserBook } from "../../hooks/useBooks";
 
+import { useTheme } from "../../context/ThemeContext";
+
 export default function Search() {
   const router = useRouter();
+  const { colors, isDark } = useTheme();
   const [query, setQuery] = useState("");
   const { results, loading, error, searchBooks, setResults } = useAladinSearch();
   const { data: userBooks } = useBooks();
@@ -111,31 +114,31 @@ export default function Search() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.content}>
-        <View style={styles.searchContainer}>
-          <SearchIcon size={20} color="#94A3B8" />
+        <View style={[styles.searchContainer, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+          <SearchIcon size={20} color={colors.textMuted} />
           <TextInput
-            style={styles.input}
+            style={[styles.input, { color: colors.text }]}
             placeholder="책 제목이나 저자로 검색..."
             value={query}
             onChangeText={handleQueryChange}
-            placeholderTextColor="#94A3B8"
+            placeholderTextColor={colors.textMuted}
             autoCapitalize="none"
             autoCorrect={false}
           />
           {query.length > 0 && (
             <TouchableOpacity onPress={clearSearch}>
-              <XMarkIcon size={20} color="#94A3B8" />
+              <XMarkIcon size={20} color={colors.textMuted} />
             </TouchableOpacity>
           )}
         </View>
 
         {error ? (
           <View style={styles.centerContainer}>
-            <Text style={styles.errorText}>{error}</Text>
-            <TouchableOpacity onPress={() => searchBooks(query)} style={styles.retryButton}>
-               <Text style={styles.retryText}>다시 시도</Text>
+            <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
+            <TouchableOpacity onPress={() => searchBooks(query)} style={[styles.retryButton, { backgroundColor: isDark ? colors.border : '#F1F5F9' }]}>
+               <Text style={[styles.retryText, { color: colors.text }]}>다시 시도</Text>
             </TouchableOpacity>
           </View>
         ) : loading ? (
@@ -149,7 +152,7 @@ export default function Search() {
             contentContainerStyle={styles.listContent}
             ListEmptyComponent={
               query.length > 0 ? (
-                <Text style={styles.emptyText}>검색 결과가 없습니다.</Text>
+                <Text style={[styles.emptyText, { color: colors.textMuted }]}>검색 결과가 없습니다.</Text>
               ) : null
             }
           />
@@ -162,7 +165,6 @@ export default function Search() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
   },
   content: {
     flex: 1,
@@ -174,20 +176,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#D1D5DB',
-    backgroundColor: '#FFFFFF',
   },
   input: {
     flex: 1,
     marginLeft: 12,
     fontSize: 16,
-    color: '#1E293B',
     paddingVertical: 8,
-    ...Platform.select({
-      web: {
-        // Remove outlineStyle as it's not a standard RN property and causes type errors
-      },
-    }),
   },
   listContent: {
     padding: 16,
@@ -195,7 +189,6 @@ const styles = StyleSheet.create({
   emptyText: {
     textAlign: 'center',
     marginTop: 40,
-    color: '#64748B',
     fontSize: 14,
   },
   centerContainer: {
@@ -205,7 +198,6 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   errorText: {
-    color: '#EF4444',
     marginBottom: 16,
     fontSize: 14,
     textAlign: 'center',
@@ -213,11 +205,9 @@ const styles = StyleSheet.create({
   retryButton: {
     paddingHorizontal: 20,
     paddingVertical: 10,
-    backgroundColor: '#F1F5F9',
     borderRadius: 8,
   },
   retryText: {
-    color: '#475569',
     fontWeight: '600',
   },
 });

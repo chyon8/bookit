@@ -12,6 +12,8 @@ interface ConfirmModalProps {
   isDestructive?: boolean;
 }
 
+import { useTheme } from '../context/ThemeContext';
+
 export function ConfirmModal({
   isVisible,
   title,
@@ -22,6 +24,8 @@ export function ConfirmModal({
   cancelText = "취소",
   isDestructive = false
 }: ConfirmModalProps) {
+  const { colors, isDark } = useTheme();
+
   return (
     <Modal
       animationType="fade"
@@ -30,28 +34,30 @@ export function ConfirmModal({
       onRequestClose={onCancel}
     >
       <View style={styles.overlay}>
-        <View style={styles.modalCard}>
-          <Text style={styles.title}>{title}</Text>
-          <Text style={styles.message}>{message}</Text>
+        <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
+          <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
+          <Text style={[styles.message, { color: colors.textMuted }]}>{message}</Text>
           
           <View style={styles.buttonContainer}>
             <TouchableOpacity 
-              style={[styles.button, styles.cancelButton]} 
+              style={[styles.button, { backgroundColor: isDark ? colors.border : '#F1F5F9' }]} 
               onPress={onCancel}
             >
-              <Text style={styles.cancelButtonText}>{cancelText}</Text>
+              <Text style={[styles.cancelButtonText, { color: colors.textMuted }]}>{cancelText}</Text>
             </TouchableOpacity>
             
             <TouchableOpacity 
               style={[
                 styles.button, 
-                isDestructive ? styles.destructiveButton : styles.confirmButton
+                isDestructive 
+                  ? { backgroundColor: isDark ? '#7F1D1D' : '#FEE2E2' } 
+                  : { backgroundColor: colors.primary }
               ]} 
               onPress={onConfirm}
             >
               <Text style={[
                 styles.buttonText, 
-                isDestructive ? styles.destructiveButtonText : styles.confirmButtonText
+                { color: isDestructive ? (isDark ? '#F87171' : '#EF4444') : '#FFFFFF' }
               ]}>{confirmText}</Text>
             </TouchableOpacity>
           </View>
@@ -70,7 +76,6 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   modalCard: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 24,
     width: '100%',
@@ -85,13 +90,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#1E293B',
     marginBottom: 8,
     textAlign: 'center',
   },
   message: {
     fontSize: 15,
-    color: '#64748B',
     marginBottom: 24,
     textAlign: 'center',
     lineHeight: 22,
@@ -109,28 +112,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   cancelButton: {
-    backgroundColor: '#F1F5F9',
   },
   confirmButton: {
-    backgroundColor: '#4ADE80',
   },
   destructiveButton: {
-    backgroundColor: '#FEE2E2',
   },
   cancelButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#64748B',
   },
   confirmButtonText: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#FFFFFF',
   },
   destructiveButtonText: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#EF4444',
   },
   buttonText: {
     fontSize: 14,
