@@ -9,14 +9,19 @@ import {
   ScrollView,
   Image,
   StyleSheet,
-  Dimensions
+  Dimensions,
+  Alert
 } from "react-native";
 import { useBooks, ReadingStatus, UserBook } from "../../hooks/useBooks";
 import { BookCard } from "../../components/BookCard";
+import { HorizontalBookCard } from "../../components/HorizontalBookCard";
 import { Stack, useRouter } from "expo-router";
-import { SearchIcon, XMarkIcon, SparklesIcon, ChevronDownIcon } from "../../components/Icons";
+import { BookSearchLoading } from "../../components/BookSearchLoading";
+import { SearchIcon, XMarkIcon, SparklesIcon, ChevronDownIcon, TrashIcon } from "../../components/Icons";
 import { RandomNoteModal, Note } from "../../components/RandomNoteModal";
 import { FilterSheet, SortOption } from "../../components/FilterSheet";
+import { useDeleteBook } from "../../hooks/useBookData";
+import { ConfirmModal } from "../../components/ConfirmModal";
 
 const { width: screenWidth } = Dimensions.get('window');
 const CARD_WIDTH = (screenWidth - 44) / 2; // 2 columns: (Screen - 32px padding - 12px gap) / 2
@@ -24,6 +29,8 @@ const CARD_WIDTH = (screenWidth - 44) / 2; // 2 columns: (Screen - 32px padding 
 export default function Home() {
   const router = useRouter();
   const { data: userBooks, isLoading, error } = useBooks();
+  const deleteBookMutation = useDeleteBook();
+
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<ReadingStatus | "All">("All");
 
@@ -32,6 +39,18 @@ export default function Home() {
   const [currentNoteIndex, setCurrentNoteIndex] = useState(0);
 
   const [visibleCount, setVisibleCount] = useState(12);
+
+  const [confirmModalConfig, setConfirmModalConfig] = useState({
+    isVisible: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+    bookId: "",
+  });
+
+  const closeConfirmModal = () => {
+    setConfirmModalConfig(prev => ({ ...prev, isVisible: false }));
+  };
 
   const filterOptions = ["All", ReadingStatus.Reading, ReadingStatus.Finished, ReadingStatus.WantToRead] as const;
   
@@ -190,6 +209,23 @@ export default function Home() {
      return filteredBooksAll.slice(0, visibleCount);
   }, [filteredBooksAll, visibleCount]);
 
+  if (isLoading) {
+    return (
+      <View style={styles.centerContainer}>
+        <BookSearchLoading message="서재를 불러오고 있어요" />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.centerContainer}>
+        <Text style={styles.errorTitle}>Failed to load books</Text>
+        <Text style={styles.errorMessage}>{String(error)}</Text>
+      </View>
+    );
+  }
+
   const handleShowRandomNote = () => {
     if (!userBooks || userBooks.length === 0) return;
 
@@ -236,26 +272,30 @@ export default function Home() {
     router.push(`/book-record/${book.book_id}`);
   };
 
+  const handleDeleteBook = (id: string, title: string) => {
+    setConfirmModalConfig({
+        isVisible: true,
+        title: "기록 삭제",
+        message: `"${title}" 기록을 정말 삭제하시겠습니까?`,
+        bookId: id,
+        onConfirm: async () => {
+            try {
+                await deleteBookMutation.mutateAsync(id);
+                // Badge update will happen automatically due to cache invalidation in hook
+            } catch (e) {
+                Alert.alert("오류", "삭제 중 문제가 발생했습니다.");
+            }
+        }
+    });
+  };
+
   const renderHorizontalBookCard = (book: UserBook) => (
-    <TouchableOpacity 
-      key={book.id} 
-      style={styles.horizontalCard}
-      onPress={() => handleBookPress(book)}
-    >
-      <View style={styles.imageContainer}>
-        <Image
-          source={{ uri: book.books.cover_image_url }}
-          style={styles.bookImage}
-          resizeMode="cover"
-        />
-      </View>
-      <View style={styles.cardTextContainer}>
-        <Text style={styles.bookTitle} numberOfLines={2}>{book.books.title}</Text>
-        <Text style={styles.bookAuthor} numberOfLines={1}>
-          {book.books.author?.split("(지은이")[0].trim()}
-        </Text>
-      </View>
-    </TouchableOpacity>
+    <HorizontalBookCard 
+      key={book.id}
+      book={book}
+      onPress={handleBookPress}
+      onDelete={handleDeleteBook}
+    />
   );
 
   const renderBookSection = (title: string, books: UserBook[] | undefined, status: ReadingStatus) => {
@@ -294,14 +334,7 @@ export default function Home() {
     );
   }
 
-  if (error) {
-    return (
-      <View style={styles.centerContainer}>
-        <Text style={styles.errorTitle}>Failed to load books</Text>
-        <Text style={styles.errorMessage}>{String(error)}</Text>
-      </View>
-    );
-  }
+
 
   return (
     <View style={styles.container}>
@@ -441,6 +474,7 @@ export default function Home() {
                       book={book} 
                       showStatusBadge={false} 
                       onSelect={handleBookPress}
+                      onDelete={handleDeleteBook}
                     />
                   </View>
                 ))}
@@ -484,6 +518,16 @@ export default function Home() {
         initialFilters={filters}
         onApply={setFilters}
         genres={genres}
+      />
+
+      <ConfirmModal
+        isVisible={confirmModalConfig.isVisible}
+        title={confirmModalConfig.title}
+        message={confirmModalConfig.message}
+        onConfirm={confirmModalConfig.onConfirm}
+        onCancel={closeConfirmModal}
+        confirmText="삭제"
+        isDestructive={true}
       />
     </View>
   );
@@ -649,33 +693,6 @@ const styles = StyleSheet.create({
   horizontalScrollContent: {
     paddingRight: 16,
     gap: 12,
-  },
-  horizontalCard: {
-    width: 140,
-  },
-  imageContainer: {
-    aspectRatio: 2/3,
-    width: '100%',
-    borderRadius: 8,
-    overflow: 'hidden',
-    backgroundColor: '#E5E7EB',
-  },
-  bookImage: {
-    width: '100%',
-    height: '100%',
-  },
-  cardTextContainer: {
-    paddingVertical: 8,
-  },
-  bookTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#03314B',
-    marginBottom: 4,
-  },
-  bookAuthor: {
-    fontSize: 12,
-    color: '#475569',
   },
   gridContainer: {
     flexDirection: 'row',

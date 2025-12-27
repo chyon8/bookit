@@ -100,7 +100,7 @@ const Book = ({
   );
 };
 
-export const BookSearchLoading = () => {
+export const BookSearchLoading = ({ message = "책을 찾고 있어요..." }: { message?: string }) => {
   return (
     <View style={styles.container}>
       <View style={styles.loader}>
@@ -109,7 +109,7 @@ export const BookSearchLoading = () => {
         <Book delay={500} color="#82c4a8" height={80} left={120} />
         <View style={styles.shelf} />
       </View>
-      <Text style={styles.text}>책을 찾고 있어요...</Text>
+      <Text style={styles.text}>{message}</Text>
     </View>
   );
 };

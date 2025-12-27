@@ -219,3 +219,27 @@ export function useAddBookToLibrary() {
      },
   });
 }
+// Mutation for deleting a book from library
+export function useDeleteBook() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (reviewId: string) => {
+      console.log('Deleting book record:', reviewId);
+      const { error } = await supabase
+        .from("user_books")
+        .delete()
+        .eq("id", reviewId);
+
+      if (error) {
+        console.error("Error deleting book:", error);
+        throw error;
+      };
+      return reviewId;
+    },
+    onSuccess: () => {
+      // Invalidate the base key to ensure the library and search badges update instantly
+      queryClient.invalidateQueries({ queryKey: bookKeys.all });
+    },
+  });
+}

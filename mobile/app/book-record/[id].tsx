@@ -14,9 +14,9 @@ import {
   ActivityIndicator
 } from "react-native";
 import { useLocalSearchParams, useRouter, Stack, useNavigation } from "expo-router";
-import { useBookData, useUpdateBookReview } from "../../hooks/useBookData";
+import { useBookData, useUpdateBookReview, useDeleteBook } from "../../hooks/useBookData";
 import { UserBook, ReadingStatus, MemorableQuote, Memo } from "../../hooks/useBooks";
-import { ChevronLeftIcon } from "../../components/Icons";
+import { ChevronLeftIcon, TrashIcon } from "../../components/Icons";
 import { StarRating } from "../../components/StarRating";
 import { QuoteCard } from "../../components/QuoteCard";
 import { MemoCard } from "../../components/MemoCard";
@@ -38,11 +38,13 @@ export default function BookRecordScreen() {
 
   const { data: book, isLoading } = useBookData(id, user?.id);
   const updateReviewMutation = useUpdateBookReview();
+  const deleteBookMutation = useDeleteBook();
 
   const [review, setReview] = useState<Partial<UserBook>>({});
   const [isDirty, setIsDirty] = useState(false);
   const initialReviewState = useRef<string>("");
   const isSaving = useRef(false);
+  const isDeleting = useRef(false);
   const navigation = useNavigation();
 
   // Modal State
@@ -137,6 +139,26 @@ export default function BookRecordScreen() {
       isSaving.current = false;
       Alert.alert("오류", "저장 중 문제가 발생했습니다.");
     }
+  };
+
+  const handleDelete = async () => {
+    if (!book) return;
+    
+    showConfirmModal(
+        "기록 삭제",
+        "정말 이 독서 기록을 삭제하시겠습니까? 삭제된 기록은 복구할 수 없습니다.",
+        async () => {
+            try {
+                isDeleting.current = true;
+                await deleteBookMutation.mutateAsync(book.review.id);
+                router.replace('/'); // Go back to library
+            } catch (e) {
+                isDeleting.current = false;
+                Alert.alert("오류", "삭제 중 문제가 발생했습니다.");
+            }
+        },
+        { confirmText: "삭제", isDestructive: true }
+    );
   };
 
   const handleBack = () => {
@@ -408,6 +430,16 @@ export default function BookRecordScreen() {
                 ))}
             </View>
 
+            {/* Delete Button */}
+            <TouchableOpacity 
+                onPress={handleDelete} 
+                style={styles.deleteButton}
+                disabled={isDeleting.current}
+            >
+                <TrashIcon size={20} color="#EF4444" />
+                <Text style={styles.deleteButtonText}>독서 기록 삭제하기</Text>
+            </TouchableOpacity>
+
           </View>
           
           <View style={{ height: 40 }} /> 
@@ -642,5 +674,23 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     marginBottom: 16,
+  },
+  deleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    marginTop: 24,
+    marginBottom: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#FEE2E2',
+    backgroundColor: '#FEF2F2',
+    gap: 8,
+  },
+  deleteButtonText: {
+    color: '#EF4444',
+    fontWeight: 'bold',
+    fontSize: 15,
   },
 });
