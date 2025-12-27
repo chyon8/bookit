@@ -102,7 +102,7 @@ const Book = ({
 };
 
 export const BookSearchLoading = ({ message = "책을 찾고 있어요..." }: { message?: string }) => {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
 
   return (
     <View style={styles.container}>
@@ -110,7 +110,7 @@ export const BookSearchLoading = ({ message = "책을 찾고 있어요..." }: { 
         <Book delay={0} color="#f3c969" height={75} left={20} />
         <Book delay={250} color="#f28c8c" height={90} left={70} />
         <Book delay={500} color="#82c4a8" height={80} left={120} />
-        <View style={styles.shelf} />
+        <View style={[styles.shelf, { backgroundColor: isDark ? '#5d4037' : '#9b7a60' }]} />
       </View>
       <Text style={[styles.text, { color: colors.textMuted }]}>{message}</Text>
     </View>
@@ -145,7 +145,6 @@ const styles = StyleSheet.create({
     left: 0,
     width: '100%',
     height: 5,
-    backgroundColor: '#9b7a60',
     borderRadius: 2.5,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },

@@ -214,7 +214,7 @@ export default function Home() {
 
   if (isLoading) {
     return (
-      <View style={styles.centerContainer}>
+      <View style={[styles.centerContainer, { backgroundColor: colors.background }]}>
         <BookSearchLoading message="서재를 불러오고 있어요" />
       </View>
     );
@@ -222,9 +222,9 @@ export default function Home() {
 
   if (error) {
     return (
-      <View style={styles.centerContainer}>
-        <Text style={styles.errorTitle}>Failed to load books</Text>
-        <Text style={styles.errorMessage}>{String(error)}</Text>
+      <View style={[styles.centerContainer, { backgroundColor: colors.background }]}>
+        <Text style={[styles.errorTitle, { color: colors.error }]}>Failed to load books</Text>
+        <Text style={[styles.errorMessage, { color: colors.textMuted }]}>{String(error)}</Text>
       </View>
     );
   }
