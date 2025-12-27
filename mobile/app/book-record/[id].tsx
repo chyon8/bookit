@@ -573,7 +573,7 @@ export default function BookRecordScreen() {
                 <Text style={[styles.sectionTitle, { color: colors.text }]}>메모</Text>
               </View>
               
-              <TouchableOpacity onPress={addMemo} style={[styles.addButton, { backgroundColor: isDark ? colors.border : '#ECFDF5' }]}>
+              <TouchableOpacity onPress={addMemo} style={[styles.addButton, { backgroundColor: isDark ? colors.border : '#ECFDF5', marginBottom: 12 }]}>
                   <Text style={[styles.addButtonText, { color: colors.primary }]}>+ 메모 추가</Text>
               </TouchableOpacity>
 
