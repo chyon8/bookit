@@ -12,6 +12,7 @@ import {
   Dimensions,
   Alert
 } from "react-native";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBooks, ReadingStatus, UserBook } from "../../hooks/useBooks";
 import { BookCard } from "../../components/BookCard";
 import { HorizontalBookCard } from "../../components/HorizontalBookCard";
@@ -31,6 +32,7 @@ import { useTheme } from "../../context/ThemeContext";
 export default function Home() {
   const router = useRouter();
   const { colors, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
   const { data: userBooks, isLoading, error } = useBooks();
   const deleteBookMutation = useDeleteBook();
 
@@ -339,7 +341,7 @@ export default function Home() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <SafeAreaView style={styles.flex1}>
-        <ScrollView style={styles.flex1} contentContainerStyle={styles.scrollContent}>
+        <ScrollView style={styles.flex1} contentContainerStyle={[styles.scrollContent, { paddingBottom: 100 + insets.bottom }]}>
           
           {/* Search Bar & Random Button */}
           <View style={styles.searchContainer}>
@@ -542,7 +544,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 16,
     paddingTop: 8,
-    paddingBottom: 40,
   },
   centerContainer: {
     flex: 1,

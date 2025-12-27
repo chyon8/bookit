@@ -1,8 +1,21 @@
 import { Platform } from "react-native";
+import Constants from 'expo-constants';
 
-const API_URL =
-  Platform.OS === "android"
-    ? "http://10.0.2.2:3000"
-    : "http://localhost:3000";
+const getBaseUrl = () => {
+  if (!__DEV__) {
+    return "https://your-production-url.com";
+  }
 
-export const BASE_URL = __DEV__ ? API_URL : "https://your-production-url.com";
+  // Get the IP address of the machine running the Expo dev server
+  const debuggerHost = Constants.expoConfig?.hostUri;
+  const address = debuggerHost?.split(':')[0];
+
+  if (!address) {
+    return Platform.OS === "android" ? "http://10.0.2.2:3000" : "http://localhost:3000";
+  }
+
+  // Assuming Next.js (proxy server) is running on the same machine at port 3000
+  return `http://${address}:3000`;
+};
+
+export const BASE_URL = getBaseUrl();

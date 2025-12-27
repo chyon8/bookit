@@ -393,7 +393,10 @@ export default function BookRecordScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Stack.Screen options={{ headerShown: false }} />
+      <Stack.Screen options={{ 
+        headerShown: false,
+        gestureEnabled: !isDirty // Disable swipe gesture when dirty to avoid native conflict
+      }} />
       
       <ConfirmModal
         isVisible={modalConfig.isVisible}

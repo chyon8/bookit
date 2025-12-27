@@ -10,7 +10,7 @@ import {
   Platform,
   UIManager
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { G, Circle, Path } from 'react-native-svg';
 import { UserBook, ReadingStatus } from "../hooks/useBooks";
 import { BookOpenIcon, BookIcon, ChartBarIcon, StarIcon } from "./Icons";
@@ -140,6 +140,7 @@ const DonutChart = ({ data }: { data: { name: string; value: number; color: stri
 export default function StatsView({ books }: StatsViewProps) {
   const [activeTab, setActiveTab] = useState<Tab>("overview");
   const { colors, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
 
   const processedStats = useMemo(() => {
     const stats = {
@@ -226,7 +227,7 @@ export default function StatsView({ books }: StatsViewProps) {
 
       <ScrollView 
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContentContainer}
+        contentContainerStyle={[styles.scrollContentContainer, { paddingBottom: 100 + insets.bottom }]}
       >
         {activeTab === "overview" && (
             <View style={styles.section}>
@@ -307,7 +308,6 @@ const styles = StyleSheet.create({
   },
   scrollContentContainer: {
     padding: 16,
-    paddingBottom: 40,
   },
   section: {
     gap: 16,

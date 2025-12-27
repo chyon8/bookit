@@ -80,3 +80,10 @@ export const CameraIcon = ({ className, size = 20, color = "black" }: { classNam
 export const PhotoIcon = ({ className, size = 20, color = "black" }: { className?: string; size?: number; color?: string }) => (
   <Feather name="image" size={size} color={color} className={className} />
 );
+export const ListIcon = ({ className, size = 20, color = "black" }: { className?: string; size?: number; color?: string }) => (
+  <Feather name="list" size={size} color={color} className={className} />
+);
+
+export const SparkleChatIcon = ({ className, size = 20, color = "black" }: { className?: string; size?: number; color?: string }) => (
+  <FontAwesome name="magic" size={size} color={color} className={className} />
+);

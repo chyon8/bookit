@@ -1,12 +1,23 @@
 import { Tabs, useRouter } from "expo-router";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
-import { BookIcon, BookshelfIcon, ChartBarIcon, SearchIcon, TrendingUpIcon } from "../../components/Icons";
 import { Feather } from "@expo/vector-icons";
 import { useTheme } from "../../context/ThemeContext";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { 
+  BookIcon, 
+  BookshelfIcon, 
+  ChartBarIcon, 
+  SearchIcon, 
+  TrendingUpIcon,
+  ListIcon,
+  SparkleChatIcon
+} from "../../components/Icons";
 
 export default function TabLayout() {
   const router = useRouter();
   const { colors, toggleTheme, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
+  const tabBarHeight = 70 + insets.bottom;
 
   return (
     <Tabs
@@ -43,13 +54,29 @@ export default function TabLayout() {
             </View>
           </View>
         ),
-        tabBarActiveTintColor: colors.text,
+        tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,
-        tabBarStyle: [styles.tabBar, { 
+        tabBarStyle: { 
           backgroundColor: colors.card,
-          borderTopColor: colors.border
-        }],
-        tabBarLabelStyle: styles.tabBarLabel,
+          borderTopColor: colors.border,
+          height: tabBarHeight,
+          paddingBottom: insets.bottom > 0 ? insets.bottom : 12,
+          paddingTop: 12,
+          borderTopWidth: 1,
+          elevation: 20,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -4 },
+          shadowOpacity: isDark ? 0.4 : 0.08,
+          shadowRadius: 15,
+        },
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: '600',
+          marginTop: 4,
+        },
+        tabBarIconStyle: {
+          marginTop: 0,
+        }
       }}
     >
       <Tabs.Screen
@@ -63,7 +90,7 @@ export default function TabLayout() {
         name="index"
         options={{
           title: "내 책장",
-          tabBarIcon: ({ color }) => <BookIcon color={color} size={24} />,
+          tabBarIcon: ({ color }) => <ListIcon color={color} size={24} />,
         }}
       />
       <Tabs.Screen
@@ -77,7 +104,7 @@ export default function TabLayout() {
         name="chat"
         options={{
           title: "AI 채팅",
-          tabBarIcon: ({ color }) => <TrendingUpIcon color={color} size={24} />,
+          tabBarIcon: ({ color }) => <SparkleChatIcon color={color} size={24} />,
         }}
       />
     </Tabs>
@@ -123,17 +150,5 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     fontWeight: 'bold',
     fontSize: 14,
-  },
-  tabBar: {
-    backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
-    height: 65,
-    paddingBottom: 10,
-    paddingTop: 8,
-  },
-  tabBarLabel: {
-    fontSize: 12,
-    marginTop: 2,
   },
 });

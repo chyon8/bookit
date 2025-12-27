@@ -12,6 +12,7 @@ import {
   Platform,
   Alert
 } from "react-native";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from "expo-router";
 import { SearchIcon, XMarkIcon } from "../../components/Icons";
 import { useAladinSearch } from "../../hooks/useAladinSearch";
@@ -24,6 +25,7 @@ import { useTheme } from "../../context/ThemeContext";
 export default function Search() {
   const router = useRouter();
   const { colors, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
   const [query, setQuery] = useState("");
   const { results, loading, error, searchBooks, setResults } = useAladinSearch();
   const { data: userBooks } = useBooks();
@@ -149,7 +151,7 @@ export default function Search() {
             extraData={userBooks} // Force re-render when userBooks changes
             keyExtractor={(item) => item.isbn13 || item.id}
             renderItem={renderItem}
-            contentContainerStyle={styles.listContent}
+            contentContainerStyle={[styles.listContent, { paddingBottom: 100 + insets.bottom }]}
             ListEmptyComponent={
               query.length > 0 ? (
                 <Text style={[styles.emptyText, { color: colors.textMuted }]}>검색 결과가 없습니다.</Text>

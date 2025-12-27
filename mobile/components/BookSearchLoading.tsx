@@ -1,15 +1,5 @@
-import React, { useEffect } from 'react';
-import { View, StyleSheet, Text } from 'react-native';
-import Animated, { 
-  useAnimatedStyle, 
-  useSharedValue, 
-  withDelay, 
-  withRepeat, 
-  withSequence, 
-  withTiming, 
-  Easing,
-  cancelAnimation
-} from 'react-native-reanimated';
+import React, { useEffect, useRef } from 'react';
+import { View, StyleSheet, Text, Animated, Easing } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 
 const Book = ({ 
@@ -23,66 +13,58 @@ const Book = ({
   height: number; 
   left: number;
 }) => {
-  const opacity = useSharedValue(0);
-  const translateY = useSharedValue(60);
-  const rotate = useSharedValue(0);
-  const scale = useSharedValue(0.8);
+  const animatedValue = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    const duration = 2000;
-    
-    // 0% -> 40%
-    const animate = () => {
-       // Reset
-       opacity.value = 0;
-       translateY.value = 60;
-       rotate.value = 0;
-       scale.value = 0.8;
+    // Reset value
+    animatedValue.setValue(0);
 
-       // Start Sequence
-       opacity.value = withDelay(delay, withRepeat(withSequence(
-         withTiming(1, { duration: duration * 0.4 }),
-         withTiming(1, { duration: duration * 0.6 })
-       ), -1));
-
-       translateY.value = withDelay(delay, withRepeat(withSequence(
-         withTiming(-10, { duration: duration * 0.4, easing: Easing.ease }),
-         withTiming(0, { duration: duration * 0.3 }),
-         withTiming(0, { duration: duration * 0.3 })
-       ), -1));
-
-       rotate.value = withDelay(delay, withRepeat(withSequence(
-         withTiming(-3, { duration: duration * 0.4 }),
-         withTiming(0, { duration: duration * 0.3 }),
-         withTiming(0, { duration: duration * 0.3 })
-       ), -1));
-
-       scale.value = withDelay(delay, withRepeat(withSequence(
-         withTiming(1.05, { duration: duration * 0.4 }),
-         withTiming(1, { duration: duration * 0.3 }),
-         withTiming(1, { duration: duration * 0.3 })
-       ), -1));
-    }
-     
-    animate();
+    // Create a continuous loop
+    // 0 -> 1 will represent 0% to 100% of the 2000ms animation
+    Animated.loop(
+      Animated.sequence([
+        Animated.delay(delay),
+        Animated.timing(animatedValue, {
+          toValue: 1,
+          duration: 2000,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        })
+      ])
+    ).start();
 
     return () => {
-       cancelAnimation(opacity);
-       cancelAnimation(translateY);
-       cancelAnimation(rotate);
-       cancelAnimation(scale);
+      animatedValue.stopAnimation();
     }
-  }, []);
+  }, [delay]);
 
-  const animatedStyle = useAnimatedStyle(() => {
-    return {
-      opacity: opacity.value,
-      transform: [
-        { translateY: translateY.value },
-        { rotate: `${rotate.value}deg` },
-        { scale: scale.value }
-      ]
-    };
+  // Interpolate for different properties
+  // translateY: 0% -> 40% (-10), 40% -> 70% (0), 70% -> 100% (0)
+  const translateY = animatedValue.interpolate({
+    inputRange: [0, 0.4, 0.7, 1],
+    outputRange: [60, -10, 0, 0],
+    extrapolate: 'clamp'
+  });
+
+  // opacity: 0% -> 40% (1), 40% -> 100% (1)
+  const opacity = animatedValue.interpolate({
+    inputRange: [0, 0.1, 0.4, 1],
+    outputRange: [0, 1, 1, 1],
+    extrapolate: 'clamp'
+  });
+
+  // rotate: 0% -> 40% (-3deg), 40% -> 70% (0), 70% -> 100% (0)
+  const rotate = animatedValue.interpolate({
+    inputRange: [0, 0.4, 0.7, 1],
+    outputRange: ['0deg', '-3deg', '0deg', '0deg'],
+    extrapolate: 'clamp'
+  });
+
+  // scale: 0% -> 40% (1.05), 40% -> 70% (1), 70% -> 100% (1)
+  const scale = animatedValue.interpolate({
+    inputRange: [0, 0.4, 0.7, 1],
+    outputRange: [0.8, 1.05, 1, 1],
+    extrapolate: 'clamp'
   });
 
   return (
@@ -93,9 +75,14 @@ const Book = ({
           backgroundColor: color, 
           height, 
           left,
-          zIndex: color === '#f28c8c' ? 10 : 1 // z-index for middle book
-        },
-        animatedStyle
+          zIndex: color === '#f28c8c' ? 10 : 1,
+          opacity: opacity,
+          transform: [
+            { translateY },
+            { rotate },
+            { scale }
+          ]
+        }
       ]}
     />
   );
