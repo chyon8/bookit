@@ -99,11 +99,13 @@ export default function Home() {
     sort: SortOption;
     reread: boolean | null;
     month: string | null;
+    year: string | null;
     genre: string | null;
   }>({
     sort: "date_desc",
     reread: null,
     month: null,
+    year: null,
     genre: null
   });
 
@@ -166,6 +168,10 @@ export default function Home() {
       if (filters.month && book.end_date) {
          const date = new Date(book.end_date);
          if ((date.getMonth() + 1).toString() !== filters.month) return false;
+      }
+      if (filters.year && book.end_date) {
+         const date = new Date(book.end_date);
+         if (date.getFullYear().toString() !== filters.year) return false;
       }
 
       return true;
@@ -429,31 +435,25 @@ export default function Home() {
           )}
           <View style={styles.secondaryFilterContainer}>
             <TouchableOpacity 
-                style={[styles.filterButton, { backgroundColor: isDark ? colors.border : '#F1F5F9' }]}
-                onPress={() => setFilters({ sort: "date_desc", reread: null, month: null, genre: null })}
-            >
-              <Text style={[styles.filterButtonText, { color: colors.text }]}>초기화</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-                style={[styles.filterButton, { backgroundColor: isDark ? colors.border : '#F1F5F9' }]}
+                style={[
+                  styles.filterButton, 
+                  { backgroundColor: isDark ? colors.border : '#F1F5F9' },
+                  (filters.month || filters.year || filters.reread || filters.genre) && { borderColor: colors.primary, borderWidth: 1 }
+                ]}
                 onPress={() => setFilterSheetVisible(true)}
             >
-              <Text style={[styles.filterButtonText, { color: colors.text }]}>상세 필터</Text>
-              <ChevronDownIcon size={16} color={colors.textMuted} />
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-                style={[styles.filterButton, { backgroundColor: isDark ? colors.border : '#F1F5F9' }]}
-                onPress={() => setFilterSheetVisible(true)}
-            >
-              <Text style={[styles.filterButtonText, { color: colors.text }]}>
-                {filters.sort === "date_desc" ? "최신 추가순" : 
-                 filters.sort === "date_asc" ? "오래된순" : 
-                 filters.sort === "rating_desc" ? "별점 높은순" : 
-                 filters.sort === "rating_asc" ? "별점 낮은순" : "제목순"}
+              <Text style={[
+                styles.filterButtonText, 
+                { color: (filters.month || filters.year || filters.reread || filters.genre) ? colors.primary : colors.text }
+              ]}>
+                필터 및 정렬 · {
+                  filters.sort === "date_desc" ? "최신순" : 
+                  filters.sort === "date_asc" ? "오래된순" : 
+                  filters.sort === "rating_desc" ? "별점순" : 
+                  filters.sort === "rating_asc" ? "낮은별점순" : "제목순"
+                }
               </Text>
-              <ChevronDownIcon size={16} color={colors.textMuted} />
+              <ChevronDownIcon size={16} color={(filters.month || filters.year || filters.reread || filters.genre) ? colors.primary : colors.textMuted} />
             </TouchableOpacity>
           </View>
 

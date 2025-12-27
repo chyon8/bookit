@@ -19,12 +19,14 @@ interface FilterSheetProps {
     sort: SortOption;
     reread: boolean | null;
     month: string | null;
+    year: string | null;
     genre: string | null;
   }) => void;
   initialFilters: {
     sort: SortOption;
     reread: boolean | null;
     month: string | null;
+    year: string | null;
     genre: string | null;
   };
   genres: string[]; // Pass available genres
@@ -37,12 +39,15 @@ export const FilterSheet = ({ visible, onClose, onApply, initialFilters, genres 
   const [sort, setSort] = useState<SortOption>(initialFilters.sort);
   const [reread, setReread] = useState<boolean | null>(initialFilters.reread);
   const [month, setMonth] = useState<string | null>(initialFilters.month);
+  const [year, setYear] = useState<string | null>(initialFilters.year);
   const [genre, setGenre] = useState<string | null>(initialFilters.genre);
 
   const months = Array.from({ length: 12 }, (_, i) => `${i + 1}월`);
+  const currentYearNum = new Date().getFullYear();
+  const years = [currentYearNum, currentYearNum - 1, currentYearNum - 2].map(String);
 
   const handleApply = () => {
-    onApply({ sort, reread, month, genre });
+    onApply({ sort, reread, month, year, genre });
     onClose();
   };
 
@@ -50,6 +55,7 @@ export const FilterSheet = ({ visible, onClose, onApply, initialFilters, genres 
     setSort("date_desc");
     setReread(null);
     setMonth(null);
+    setYear(null);
     setGenre(null);
   };
 
@@ -121,6 +127,32 @@ export const FilterSheet = ({ visible, onClose, onApply, initialFilters, genres 
                 </View>
                 
                  <View style={[styles.divider, { backgroundColor: colors.border }]} />
+ 
+                 {/* Year Section */}
+                 <View style={styles.section}>
+                    <Text style={[styles.sectionTitle, { color: colors.text }]}>연도별 보기</Text>
+                    <View style={styles.chipContainer}>
+                        {years.map((y) => (
+                             <TouchableOpacity
+                                key={y}
+                                onPress={() => setYear(year === y ? null : y)}
+                                style={[
+                                  styles.chip, 
+                                  { backgroundColor: isDark ? colors.border : '#F1F5F9' },
+                                  year === y && { backgroundColor: isDark ? '#064E3B' : '#ECFDF5', borderColor: colors.primary }
+                                ]}
+                            >
+                                <Text style={[
+                                  styles.chipText, 
+                                  { color: colors.textMuted },
+                                  year === y && { color: isDark ? colors.primary : '#15803D', fontWeight: '600' }
+                                ]}>{y}년</Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                </View>
+
+                <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
                 {/* Month Section */}
                 <View style={styles.section}>
