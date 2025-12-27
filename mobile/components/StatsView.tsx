@@ -317,35 +317,37 @@ const styles = StyleSheet.create({
     width: (width - 32 - 12) / 2,
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
-    padding: 16,
+    padding: 12,
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.04,
     shadowRadius: 12,
     elevation: 3,
-    minHeight: 110, // Reduced from 140
-    justifyContent: 'space-between',
+    minHeight: 90, // Reduced from 110
+    justifyContent: 'center',
+    gap: 2,
   },
   statCardHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'flex-start',
   },
   statCardTitle: {
     fontSize: 13,
     color: '#64748B',
     fontWeight: '600',
+    textAlign: 'center',
   },
   iconContainer: {
     position: 'absolute',
-    right: -6,
-    top: -6,
+    right: 0,
+    top: 0,
     opacity: 0.08,
     transform: [{ scale: 1.8 }], // Reduced from 2.2
   },
   statCardContent: {
     alignItems: 'center',
-    paddingTop: 4,
+    paddingTop: 0,
   },
   statCardValue: {
     fontSize: 28, // Reduced from 36

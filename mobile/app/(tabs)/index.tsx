@@ -620,7 +620,7 @@ const styles = StyleSheet.create({
   },
   subTabsContainer: {
     flexDirection: 'row',
-    justifyContent: 'center',
+    justifyContent: 'flex-end',
     alignItems: 'center',
     marginBottom: 16,
     gap: 8,
@@ -649,6 +649,7 @@ const styles = StyleSheet.create({
   secondaryFilterContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'flex-end',
     gap: 8,
     marginBottom: 20,
   },

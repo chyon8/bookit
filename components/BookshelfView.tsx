@@ -802,7 +802,7 @@ const BookshelfView: React.FC = () => {
               ))}
             </div>      
       {statusFilter === ReadingStatus.Finished && (
-        <div className="flex items-center justify-center pt-4 w-full">
+        <div className="flex items-center justify-end pt-4 w-full">
             <div className="inline-flex rounded-lg shadow-sm">
                 <button
                     onClick={() => setFinishedSubFilter('finished')}
