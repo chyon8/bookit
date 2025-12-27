@@ -11,6 +11,7 @@ import {
   UIManager
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import Svg, { G, Circle, Path } from 'react-native-svg';
 import { UserBook, ReadingStatus } from "../hooks/useBooks";
 import { BookOpenIcon, BookIcon, ChartBarIcon, StarIcon } from "./Icons";
 import ReadingCalendar from "./statistics/ReadingCalendar";
@@ -18,6 +19,8 @@ import MonthlyCompletionChart from "./statistics/MonthlyCompletionChart";
 import StarDistributionChart from "./statistics/StarDistributionChart";
 import GenreChart from "./statistics/GenreChart";
 import TopAuthorsList from "./statistics/TopAuthorsList";
+import WishlistGenreChart from "./statistics/WishlistGenreChart";
+import WishlistAuthorChart from "./statistics/WishlistAuthorChart";
 
 if (
   Platform.OS === 'android' &&
@@ -40,36 +43,88 @@ interface StatsViewProps {
 const StatCard = ({ title, value, description, icon }: { title: string, value: string | number, description?: string, icon?: React.ReactNode }) => (
   <View style={styles.statCard}>
     <View style={styles.statCardHeader}>
-         <Text style={styles.statCardTitle}>{title}</Text>
-         {icon && <View style={styles.iconContainer}>{icon}</View>}
+      <Text style={styles.statCardTitle}>{title}</Text>
+      {icon && <View style={styles.iconContainer}>{icon}</View>}
     </View>
-    <Text style={styles.statCardValue}>{value}</Text>
-    {description && <Text style={styles.statCardDesc}>{description}</Text>}
+    <View style={styles.statCardContent}>
+      <Text style={styles.statCardValue}>{value}</Text>
+      {description && <Text style={styles.statCardDesc}>{description}</Text>}
+    </View>
   </View>
 );
 
-const CustomBarChart = ({ data, color }: { data: { name: string; value: number }[], color: string }) => {
-  const maxValue = Math.max(...data.map(d => d.value), 1);
+const DonutChart = ({ data }: { data: { name: string; value: number; color: string }[] }) => {
+  const total = data.reduce((acc, curr) => acc + curr.value, 0);
+  const size = 150; // Reduced from 200
+  const strokeWidth = 20; // Reduced from 25
+  const center = size / 2;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+
+  let currentAngle = -90; // Start from top
 
   return (
-    <View style={styles.chartContainer}>
-      {data.map((item, index) => (
-        <View key={index} style={styles.barRow}>
-          <Text style={styles.barLabel} numberOfLines={1}>{item.name}</Text>
-          <View style={styles.barWrapper}>
-            <View 
-              style={[
-                styles.bar, 
-                { 
-                  width: `${(item.value / maxValue) * 100}%`,
-                  backgroundColor: color 
-                }
-              ]} 
-            />
-          </View>
-          <Text style={styles.barValue}>{item.value}</Text>
+    <View style={styles.donutContainer}>
+      <View style={styles.donutWrapper}>
+        <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+          <G rotation={0} origin={`${center}, ${center}`}>
+            {data.map((item, index) => {
+              const percentage = item.value / (total || 1);
+              const angle = percentage * 360;
+              
+              const x1 = center + radius * Math.cos((currentAngle * Math.PI) / 180);
+              const y1 = center + radius * Math.sin((currentAngle * Math.PI) / 180);
+              
+              currentAngle += angle;
+              
+              const x2 = center + radius * Math.cos((currentAngle * Math.PI) / 180);
+              const y2 = center + radius * Math.sin((currentAngle * Math.PI) / 180);
+              
+              const largeArcFlag = percentage > 0.5 ? 1 : 0;
+              const d = `M ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2}`;
+
+              if (percentage === 1) {
+                  return (
+                    <Circle
+                        key={index}
+                        cx={center}
+                        cy={center}
+                        r={radius}
+                        stroke={item.color}
+                        strokeWidth={strokeWidth}
+                        fill="none"
+                    />
+                  )
+              }
+
+              if (percentage === 0) return null;
+
+              return (
+                <Path
+                  key={index}
+                  d={d}
+                  stroke={item.color}
+                  strokeWidth={strokeWidth}
+                  fill="none"
+                  strokeLinecap="round"
+                />
+              );
+            })}
+          </G>
+        </Svg>
+        <View style={styles.donutCenterLabel}>
+            <Text style={styles.donutCenterValue}>{total}권</Text>
         </View>
-      ))}
+      </View>
+
+      <View style={styles.legendContainer}>
+        {data.map((item, index) => (
+          <View key={index} style={styles.legendItem}>
+            <View style={[styles.legendColor, { backgroundColor: item.color }]} />
+            <Text style={styles.legendLabel}>{item.name}</Text>
+          </View>
+        ))}
+      </View>
     </View>
   );
 };
@@ -169,14 +224,18 @@ export default function StatsView({ books, theme }: StatsViewProps) {
 
                 <View style={styles.simpleCard}>
                     <Text style={styles.cardTitle}>내 서재 현황</Text>
-                     <CustomBarChart 
+                     <DonutChart 
                         data={processedStats.readingStatusData.map(d => ({
-                            ...d,
                             name: d.name === "Reading" ? "읽는 중" : 
                                   d.name === "Finished" ? "완독" : 
-                                  d.name === "Want to Read" ? "읽고 싶은" : d.name
+                                  d.name === "Want to Read" ? "읽고 싶은" : 
+                                  d.name === "Dropped" ? "중단" : d.name,
+                            value: d.value,
+                            color: d.name === "Finished" ? "#334155" :
+                                   d.name === "Want to Read" ? "#94A3B8" :
+                                   d.name === "Reading" ? "#22C55E" :
+                                   d.name === "Dropped" ? "#CBD5E1" : "#E2E8F0"
                         }))} 
-                        color="#4ADE80" 
                     />
                 </View>
             </View>
@@ -198,8 +257,9 @@ export default function StatsView({ books, theme }: StatsViewProps) {
         )}
         
         {activeTab === "wishlist" && (
-            <View style={styles.centerPlaceholder}>
-                <Text style={styles.placeholderText}>준비 중입니다.</Text>
+             <View style={styles.section}>
+                <WishlistGenreChart books={books} theme={theme} />
+                <WishlistAuthorChart books={books} theme={theme} />
             </View>
         )}
       </ScrollView>
@@ -256,37 +316,48 @@ const styles = StyleSheet.create({
   statCard: {
     width: (width - 32 - 12) / 2,
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    borderRadius: 20,
     padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 12,
+    elevation: 3,
+    minHeight: 110, // Reduced from 140
+    justifyContent: 'space-between',
   },
   statCardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    alignItems: 'flex-start',
   },
   statCardTitle: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#64748B',
     fontWeight: '600',
-    textTransform: 'uppercase',
   },
   iconContainer: {
-    opacity: 0.5,
+    position: 'absolute',
+    right: -6,
+    top: -6,
+    opacity: 0.08,
+    transform: [{ scale: 1.8 }], // Reduced from 2.2
+  },
+  statCardContent: {
+    alignItems: 'center',
+    paddingTop: 4,
   },
   statCardValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#0F172A',
+    fontSize: 28, // Reduced from 36
+    fontWeight: '800',
+    color: '#1E293B',
+    letterSpacing: -0.5,
   },
   statCardDesc: {
-    fontSize: 12,
+    fontSize: 12, // Reduced from 13
     color: '#94A3B8',
-    marginTop: 4,
+    marginTop: 2,
+    fontWeight: '500',
   },
   simpleCard: {
     backgroundColor: '#FFFFFF',
@@ -311,34 +382,46 @@ const styles = StyleSheet.create({
   placeholderText: {
     color: '#94A3B8',
   },
-  chartContainer: {
-    gap: 12,
+  donutContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 4,
   },
-  barRow: {
+  donutWrapper: {
+    width: 150,
+    height: 150,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  donutCenterLabel: {
+    position: 'absolute',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  donutCenterValue: {
+    fontSize: 24, // Reduced from 32
+    fontWeight: '800',
+    color: '#1E293B',
+    marginBottom: 0,
+  },
+  legendContainer: {
+    marginLeft: 16,
+    gap: 10,
+  },
+  legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
-  barLabel: {
-    width: 60,
-    fontSize: 12,
-    color: '#64748B',
-    textAlign: 'right',
-  },
-  barWrapper: {
-    flex: 1,
+  legendColor: {
+    width: 12, // Reduced from 14
     height: 12,
-    backgroundColor: '#F1F5F9',
-    borderRadius: 6,
-    overflow: 'hidden',
+    borderRadius: 3,
   },
-  bar: {
-    height: '100%',
-    borderRadius: 6,
-  },
-  barValue: {
-    width: 30,
-    fontSize: 12,
+  legendLabel: {
+    fontSize: 14, // Reduced from 16
+    fontWeight: '600',
     color: '#64748B',
-  }
+  },
 });

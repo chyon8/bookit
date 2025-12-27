@@ -1,9 +1,10 @@
-import React, { useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { 
   View, 
   Text, 
   StyleSheet, 
-  Dimensions 
+  Dimensions,
+  TouchableOpacity
 } from "react-native";
 import { UserBook, ReadingStatus } from "../../hooks/useBooks";
 
@@ -15,6 +16,8 @@ interface StarDistributionChartProps {
 }
 
 export default function StarDistributionChart({ books, theme }: StarDistributionChartProps) {
+  const [selectedBar, setSelectedBar] = useState<number | null>(null);
+
   const distributionData = useMemo(() => {
     const counts: Record<number, number> = {};
     // Match web version: 1.0 to 5.0 with 0.5 steps (9 bars)
@@ -74,14 +77,32 @@ export default function StarDistributionChart({ books, theme }: StarDistribution
               const showLabel = [1.0, 2.0, 3.5, 5.0].includes(item.rating);
               
               return (
-                <View key={index} style={styles.barColumn}>
+                <View 
+                  key={index} 
+                  style={[
+                    styles.barColumn,
+                    selectedBar === index && { zIndex: 100 }
+                  ]}
+                >
                   <View style={styles.barTrack}>
-                    <View 
+                    <TouchableOpacity 
+                      activeOpacity={0.8}
+                      onPress={() => setSelectedBar(selectedBar === index ? null : index)}
                       style={[
                         styles.bar, 
-                        { height: `${(item.count / roundedMax) * 100}%` }
+                        { height: `${(item.count / roundedMax) * 100}%` },
+                        selectedBar === index && styles.activeBar
                       ]} 
                     />
+                    {selectedBar === index && (
+                      <View style={[
+                        styles.tooltip,
+                        { bottom: `${(item.count / roundedMax) * 100 + 12}%` }
+                      ]}>
+                        <Text style={styles.tooltipDate}>{item.rating.toFixed(1)}점</Text>
+                        <Text style={styles.tooltipCount}>권 : {item.count}</Text>
+                      </View>
+                    )}
                   </View>
                   <View style={styles.xLabelWrapper}>
                     {showLabel ? (
@@ -170,10 +191,43 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   bar: {
-    backgroundColor: '#334155', // Navy color from web design
+    backgroundColor: '#334155',
     borderTopLeftRadius: 6,
     borderTopRightRadius: 6,
     width: '100%',
+  },
+  activeBar: {
+    backgroundColor: '#1E293B',
+    opacity: 0.8,
+  },
+  tooltip: {
+    position: 'absolute',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+    minWidth: 60,
+    left: '50%',
+    marginLeft: -30,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  tooltipDate: {
+    color: '#1E293B',
+    fontSize: 12,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  tooltipCount: {
+    color: '#1E293B',
+    fontSize: 13,
+    fontWeight: 'bold',
   },
   xLabelWrapper: {
     height: 40,

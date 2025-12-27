@@ -10,19 +10,20 @@ import { UserBook, ReadingStatus } from "../../hooks/useBooks";
 
 const { width } = Dimensions.get("window");
 
-interface GenreChartProps {
+interface WishlistGenreChartProps {
   books: UserBook[];
   theme: "light" | "dark";
 }
 
-export default function GenreChart({ books, theme }: GenreChartProps) {
+export default function WishlistGenreChart({ books, theme }: WishlistGenreChartProps) {
   const [selectedBar, setSelectedBar] = useState<number | null>(null);
 
   const genreData = useMemo(() => {
     const counts: Record<string, number> = {};
     
     books.forEach(book => {
-      if (book.status === ReadingStatus.Finished) {
+      // Filter for WantToRead
+      if (book.status === ReadingStatus.WantToRead) {
         const cat = book.books.category || "기타";
         // Simple grouping like web
         let displayCat = cat.split('>')[0].trim();
@@ -36,14 +37,27 @@ export default function GenreChart({ books, theme }: GenreChartProps) {
       .slice(0, 7); // Show top 7 genres
   }, [books]);
 
-  const maxValue = Math.max(...genreData.map(d => d.value), 100);
-  const roundedMax = Math.ceil(maxValue / 25) * 25;
+  const maxValue = Math.max(...genreData.map(d => d.value), 4); // Minimal max value for empty/low data
+  const roundedMax = Math.ceil(maxValue / 5) * 5 || 5; // Ensure non-zero
   const xAxisTicks = [0, roundedMax / 4, (roundedMax * 2) / 4, (roundedMax * 3) / 4, roundedMax];
+
+  if (genreData.length === 0) {
+      return (
+          <View style={styles.card}>
+              <View style={styles.header}>
+                <Text style={styles.title}>읽고 싶은 책 장르</Text>
+              </View>
+              <View style={[styles.chartArea, { height: 100, justifyContent: 'center', alignItems: 'center' }]}>
+                  <Text style={{ color: '#94A3B8' }}>데이터가 없습니다.</Text>
+              </View>
+          </View>
+      )
+  }
 
   return (
     <View style={styles.card}>
       <View style={styles.header}>
-        <Text style={styles.title}>완독한 책 장르</Text>
+        <Text style={styles.title}>읽고 싶은 책 장르</Text>
       </View>
 
       <View style={styles.chartArea}>
@@ -110,7 +124,7 @@ export default function GenreChart({ books, theme }: GenreChartProps) {
         {/* X Axis at bottom */}
         <View style={styles.xAxis}>
             {xAxisTicks.map((tick, i) => (
-              <Text key={i} style={styles.xTick}>{tick}</Text>
+              <Text key={i} style={styles.xTick}>{Math.round(tick)}</Text>
             ))}
         </View>
       </View>
@@ -157,14 +171,14 @@ const styles = StyleSheet.create({
   },
   gridLine: {
     width: 1,
-    backgroundColor: 'transparent', // Removed as requested ("very faint or removed")
+    backgroundColor: 'transparent', // Very faint grid or removed
     height: '100%',
   },
   xAxisTicks: {
     ...StyleSheet.absoluteFillObject,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    left: 70, // Match label width
+    left: 70,
     right: 0,
     bottom: 0,
     height: 4, 
@@ -180,20 +194,20 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     borderLeftWidth: 1,
     borderBottomWidth: 1,
-    borderColor: '#CBD5E1', 
+    borderColor: '#CBD5E1', // Softer axis color
     left: 70, // Match label width
     zIndex: 2, 
     pointerEvents: 'none',
   },
   content: {
     zIndex: 1,
-    gap: 12, 
-    paddingVertical: 4, // Minimized padding
+    gap: 12, // Increased gap for breathing room
+    paddingVertical: 12, // Increased padding
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 0, // No gap, controlled by padding/margin in labelContainer
+    gap: 0, 
   },
   labelContainer: {
     flexDirection: 'row',
@@ -211,9 +225,9 @@ const styles = StyleSheet.create({
   yTickMark: {
     width: 4,
     height: 1,
-    backgroundColor: '#CBD5E1', 
+    backgroundColor: '#CBD5E1', // Softer tick color
     position: 'absolute',
-    right: -2, // Align with axis
+    right: -2, 
   },
   barTrack: {
     flex: 1,

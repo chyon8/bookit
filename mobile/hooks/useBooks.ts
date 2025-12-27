@@ -86,7 +86,8 @@ export function useBooks() {
             author,
             cover_image_url,
             description,
-            isbn13
+            isbn13,
+            category
           )
         `)
         .order("created_at", { ascending: false })

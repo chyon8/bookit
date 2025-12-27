@@ -23,6 +23,7 @@ type TimeRange = "6" | "12" | "all";
 
 export default function MonthlyCompletionChart({ books, theme }: MonthlyCompletionChartProps) {
   const [timeRange, setTimeRange] = useState<TimeRange>("12");
+  const [selectedBar, setSelectedBar] = useState<number | null>(null);
 
   const chartData = useMemo(() => {
     const monthlyMap = new Map<number, number>();
@@ -99,27 +100,45 @@ export default function MonthlyCompletionChart({ books, theme }: MonthlyCompleti
 
           <View style={styles.barsWrapper}>
             {chartData.map((item, index) => {
-              // Show label for every few bars depending on density
-              const labelInterval = Math.max(1, Math.floor(chartData.length / 4));
+              // Show fewer labels to prevent overlap
+              const labelInterval = chartData.length > 8 ? 2 : 1;
               const showLabel = index % labelInterval === 0 || index === chartData.length - 1;
 
               return (
-                <View key={index} style={styles.barColumn}>
+                <View 
+                  key={index} 
+                  style={[
+                    styles.barColumn, 
+                    selectedBar === index && { zIndex: 100 }
+                  ]}
+                >
                   <View style={styles.barTrack}>
-                    <View 
+                    <TouchableOpacity 
+                      activeOpacity={0.8}
+                      onPress={() => setSelectedBar(selectedBar === index ? null : index)}
                       style={[
                         styles.bar, 
-                        { height: `${(item.value / roundedMax) * 100}%` }
+                        { height: `${(item.value / roundedMax) * 100}%` },
+                        selectedBar === index && styles.activeBar
                       ]} 
                     />
+                    {selectedBar === index && (
+                      <View style={[
+                        styles.tooltip,
+                        { bottom: `${(item.value / roundedMax) * 100 + 12}%` }
+                      ]}>
+                        <Text style={styles.tooltipDate}>{item.label}</Text>
+                        <Text style={styles.tooltipCount}>권 : {item.value}</Text>
+                      </View>
+                    )}
                   </View>
                   <View style={styles.xLabelWrapper}>
                     {showLabel ? (
-                      <Text style={styles.xLabel} numberOfLines={1}>
+                      <Text style={styles.xLabel}>
                         {item.label}
                       </Text>
                     ) : (
-                        <View style={styles.dot} />
+                      <View style={styles.labelSpacer} />
                     )}
                   </View>
                 </View>
@@ -178,12 +197,13 @@ const styles = StyleSheet.create({
   },
   chartArea: {
     flexDirection: 'row',
-    height: 240,
+    height: 300, // Increased total height to accommodate tooltips
+    paddingTop: 40, // Add top padding for tooltips
   },
   yAxis: {
     justifyContent: 'space-between',
     paddingRight: 12,
-    paddingBottom: 40,
+    paddingBottom: 50,
   },
   yTick: {
     fontSize: 12,
@@ -197,10 +217,10 @@ const styles = StyleSheet.create({
   },
   gridLines: {
     position: 'absolute',
-    top: 0,
+    top: 40, // Push grid down to match new padding
     left: 0,
     right: 0,
-    bottom: 40,
+    bottom: 50,
     justifyContent: 'space-between',
   },
   gridLine: {
@@ -229,22 +249,54 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 6,
     width: '100%',
   },
-  xLabelWrapper: {
-    height: 40,
+  activeBar: {
+    backgroundColor: '#1E293B',
+    opacity: 0.8,
+  },
+  tooltip: {
+    position: 'absolute',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 10,
+    minWidth: 80,
+    left: '50%',
+    marginLeft: -40,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  tooltipDate: {
+    color: '#1E293B',
+    fontSize: 12,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  tooltipCount: {
+    color: '#1E293B',
+    fontSize: 13,
+    fontWeight: 'bold',
+  },
+  xLabelWrapper: {
+    height: 50, // Increased height for rotated labels
+    justifyContent: 'flex-start',
     alignItems: 'center',
     width: '100%',
+    paddingTop: 8,
   },
   xLabel: {
-    fontSize: 9,
+    fontSize: 8,
     color: '#94A3B8',
     textAlign: 'center',
-    transform: [{ rotate: '-15deg' }], // Slight rotation for overlap
+    transform: [{ rotate: '-45deg' }],
   },
-  dot: {
-    width: 2,
-    height: 2,
-    borderRadius: 1,
-    backgroundColor: '#E2E8F0',
-  }
+  labelSpacer: {
+    height: 1,
+  },
+
 });
