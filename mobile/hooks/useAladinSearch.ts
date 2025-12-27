@@ -46,6 +46,8 @@ export function useAladinSearch() {
       }
 
       // The backend now handles the merging of review data/bookshelf status
+      console.log('[Search API] Raw results count:', data.item.length);
+      console.log('[Search API] First result:', data.item[0]?.title, 'isInBookshelf:', data.item[0]?.isInBookshelf);
       setResults(data.item);
 
     } catch (err) {

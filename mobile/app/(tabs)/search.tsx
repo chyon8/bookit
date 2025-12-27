@@ -49,34 +49,37 @@ export default function Search() {
     Keyboard.dismiss();
   };
 
+  // Helper to find book in local library
+  const findInLibrary = (targetIsbn: string) => {
+      if (!userBooks || !targetIsbn) return undefined;
+      
+      const normalize = (s: string) => s ? s.replace(/-/g, '') : '';
+      const normalizedTarget = normalize(targetIsbn);
+
+      return userBooks.find((ub: UserBook) => normalize(ub.books?.isbn13) === normalizedTarget);
+  };
+
   const handleSelectBook = (book: BookWithReview) => {
-      // Cast to any to access isInBookshelf which comes from the search hook
       let searchResult = book as BookWithReview & { isInBookshelf?: boolean };
 
-      // Client-side fallback check
-      if (userBooks) {
-           const matched = userBooks.find((ub: UserBook) => ub.books.isbn13 === book.isbn13);
-           if (matched) {
-               searchResult = {
-                   ...book,
-                   isInBookshelf: true,
-                   review: matched
-               };
-           }
+      // Client-side fallback check using shared logic
+      const matched = findInLibrary(book.isbn13);
+      if (matched) {
+           searchResult = {
+               ...book,
+               isInBookshelf: true,
+               review: matched
+           };
       }
 
       if (searchResult.isInBookshelf) {
-           // If in bookshelf, navigate to record
-           // We prioritize the ID from the matched user book if available
-           const bookId = searchResult.review?.book_id || (searchResult.review as any)?.id; // user_books.book_id
-           
+           const bookId = searchResult.review?.book_id || (searchResult.review as any)?.id;
            if (bookId) {
                router.push(`/book-record/${bookId}`);
            } else {
                 Alert.alert("오류", "책 정보를 찾을 수 없습니다.");
            }
       } else {
-         // Not in bookshelf -> Go to Preview/Add screen
          if (book.isbn13) {
              router.push(`/books/${book.isbn13}`);
          } else {
@@ -89,20 +92,14 @@ export default function Search() {
       // Enrich item with local data if available
       let enrichedItem = item as BookWithReview & { isInBookshelf?: boolean };
       
-      if (userBooks) {
-          // Normalize ISBNs for comparison (strip dashes just in case)
-          const normalize = (s: string) => s ? s.replace(/-/g, '') : '';
-          const targetIsbn = normalize(item.isbn13);
-
-          const matched = userBooks.find((ub: UserBook) => normalize(ub.books?.isbn13) === targetIsbn);
+      const matched = findInLibrary(item.isbn13);
           
-          if (matched) {
-              enrichedItem = {
-                  ...item,
-                  isInBookshelf: true,
-                  review: matched // UserBook has rating etc.
-              };
-          }
+      if (matched) {
+          enrichedItem = {
+              ...item,
+              isInBookshelf: true,
+              review: matched
+          };
       }
 
     return (
@@ -146,13 +143,9 @@ export default function Search() {
         ) : (
           <FlatList
             data={results}
+            extraData={userBooks} // Force re-render when userBooks changes
             keyExtractor={(item) => item.isbn13 || item.id}
-            renderItem={({ item }) => (
-              <SearchBookCard 
-                book={item} 
-                onSelect={handleSelectBook} 
-              />
-            )}
+            renderItem={renderItem}
             contentContainerStyle={styles.listContent}
             ListEmptyComponent={
               query.length > 0 ? (

@@ -142,11 +142,51 @@ export default function BookPreviewScreen() {
   };
 
 
+
   if (isLoading || !book) {
       return (
-          <SafeAreaView style={styles.container}>
-              <ActivityIndicator size="large" color="#4ADE80" style={{ marginTop: 50 }} />
-          </SafeAreaView>
+          <View style={styles.container}>
+             <Stack.Screen options={{ headerShown: false }} />
+             
+             {/* Background Skeleton */}
+             <View style={styles.backgroundContainer}>
+                 <View style={[styles.backgroundImage, { backgroundColor: '#334155' }]} />
+                 <View style={styles.backgroundOverlay} />
+             </View>
+
+             <SafeAreaView style={styles.safeArea}>
+                 {/* Header */}
+                 <View style={styles.header}>
+                   <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
+                     <ChevronLeftIcon size={24} color="#FFFFFF" />
+                   </TouchableOpacity>
+                 </View>
+
+                 <ScrollView contentContainerStyle={styles.scrollContent}>
+                     {/* Hero Section Skeleton */}
+                     <View style={styles.heroSection}>
+                         <View style={styles.coverShadow}>
+                           <View style={[styles.coverImage, { backgroundColor: '#475569' }]} />
+                         </View>
+                         <View style={{ width: '80%', height: 24, backgroundColor: '#475569', borderRadius: 4, marginBottom: 8 }} />
+                         <View style={{ width: '60%', height: 18, backgroundColor: '#475569', borderRadius: 4 }} />
+                     </View>
+
+                     {/* Card Skeleton */}
+                     <View style={styles.cardContainer}>
+                         <View style={styles.cardContent}>
+                             <View style={{ width: 80, height: 14, backgroundColor: '#E2E8F0', borderRadius: 4, marginBottom: 8 }} />
+                             <View style={{ width: 120, height: 20, backgroundColor: '#E2E8F0', borderRadius: 4, marginBottom: 24 }} />
+                             
+                             <View style={styles.divider} />
+                             
+                             <View style={{ width: 80, height: 14, backgroundColor: '#E2E8F0', borderRadius: 4, marginBottom: 8 }} />
+                             <View style={{ width: '100%', height: 60, backgroundColor: '#E2E8F0', borderRadius: 4 }} />
+                         </View>
+                     </View>
+                 </ScrollView>
+             </SafeAreaView>
+          </View>
       );
   }
 
