@@ -119,3 +119,104 @@ export function useUpdateBookReview() {
     },
   });
 }
+
+// Mutation for adding a new book to library (Web's handleSaveReview replication)
+export function useAddBookToLibrary() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      bookData,
+      reviewData,
+      userId,
+    }: {
+      bookData: BookWithReview;
+      reviewData: Partial<UserBook>;
+      userId: string;
+    }) => {
+      console.log('Adding book to library:', bookData.title);
+
+      const cleanedAuthor = bookData.author.split("(지은이")[0].trim();
+      
+      const bookRecord = {
+        title: bookData.title,
+        author: cleanedAuthor,
+        cover_image_url: bookData.coverImageUrl,
+        category: bookData.category,
+        description: bookData.description,
+        isbn13: bookData.isbn13,
+      };
+
+      let finalBookData: any;
+
+      // 1. Handle Books Table Upsert/Select
+      const isExistingDbBook = bookData.id && bookData.id.length > 15; // UUID check
+
+      if (isExistingDbBook) {
+         // Existing book: update using its primary key.
+         const { data, error } = await supabase
+          .from("books")
+          .update(bookRecord)
+          .eq("id", bookData.id)
+          .select()
+          .single();
+
+        if (error) throw error;
+        finalBookData = data;
+      } else {
+        // New book from search: select or insert to avoid duplicates (by ISBN)
+        const { data: existingBook, error: selectError } = await supabase
+          .from("books")
+          .select("id, cover_image_url")
+          .eq("isbn13", bookRecord.isbn13)
+          .single();
+
+        if (selectError && selectError.code !== 'PGRST116') {
+             throw selectError;
+        }
+
+        if (existingBook) {
+            finalBookData = { ...bookRecord, ...existingBook };
+             // Optional: Update existing book data if needed
+            const { error: updateError } = await supabase
+                .from("books")
+                .update(bookRecord)
+                .eq("id", existingBook.id);
+            if (updateError) console.error("Error updating existing book:", updateError);
+        } else {
+            const { data: newBook, error: insertError } = await supabase
+                .from("books")
+                .insert(bookRecord)
+                .select()
+                .single();
+            
+            if (insertError) throw insertError;
+            finalBookData = newBook;
+        }
+      }
+
+      if (!finalBookData) throw new Error("Book saving failed.");
+
+      // 2. Handle User Book Review Upsert
+      const finalReviewData = {
+        ...reviewData,
+        user_id: userId,
+        book_id: finalBookData.id,
+      };
+
+      const { data: upsertedReview, error: reviewError } = await supabase
+        .from("user_books")
+        .upsert(finalReviewData, { onConflict: "user_id,book_id" })
+        .select()
+        .single();
+      
+      if (reviewError) throw reviewError;
+
+      return { book: finalBookData, review: upsertedReview };
+    },
+    onSuccess: () => {
+       queryClient.invalidateQueries({ queryKey: bookKeys.lists() });
+       queryClient.invalidateQueries({ queryKey: bookKeys.details() });
+    },
+  });
+}

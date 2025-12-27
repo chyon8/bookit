@@ -24,7 +24,15 @@ export function useAladinSearch() {
       const url = `${BASE_URL}/api/aladin-search?query=${encodeURIComponent(query)}`;
       console.log('[Search] Fetching from:', url);
 
-      const response = await fetch(url);
+      const { data: { session } } = await import('../lib/supabase').then(m => m.supabase.auth.getSession());
+      const token = session?.access_token;
+      
+      const headers: HeadersInit = {};
+      if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(url, { headers });
       
       if (!response.ok) {
         throw new Error(`Server responded with ${response.status}`);

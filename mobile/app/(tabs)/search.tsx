@@ -9,19 +9,21 @@ import {
   SafeAreaView,
   Keyboard,
   TouchableWithoutFeedback,
-  Platform
+  Platform,
+  Alert
 } from "react-native";
 import { useRouter } from "expo-router";
 import { SearchIcon, XMarkIcon } from "../../components/Icons";
 import { useAladinSearch } from "../../hooks/useAladinSearch";
 import { BookSearchLoading } from "../../components/BookSearchLoading";
 import { SearchBookCard } from "../../components/SearchBookCard";
-import { BookWithReview } from "../../hooks/useBooks";
+import { BookWithReview, useBooks, UserBook } from "../../hooks/useBooks";
 
 export default function Search() {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const { results, loading, error, searchBooks, setResults } = useAladinSearch();
+  const { data: userBooks } = useBooks();
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleQueryChange = (text: string) => {
@@ -48,72 +50,67 @@ export default function Search() {
   };
 
   const handleSelectBook = (book: BookWithReview) => {
-      // Navigate to book detail or add-book screen
-      // Since we don't have a dedicated "Add Book" screen that accepts an object yet,
-      // We might pass it via params or simplified flow.
-      // For now, let's assume we go to a route that handles this, 
-      // or we just go to book-record/[id] if it exists, or a new add screen.
+      // Cast to any to access isInBookshelf which comes from the search hook
+      let searchResult = book as BookWithReview & { isInBookshelf?: boolean };
+
+      // Client-side fallback check
+      if (userBooks) {
+           const matched = userBooks.find((ub: UserBook) => ub.books.isbn13 === book.isbn13);
+           if (matched) {
+               searchResult = {
+                   ...book,
+                   isInBookshelf: true,
+                   review: matched
+               };
+           }
+      }
+
+      if (searchResult.isInBookshelf) {
+           // If in bookshelf, navigate to record
+           // We prioritize the ID from the matched user book if available
+           const bookId = searchResult.review?.book_id || (searchResult.review as any)?.id; // user_books.book_id
+           
+           if (bookId) {
+               router.push(`/book-record/${bookId}`);
+           } else {
+                Alert.alert("오류", "책 정보를 찾을 수 없습니다.");
+           }
+      } else {
+         // Not in bookshelf -> Go to Preview/Add screen
+         if (book.isbn13) {
+             router.push(`/books/${book.isbn13}`);
+         } else {
+             Alert.alert("오류", "ISBN 정보가 없습니다.");
+         }
+      }
+  };
+
+  const renderItem = ({ item }: { item: BookWithReview }) => {
+      // Enrich item with local data if available
+      let enrichedItem = item as BookWithReview & { isInBookshelf?: boolean };
       
-      // If it's already in bookshelf, go to detail
-      // If not, go to add (we can use the same detail screen but in 'new' mode if supported, 
-      // or passing book data via global state/params)
-      
-      // For this implementation, I will treat it as "View Detail" 
-      // where the detail screen handles adding if not present
-      // But passing object via URL params is bad.
-      // Ideally: /book-record/new?isbn=...
-      
-      if (book.isbn13) {
-          // If the page supports fetching by ISBN or we pass data
-          // For now let's assume we navigate to a placeholder or the id check
-          // The current [id].tsx takes an ID. 
-          // If book isn't in DB, we can't go to [id].
-          // We need an "add" flow.
-          // Since I can't create a new route without user permission,
-          // I'll console log for now and maybe implement a simple alert or navigation to a stub.
-          // Actually, the user asked to "refer to original".
-          // The web app likely opens a modal or navigates.
+      if (userBooks) {
+          // Normalize ISBNs for comparison (strip dashes just in case)
+          const normalize = (s: string) => s ? s.replace(/-/g, '') : '';
+          const targetIsbn = normalize(item.isbn13);
+
+          const matched = userBooks.find((ub: UserBook) => normalize(ub.books?.isbn13) === targetIsbn);
           
-          // Let's trying navigating to book-record/new with params?
-          // Since I haven't implemented /new, I'll validly assume I should navigate to the ID if it exists?
-          // The search result sends `id` which is isbn13.
-          // If I go to `book-record/${book.isbn13}`, the current [id].tsx fetches from Supabase.
-          // If it's not in Supabase, [id].tsx returns Skeleton forever or null?
-          
-          // Wait, [id].tsx relies on `useBookData` which fetches from `user_books`.
-          // If I navigate to `book-record/123` and 123 is ISBN, and it's not in `user_books`, it will fail.
-          
-          // I should probably just show an Alert "This feature (Adding books) is coming next" 
-          // OR better, since I am "Antigravity", I should probably make it work by creating a `book-record/preview` logic? 
-          // But I am constrained to [id].tsx.
-          
-          // Let's check if there is an `add` screen in the file list? No.
-          // I will navigate to a non-existent route just to show intent? No that crashes.
-          
-          // I will just Alert for now as a placeholder for the "OnSelect" action, 
-          // unless the book is already in shelf.
-          
-          if ((book as any).isInBookshelf) {
-               // Use the ID from the result which should be the user_book id if found? 
-               // Wait, the search API logic I wrote returns `id: item.isbn13`. 
-               // It doesn't return the `user_book` ID.
-               // Ah, `review` object in my hook contains the whole user_book data including ID!
-               if (book.review && book.review.id) {
-                   router.push(`/book-record/${book.review.book_id}`); // user_book.book_id is the foreign key to books table? 
-                   // No, `user_books` table usually has `id` (primary key).
-                   // Let's check my hook logic again.
-                   // `reviewData` is from `user_books`. 
-                   // So `book.review.id` is the `user_book` ID?
-                   // No, `reviewData` is `...reviewData`. 
-                   // let's assume `book.review` has `book_id`.
-                   
-                   router.push(`/book-record/${book.review.book_id}`);
-               }
-          } else {
-             // Not in bookshelf.
-             alert("책 추가 기능은 아직 구현되지 않았습니다. (Mobile)");
+          if (matched) {
+              enrichedItem = {
+                  ...item,
+                  isInBookshelf: true,
+                  review: matched // UserBook has rating etc.
+              };
           }
       }
+
+    return (
+      <SearchBookCard
+        book={enrichedItem}
+        onSelect={handleSelectBook}
+      />
+    );
   };
 
   return (
@@ -195,6 +192,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     ...Platform.select({
       web: {
+        // @ts-ignore
         outlineStyle: 'none',
       },
     }),
