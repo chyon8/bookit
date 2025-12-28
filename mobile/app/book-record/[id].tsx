@@ -51,6 +51,7 @@ export default function BookRecordScreen() {
   const isSaving = useRef(false);
   const isDeleting = useRef(false);
   const navigation = useNavigation();
+  const scrollViewRef = useRef<ScrollView>(null);
 
   // Modal State
   const [modalConfig, setModalConfig] = useState({
@@ -226,6 +227,9 @@ export default function BookRecordScreen() {
         memorable_quotes: newQuotes
       };
     });
+    setTimeout(() => {
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+    }, 100);
   };
 
   const updateQuote = (index: number, field: keyof MemorableQuote, value: string) => {
@@ -258,6 +262,9 @@ export default function BookRecordScreen() {
       ...prev,
       memos: [...(prev.memos || []), newMemo]
     }));
+    setTimeout(() => {
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+    }, 100);
   };
 
   const updateMemo = (index: number, text: string) => {
@@ -381,6 +388,7 @@ export default function BookRecordScreen() {
       setScanImageUri(null);
       setScanImageBase64(null);
       setScannedText("");
+      scrollViewRef.current?.scrollToEnd({ animated: true });
     }, 500);
   };
 
@@ -442,7 +450,12 @@ export default function BookRecordScreen() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.flex1}
       >
-        <ScrollView contentContainerStyle={styles.scrollContent}>
+        <ScrollView 
+          ref={scrollViewRef}
+          contentContainerStyle={styles.scrollContent}
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps="handled"
+        >
           {/* Top Section with Blur Background */}
           <View style={styles.topSection}>
             <Image 

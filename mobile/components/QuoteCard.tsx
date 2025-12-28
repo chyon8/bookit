@@ -13,8 +13,6 @@ interface QuoteCardProps {
 
 export const QuoteCard: React.FC<QuoteCardProps> = ({ quote, onDelete, onChange, initialIsEditing }) => {
   const [isEditing, setIsEditing] = useState(initialIsEditing !== undefined ? initialIsEditing : !quote.quote);
-  const [quoteHeight, setQuoteHeight] = useState(60);
-  const [thoughtHeight, setThoughtHeight] = useState(40);
   const { colors, isDark } = useTheme();
 
   if (isEditing) {
@@ -31,13 +29,13 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({ quote, onDelete, onChange,
               styles.input, 
               styles.quoteInput, 
               { 
-                height: Math.max(60, quoteHeight), 
+                minHeight: 60,
                 backgroundColor: isDark ? colors.border : '#F8FAFC',
                 color: colors.text
               },
               Platform.OS === 'web' && ({ resize: 'vertical', overflow: 'hidden' } as any)
             ]}
-            onContentSizeChange={(e) => setQuoteHeight(e.nativeEvent.contentSize.height)}
+            scrollEnabled={false}
             autoFocus={!quote.quote}
           />
           <TouchableOpacity onPress={onDelete} style={styles.iconButton}>
@@ -70,13 +68,13 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({ quote, onDelete, onChange,
               styles.input, 
               styles.thoughtInput, 
               { 
-                height: Math.max(40, thoughtHeight), 
+                minHeight: 40,
                 backgroundColor: isDark ? colors.border : '#F8FAFC',
                 color: colors.text
               },
               Platform.OS === 'web' && ({ resize: 'vertical', overflow: 'hidden' } as any)
             ]}
-            onContentSizeChange={(e) => setThoughtHeight(e.nativeEvent.contentSize.height)}
+            scrollEnabled={false}
           />
         </View>
         <View style={styles.footer}>

@@ -12,7 +12,6 @@ interface MemoCardProps {
 
 export const MemoCard: React.FC<MemoCardProps> = ({ memo, onDelete, onChange }) => {
   const [isEditing, setIsEditing] = useState(memo.text === "");
-  const [memoHeight, setMemoHeight] = useState(80);
   const { colors, isDark } = useTheme();
 
   const formattedDate = useMemo(() => {
@@ -43,13 +42,13 @@ export const MemoCard: React.FC<MemoCardProps> = ({ memo, onDelete, onChange }) 
           style={[
             styles.input, 
             { 
-              height: Math.max(80, memoHeight), 
+              minHeight: 80,
               backgroundColor: isDark ? colors.border : '#F8FAFC',
               color: colors.text
             },
             Platform.OS === 'web' && ({ resize: 'vertical', overflow: 'hidden' } as any)
           ]}
-          onContentSizeChange={(e) => setMemoHeight(e.nativeEvent.contentSize.height)}
+          scrollEnabled={false}
           autoFocus
         />
         <View style={styles.footer}>
