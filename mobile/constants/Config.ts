@@ -3,7 +3,7 @@ import Constants from 'expo-constants';
 
 const getBaseUrl = () => {
   if (!__DEV__) {
-    return "https://your-production-url.com";
+    return "https://bookit-sigma-virid.vercel.app";
   }
 
   // Get the IP address of the machine running the Expo dev server
