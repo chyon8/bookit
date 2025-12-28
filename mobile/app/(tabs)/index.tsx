@@ -460,11 +460,12 @@ export default function Home() {
           </View>
 
           {/* Content */}
-          {statusFilter === "All" && groupedBooks ? (
+          {statusFilter === "All" && !searchQuery.trim() && groupedBooks ? (
             <View style={styles.sectionsContainer}>
               {renderBookSection("읽는 중", groupedBooks[ReadingStatus.Reading], ReadingStatus.Reading)}
               {renderBookSection("읽고 싶은", groupedBooks[ReadingStatus.WantToRead], ReadingStatus.WantToRead)}
               {renderBookSection("완독", groupedBooks[ReadingStatus.Finished], ReadingStatus.Finished)}
+              {renderBookSection("중단", groupedBooks[ReadingStatus.Dropped], ReadingStatus.Dropped)}
             </View>
           ) : (
             <View>

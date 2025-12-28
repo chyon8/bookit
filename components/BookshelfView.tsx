@@ -934,7 +934,7 @@ const BookshelfView: React.FC = () => {
 
       {sortedAndFilteredBooks.length > 0 ? (
         <div className="space-y-8">
-          {statusFilter === "All" && groupedBooks ? (
+          {statusFilter === "All" && !searchQuery.trim() && groupedBooks ? (
             <>
               {renderBookSection(
                 "읽는 중",
