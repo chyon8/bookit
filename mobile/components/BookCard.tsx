@@ -147,10 +147,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
     marginBottom: 4,
+    height: 40,
+    lineHeight: 20,
   },
   bookAuthor: {
     fontSize: 12,
     marginBottom: 4,
+    height: 16,
+    lineHeight: 16,
   },
   statusContainer: {
     flexDirection: 'row',

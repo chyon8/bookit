@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { View, Text, Image, TouchableOpacity, StyleSheet, Platform } from "react-native";
-import { UserBook } from "../hooks/useBooks";
-import { TrashIcon } from "./Icons";
+import { UserBook, ReadingStatus } from "../hooks/useBooks";
+import { TrashIcon, StarIcon } from "./Icons";
 
 interface HorizontalBookCardProps {
   book: UserBook;
@@ -52,6 +52,20 @@ export function HorizontalBookCard({ book, onPress, onDelete }: HorizontalBookCa
         <Text style={[styles.bookAuthor, { color: colors.textMuted }]} numberOfLines={1}>
           {book.books.author?.split("(지은이")[0].trim()}
         </Text>
+        <View style={styles.statusContainer}>
+          {book.status === ReadingStatus.Reading && book.start_date ? (
+            <Text style={[styles.readingStatus, { color: colors.primary }]}>
+              {Math.floor((new Date().setHours(0,0,0,0) - new Date(book.start_date).setHours(0,0,0,0)) / (1000 * 60 * 60 * 24)) + 1}일째 읽는중
+            </Text>
+          ) : (book.rating && book.rating > 0) ? (
+            <View style={styles.ratingContainer}>
+              <Text style={[styles.ratingText, { color: colors.text }]}>{book.rating.toFixed(1)}</Text>
+              <StarIcon size={12} color="#FACC15" />
+            </View>
+          ) : (
+            <View />
+          )}
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -93,8 +107,30 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
     marginBottom: 4,
+    height: 40, // 2 lines * 20
+    lineHeight: 20,
   },
   bookAuthor: {
     fontSize: 12,
+    height: 16, // 1 line * 16
+    lineHeight: 16,
+  },
+  statusContainer: {
+    height: 16,
+    justifyContent: 'center',
+    marginTop: 4,
+  },
+  readingStatus: {
+    fontSize: 11,
+    fontWeight: 'bold',
+  },
+  ratingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  ratingText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    marginRight: 2,
   },
 });
