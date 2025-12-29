@@ -74,7 +74,7 @@ export function ScanPreviewModal({
     <Modal
       visible={isVisible}
       animationType="slide"
-      presentationStyle="pageSheet"
+      presentationStyle="fullScreen"
       onRequestClose={onClose}
     >
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
