@@ -31,6 +31,12 @@ export function ImageCropper({ imageUri, onCancel, onCrop }: ImageCropperProps) 
     const cropWidth = useSharedValue(SCREEN_WIDTH - 40);
     const cropHeight = useSharedValue((SCREEN_WIDTH - 40) * 1.4);
     
+    // Crop Position (offset from center)
+    const cropX = useSharedValue(0);
+    const cropY = useSharedValue(0);
+    const savedCropX = useSharedValue(0);
+    const savedCropY = useSharedValue(0);
+    
     // Shared Values for Image Transformation
     const scale = useSharedValue(1);
     const savedScale = useSharedValue(1);
@@ -146,30 +152,58 @@ export function ImageCropper({ imageUri, onCancel, onCrop }: ImageCropperProps) 
     const bottomLeftGesture = createResizeGesture(-1, 1);
     const bottomRightGesture = createResizeGesture(1, 1);
 
+    // Crop Box Pan Gesture (for moving the entire box)
+    const cropBoxPanGesture = Gesture.Pan()
+        .onStart(() => {
+            savedCropX.value = cropX.value;
+            savedCropY.value = cropY.value;
+        })
+        .onUpdate((e) => {
+            if (!containerSize) return;
+            
+            const nextX = savedCropX.value + e.translationX;
+            const nextY = savedCropY.value + e.translationY;
+            
+            // Limit movement to keep crop box within container
+            const maxOffsetX = (containerSize.width - cropWidth.value) / 2;
+            const maxOffsetY = (containerSize.height - cropHeight.value) / 2;
+            
+            cropX.value = Math.max(-maxOffsetX, Math.min(maxOffsetX, nextX));
+            cropY.value = Math.max(-maxOffsetY, Math.min(maxOffsetY, nextY));
+        })
+        .onEnd(() => {
+            savedCropX.value = cropX.value;
+            savedCropY.value = cropY.value;
+        });
+
     const animatedCropStyle = useAnimatedStyle(() => ({
         width: cropWidth.value,
         height: cropHeight.value,
+        transform: [
+            { translateX: cropX.value },
+            { translateY: cropY.value }
+        ]
     }));
     
-    // Overlay styles
+    // Overlay styles (accounting for crop box position)
     const animatedOverlayTopStyle = useAnimatedStyle(() => ({
-        height: (containerSize?.height ?? 0) / 2 - cropHeight.value / 2,
+        height: (containerSize?.height ?? 0) / 2 - cropHeight.value / 2 + cropY.value,
     }));
     
     const animatedOverlayBottomStyle = useAnimatedStyle(() => ({
-        height: (containerSize?.height ?? 0) / 2 - cropHeight.value / 2,
+        height: (containerSize?.height ?? 0) / 2 - cropHeight.value / 2 - cropY.value,
     }));
     
     const animatedOverlayLeftStyle = useAnimatedStyle(() => ({
-        top: (containerSize?.height ?? 0) / 2 - cropHeight.value / 2,
+        top: (containerSize?.height ?? 0) / 2 - cropHeight.value / 2 + cropY.value,
         height: cropHeight.value,
-        width: (containerSize?.width ?? 0) / 2 - cropWidth.value / 2,
+        width: (containerSize?.width ?? 0) / 2 - cropWidth.value / 2 + cropX.value,
     }));
 
     const animatedOverlayRightStyle = useAnimatedStyle(() => ({
-        top: (containerSize?.height ?? 0) / 2 - cropHeight.value / 2,
+        top: (containerSize?.height ?? 0) / 2 - cropHeight.value / 2 + cropY.value,
         height: cropHeight.value,
-        width: (containerSize?.width ?? 0) / 2 - cropWidth.value / 2,
+        width: (containerSize?.width ?? 0) / 2 - cropWidth.value / 2 - cropX.value,
     }));
 
 
@@ -185,28 +219,28 @@ export function ImageCropper({ imageUri, onCancel, onCrop }: ImageCropperProps) 
 
             const finalScale = scale.value;
             
-            // Calculate Crop Box relative to Layout Center
-            // Crop Box is always centered in Layout.
-            // Layout Center is (containerWidth/2, containerHeight/2)
-            // Crop Box TopLeft (Layout Coords) = (CW/2 - CropW/2, CH/2 - CropH/2)
+            // Calculate Crop Box position
+            // Crop Box Center (Layout Coords) = (CW/2 + cropX, CH/2 + cropY)
+            // Crop Box TopLeft (Layout Coords) = (CW/2 + cropX - CropW/2, CH/2 + cropY - CropH/2)
             
             // Image Visual Center (Layout Coords) = (CW/2 + TranslateX, CH/2 + TranslateY)
             // Image Visual TopLeft = ImageVisualCenter - (DisplayedW * Scale / 2)
             
-            // We want CropBox TopLeft relative to Image Visual TopLeft
-            // RelX = CropBoxX - ImageVisualX
-            // = (CW/2 - CW_box/2) - ( (CW/2 + TransX) - (DispW * Scale / 2) )
-            // = -CW_box/2 - TransX + DispW * Scale / 2
+            // Crop Box TopLeft relative to Image Visual TopLeft:
+            // RelX = (CW/2 + cropX - CropW/2) - ((CW/2 + TransX) - (DispW * Scale / 2))
+            // = cropX - CropW/2 - TransX + DispW * Scale / 2
             
             // Divide by Scale to get coords in Unscaled Displayed Image
-            // X_unscaled = RelX / Scale
-            // = (-CW_box/2 - TransX)/Scale + DispW/2
+            // X_unscaled = RelX / Scale + DispW/2
+            // = (cropX - CropW/2 - TransX) / Scale + DispW/2
             
             const currentCropW = cropWidth.value;
             const currentCropH = cropHeight.value;
+            const currentCropX = cropX.value;
+            const currentCropY = cropY.value;
             
-            const cropX_in_view = (displayedWidth / 2) + (-currentCropW/2 - translateX.value) / finalScale;
-            const cropY_in_view = (displayedHeight / 2) + (-currentCropH/2 - translateY.value) / finalScale;
+            const cropX_in_view = (displayedWidth / 2) + (currentCropX - currentCropW/2 - translateX.value) / finalScale;
+            const cropY_in_view = (displayedHeight / 2) + (currentCropY - currentCropH/2 - translateY.value) / finalScale;
             const cropW_in_view = currentCropW / finalScale;
             const cropH_in_view = currentCropH / finalScale;
             
@@ -276,21 +310,23 @@ export function ImageCropper({ imageUri, onCancel, onCrop }: ImageCropperProps) 
 
                          {/* Crop Frame & Handles */}
                          <View style={styles.centerFrameContainer} pointerEvents="box-none">
-                             <Animated.View style={[styles.cropFrame, animatedCropStyle]}>
-                                 <GestureDetector gesture={topLeftGesture}>
-                                     <View style={[styles.corner, styles.topLeft, { padding: 10, margin: -10 }]} /> 
-                                     {/* Increased hit slop via padding/margin trick or just larger view */}
-                                 </GestureDetector>
-                                 <GestureDetector gesture={topRightGesture}>
-                                     <View style={[styles.corner, styles.topRight, { padding: 10, margin: -10 }]} />
-                                 </GestureDetector>
-                                 <GestureDetector gesture={bottomLeftGesture}>
-                                     <View style={[styles.corner, styles.bottomLeft, { padding: 10, margin: -10 }]} />
-                                 </GestureDetector>
-                                 <GestureDetector gesture={bottomRightGesture}>
-                                     <View style={[styles.corner, styles.bottomRight, { padding: 10, margin: -10 }]} />
-                                 </GestureDetector>
-                             </Animated.View>
+                             <GestureDetector gesture={cropBoxPanGesture}>
+                                 <Animated.View style={[styles.cropFrame, animatedCropStyle]}>
+                                     <GestureDetector gesture={topLeftGesture}>
+                                         <View style={[styles.corner, styles.topLeft, { padding: 10, margin: -10 }]} /> 
+                                         {/* Increased hit slop via padding/margin trick or just larger view */}
+                                     </GestureDetector>
+                                     <GestureDetector gesture={topRightGesture}>
+                                         <View style={[styles.corner, styles.topRight, { padding: 10, margin: -10 }]} />
+                                     </GestureDetector>
+                                     <GestureDetector gesture={bottomLeftGesture}>
+                                         <View style={[styles.corner, styles.bottomLeft, { padding: 10, margin: -10 }]} />
+                                     </GestureDetector>
+                                     <GestureDetector gesture={bottomRightGesture}>
+                                         <View style={[styles.corner, styles.bottomRight, { padding: 10, margin: -10 }]} />
+                                     </GestureDetector>
+                                 </Animated.View>
+                             </GestureDetector>
                          </View>
                     </View>
                 )}
@@ -302,7 +338,7 @@ export function ImageCropper({ imageUri, onCancel, onCrop }: ImageCropperProps) 
                 </TouchableOpacity>
                 <View style={{ flex: 1, alignItems: 'center' }}>
                     <Text style={{ color: colors.textMuted, fontSize: 12 }}>
-                        모서리를 드래그하여 조절하세요
+                        박스를 드래그하여 이동 · 모서리로 크기 조절
                     </Text>
                 </View>
                 <TouchableOpacity onPress={handleCrop} disabled={isProcessing} style={styles.button}>
