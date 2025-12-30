@@ -165,7 +165,7 @@ export default function Home() {
       }
 
       // 3. Detailed Filters
-      if (filters.reread && !book.is_rereading) return false;
+      if (filters.reread && !book.reread_will) return false;
       if (filters.genre && book.books.category !== filters.genre) return false;
       if (filters.month && book.end_date) {
          const date = new Date(book.end_date);

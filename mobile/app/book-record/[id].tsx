@@ -533,10 +533,10 @@ export default function BookRecordScreen() {
 
               <TouchableOpacity 
                 style={styles.checkboxRow}
-                onPress={() => updateReview('is_rereading', !review.is_rereading)}
+                onPress={() => updateReview('reread_will', !review.reread_will)}
               >
-                  <View style={[styles.checkbox, { borderColor: colors.border }, review.is_rereading && { backgroundColor: colors.primary, borderColor: colors.primary }]}>
-                    {review.is_rereading && <Text style={styles.checkboxCheck}>✓</Text>}
+                  <View style={[styles.checkbox, { borderColor: colors.border }, review.reread_will && { backgroundColor: colors.primary, borderColor: colors.primary }]}>
+                    {review.reread_will && <Text style={styles.checkboxCheck}>✓</Text>}
                   </View>
                   <Text style={[styles.checkboxLabel, { color: colors.textMuted }]}>다시 읽고 싶은 책으로 표시</Text>
               </TouchableOpacity>

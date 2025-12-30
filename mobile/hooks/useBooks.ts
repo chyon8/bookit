@@ -44,7 +44,7 @@ export interface UserBook {
   overall_impression: string | null;
   connected_thoughts: string | null;
   questions_from_book: string[] | null;
-  is_rereading: boolean | null;
+  reread_will: boolean | null;
 }
 
 export interface BookWithReview {
@@ -80,6 +80,7 @@ export function useBooks() {
           overall_impression,
           connected_thoughts,
           questions_from_book,
+          reread_will,
           books (
             id,
             title,
