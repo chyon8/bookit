@@ -38,12 +38,16 @@ export const SearchBookCard: React.FC<SearchBookCardProps> = ({ book, onSelect }
              )}
         </View>
 
-        {book.review && book.review.rating && book.review.rating > 0 ? (
-           <View style={styles.ratingRow}>
-             <Text style={[styles.ratingText, { color: colors.text }]}>{book.review.rating.toFixed(1)}</Text>
-             <StarIcon size={16} color="#FACC15" />
-           </View>
-        ) : null}
+        <View style={styles.ratingRow}>
+          {book.review && book.review.rating && book.review.rating > 0 ? (
+            <>
+              <Text style={[styles.ratingText, { color: colors.text }]}>{book.review.rating.toFixed(1)}</Text>
+              <StarIcon size={16} color="#FACC15" />
+            </>
+          ) : (
+            <Text style={[styles.ratingText, { color: colors.textMuted, fontWeight: 'normal' }]}>평점 없음</Text>
+          )}
+        </View>
 
         <Text style={[styles.description, { color: colors.textMuted }]} numberOfLines={2}>
           {book.description}

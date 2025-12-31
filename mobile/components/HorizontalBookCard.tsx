@@ -63,13 +63,17 @@ export function HorizontalBookCard({ book, onPress, onDelete }: HorizontalBookCa
             <Text style={[styles.readingStatus, { color: colors.primary }]}>
               {Math.floor((new Date().setHours(0,0,0,0) - new Date(book.start_date).setHours(0,0,0,0)) / (1000 * 60 * 60 * 24)) + 1}일째 읽는중
             </Text>
-          ) : (book.rating && book.rating > 0) ? (
-            <View style={styles.ratingContainer}>
-              <Text style={[styles.ratingText, { color: colors.text }]}>{book.rating.toFixed(1)}</Text>
-              <StarIcon size={12} color="#FACC15" />
-            </View>
           ) : (
-            <View />
+            <View style={styles.ratingContainer}>
+              {(book.rating && book.rating > 0) ? (
+                <>
+                  <Text style={[styles.ratingText, { color: colors.text }]}>{book.rating.toFixed(1)}</Text>
+                  <StarIcon size={12} color="#FACC15" />
+                </>
+              ) : (
+                <Text style={[styles.ratingText, { color: colors.textMuted, fontWeight: 'normal', fontSize: 11 }]}>평점 없음</Text>
+              )}
+            </View>
           )}
         </View>
       </View>

@@ -55,7 +55,11 @@ export function BookCard({ book, onSelect, onDelete, showStatusBadge }: BookCard
       );
     }
 
-    return <View style={styles.statusPlaceholder} />;
+    return (
+      <View style={styles.statusContainer}>
+        <Text style={[styles.ratingText, { color: colors.textMuted, fontWeight: 'normal' }]}>평점 없음</Text>
+      </View>
+    );
   };
 
   return (

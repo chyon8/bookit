@@ -95,12 +95,22 @@ export default function BookRecordScreen() {
     
     if (event.type === 'set' && selectedDate && activeDateField) {
       const formattedDate = selectedDate.toISOString().split('T')[0];
-      updateReview(activeDateField, formattedDate);
-      if (Platform.OS === 'ios') {
-         // iOS stays open until closed manually or tapped outside, but here we update on change
-         // Ideally for iOS we might want a 'Done' button or similar if it's a modal,
-         // but default inline/spinner acts immediately.
+      
+      // Validation: end_date cannot be earlier than start_date
+      if (activeDateField === 'end_date' && review.start_date && formattedDate < review.start_date) {
+        Alert.alert("날짜 확인", "완료일은 시작일보다 빠를 수 없습니다.");
+        if (Platform.OS === 'ios') setShowDatePicker(false);
+        return;
       }
+      
+      // Validation: start_date cannot be later than end_date
+      if (activeDateField === 'start_date' && review.end_date && formattedDate > review.end_date) {
+        Alert.alert("날짜 확인", "시작일은 완료일보다 늦을 수 없습니다.");
+        if (Platform.OS === 'ios') setShowDatePicker(false);
+        return;
+      }
+
+      updateReview(activeDateField, formattedDate);
     } else if (event.type === 'dismissed') {
        setShowDatePicker(false);
     }
@@ -243,9 +253,12 @@ export default function BookRecordScreen() {
         }
       }
   
-      if (newStatus === ReadingStatus.Finished) {
+      if (newStatus === ReadingStatus.Finished || newStatus === ReadingStatus.Dropped) {
          updates.end_date = today;
-         if (!review.start_date) updates.start_date = today;
+         // Ensure start_date is not after end_date (today)
+         if (!review.start_date || review.start_date > today) {
+           updates.start_date = today;
+         }
       }
       
       setReview(prev => ({ ...prev, ...updates }));
@@ -597,7 +610,7 @@ export default function BookRecordScreen() {
                     // - Archives exist but duplicate: show archive only (which is 1회차)
                     // - Genuine re-read: show current (2회차) + archives
                     const shouldShowCurrentSession = 
-                      (review.status === ReadingStatus.Reading || review.status === ReadingStatus.Finished || review.status === ReadingStatus.Dropped) &&
+                      (review.status === ReadingStatus.Finished || review.status === ReadingStatus.Dropped) &&
                       (archiveCount === 0 || isGenuineReread);
                     
                     const currentSessionNumber = isGenuineReread ? archiveCount + 1 : 1;
@@ -619,7 +632,7 @@ export default function BookRecordScreen() {
                     const allSessions = [
                       ...(currentSession ? [currentSession] : []),
                       ...(isDuplicateFromMigration || isGenuineReread ? (readingSessions || []) : [])
-                    ];
+                    ].filter((s: any) => s.status === ReadingStatus.Finished || s.status === ReadingStatus.Dropped);
 
                     if (allSessions.length === 0) return <Text style={{ color: colors.textMuted, marginTop: 8 }}>기록된 독서 활동이 없습니다.</Text>;
 
@@ -659,11 +672,9 @@ export default function BookRecordScreen() {
                             <Text style={[styles.historyDate, { color: colors.textMuted }]}>
                               {session.start_date || "시작일 미정"} ~ {session.end_date || (session.status === ReadingStatus.Reading ? "(진행 중)" : "")}
                             </Text>
-                            {session.rating && session.rating > 0 && (
-                              <Text style={[styles.historyRating, { color: colors.text }]}>
-                                ★ {session.rating.toFixed(1)}
-                              </Text>
-                            )}
+                            <Text style={[styles.historyRating, { color: session.rating && session.rating > 0 ? colors.text : colors.textMuted, fontWeight: session.rating && session.rating > 0 ? 'bold' : 'normal' }]}>
+                              {session.rating && session.rating > 0 ? `★ ${session.rating.toFixed(1)}` : "평점 없음"}
+                            </Text>
                           </View>
                         </View>
                       );
@@ -690,9 +701,11 @@ export default function BookRecordScreen() {
                         </Text>
                       </TouchableOpacity>
                     </View>
-                    {review.status === ReadingStatus.Finished && (
+                    {(review.status === ReadingStatus.Finished || review.status === ReadingStatus.Dropped) && (
                       <View style={styles.dateInputContainer}>
-                        <Text style={[styles.dateLabel, { color: colors.textMuted }]}>완독일</Text>
+                        <Text style={[styles.dateLabel, { color: colors.textMuted }]}>
+                          {review.status === ReadingStatus.Finished ? "완독일" : "중단일"}
+                        </Text>
                          <TouchableOpacity 
                           style={[styles.dateInput, { backgroundColor: isDark ? colors.border : '#F1F5F9', justifyContent: 'center' }]}
                           onPress={() => handleDatePress('end_date')}
