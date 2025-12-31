@@ -21,50 +21,55 @@ const Book = ({
 
     // Create a continuous loop
     // 0 -> 1 will represent 0% to 100% of the 2000ms animation
-    Animated.loop(
-      Animated.sequence([
-        Animated.delay(delay),
-        Animated.timing(animatedValue, {
-          toValue: 1,
-          duration: 2000,
-          easing: Easing.linear,
-          useNativeDriver: true,
-        })
-      ])
-    ).start();
+    // Start with a delay, then loop the bounce
+    Animated.sequence([
+      Animated.delay(delay),
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(animatedValue, {
+            toValue: 1,
+            duration: 1000,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+          Animated.timing(animatedValue, {
+            toValue: 0,
+            duration: 1000,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          })
+        ])
+      )
+    ]).start();
 
     return () => {
       animatedValue.stopAnimation();
     }
   }, [delay]);
 
-  // Interpolate for different properties
-  // translateY: 0% -> 40% (-10), 40% -> 70% (0), 70% -> 100% (0)
+  // Interpolate for a "floating" or "bouncing" effect
+  // translateY: 0 -> -20 (up) -> 0 (down)
   const translateY = animatedValue.interpolate({
-    inputRange: [0, 0.4, 0.7, 1],
-    outputRange: [60, -10, 0, 0],
-    extrapolate: 'clamp'
+    inputRange: [0, 1],
+    outputRange: [0, -20],
   });
 
-  // opacity: 0% -> 40% (1), 40% -> 100% (1)
+  // opacity: Keep visible after initial fade in
   const opacity = animatedValue.interpolate({
-    inputRange: [0, 0.1, 0.4, 1],
-    outputRange: [0, 1, 1, 1],
-    extrapolate: 'clamp'
+    inputRange: [0, 1],
+    outputRange: [1, 1],
   });
 
-  // rotate: 0% -> 40% (-3deg), 40% -> 70% (0), 70% -> 100% (0)
+  // rotate: subtle tilt while moving
   const rotate = animatedValue.interpolate({
-    inputRange: [0, 0.4, 0.7, 1],
-    outputRange: ['0deg', '-3deg', '0deg', '0deg'],
-    extrapolate: 'clamp'
+    inputRange: [0, 1],
+    outputRange: ['0deg', '-2deg'],
   });
 
-  // scale: 0% -> 40% (1.05), 40% -> 70% (1), 70% -> 100% (1)
+  // scale: slightly expand at the peak
   const scale = animatedValue.interpolate({
-    inputRange: [0, 0.4, 0.7, 1],
-    outputRange: [0.8, 1.05, 1, 1],
-    extrapolate: 'clamp'
+    inputRange: [0, 1],
+    outputRange: [1, 1.05],
   });
 
   return (
