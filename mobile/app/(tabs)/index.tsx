@@ -76,27 +76,7 @@ export default function Home() {
     setVisibleCount(12);
   }, [statusFilter, searchQuery]);
 
-  // Calculate counts for each status
-  const statusCounts = useMemo(() => {
-    if (!userBooks) return { All: 0, Reading: 0, Finished: 0, Dropped: 0, WantToRead: 0 };
-    
-    const counts: Record<string, number> = {
-      All: userBooks.length,
-      [ReadingStatus.Reading]: 0,
-      [ReadingStatus.Finished]: 0,
-      [ReadingStatus.Dropped]: 0,
-      [ReadingStatus.WantToRead]: 0,
-    };
-    
-    for (const book of userBooks) {
-      if (book.status) {
-        counts[book.status] = (counts[book.status] || 0) + 1;
-      }
-    }
-    return counts;
-  }, [userBooks]);
-
-  // Extract Genres
+  // Filters & Sorting state
   const [filterSheetVisible, setFilterSheetVisible] = useState(false);
   const [filters, setFilters] = useState<{
     sort: SortOption;
@@ -112,7 +92,7 @@ export default function Home() {
     genre: null
   });
 
-  // Extract Genres
+  // Extract all available genres for filter sheet
   const genres = useMemo(() => {
     if (!userBooks) return [];
     const g = new Set<string>();
@@ -122,50 +102,31 @@ export default function Home() {
     return Array.from(g);
   }, [userBooks]);
 
-  // Filter books logic
-  const filteredBooksAll = useMemo(() => {
+  // 1. Global Filter (independent of tabs)
+  const globallyFilteredBooks = useMemo(() => {
     if (!userBooks) return [];
-    
-    let result = userBooks.filter(book => {
-      // 1. Status Filter
-      if (statusFilter === "Finished") {
-        // Apply sub-filter for 완독 vs 중단
-        if (subFilter === "Finished" && book.status !== ReadingStatus.Finished) return false;
-        if (subFilter === "Dropped" && book.status !== ReadingStatus.Dropped) return false;
-      } else if (statusFilter !== "All" && book.status !== statusFilter) {
-        return false;
-      }
-      
-      // 2. Search
+
+    return userBooks.filter(book => {
+      // Search logic
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
-        
-        // Check title and author
         const basicMatch = 
           book.books.title.toLowerCase().includes(query) || 
           book.books.author?.toLowerCase().includes(query);
         
-        if (basicMatch) return true;
+        const reviewMatch = 
+          book.one_line_review?.toLowerCase().includes(query) ||
+          book.overall_impression?.toLowerCase().includes(query) ||
+          book.memos?.some(memo => memo.text.toLowerCase().includes(query)) ||
+          book.memorable_quotes?.some(mq => 
+            mq.quote.toLowerCase().includes(query) || 
+            mq.thought.toLowerCase().includes(query)
+          );
 
-        // Check one-line review
-        if (book.one_line_review?.toLowerCase().includes(query)) return true;
-
-        // Check overall impression
-        if (book.overall_impression?.toLowerCase().includes(query)) return true;
-
-        // Check memos
-        if (book.memos?.some(memo => memo.text.toLowerCase().includes(query))) return true;
-
-        // Check memorable quotes
-        if (book.memorable_quotes?.some(mq => 
-          mq.quote.toLowerCase().includes(query) || 
-          mq.thought.toLowerCase().includes(query)
-        )) return true;
-
-        return false;
+        if (!basicMatch && !reviewMatch) return false;
       }
 
-      // 3. Detailed Filters
+      // Detailed filters
       if (filters.reread && !book.reread_will) return false;
       if (filters.genre && book.books.category !== filters.genre) return false;
       if (filters.month && book.end_date) {
@@ -179,8 +140,40 @@ export default function Home() {
 
       return true;
     });
+  }, [userBooks, searchQuery, filters]);
 
-    // 4. Sort
+  // 2. Dynamic status counts based on global filters
+  const statusCounts = useMemo(() => {
+    const counts: Record<string, number> = {
+      All: globallyFilteredBooks.length,
+      [ReadingStatus.Reading]: 0,
+      [ReadingStatus.Finished]: 0,
+      [ReadingStatus.Dropped]: 0,
+      [ReadingStatus.WantToRead]: 0,
+    };
+    
+    for (const book of globallyFilteredBooks) {
+      if (book.status) {
+        counts[book.status] = (counts[book.status] || 0) + 1;
+      }
+    }
+    return counts;
+  }, [globallyFilteredBooks]);
+
+  // 3. Final display list (applies tab filtering to global results)
+  const filteredBooksAll = useMemo(() => {
+    let result = globallyFilteredBooks.filter(book => {
+      // Tab/Status Filter
+      if (statusFilter === "Finished") {
+        if (subFilter === "Finished" && book.status !== ReadingStatus.Finished) return false;
+        if (subFilter === "Dropped" && book.status !== ReadingStatus.Dropped) return false;
+      } else if (statusFilter !== "All" && book.status !== statusFilter) {
+        return false;
+      }
+      return true;
+    });
+
+    // Sort
     result.sort((a, b) => {
         switch (filters.sort) {
             case "date_asc":
@@ -199,7 +192,7 @@ export default function Home() {
     });
 
     return result;
-  }, [userBooks, statusFilter, subFilter, searchQuery, filters]);
+  }, [globallyFilteredBooks, statusFilter, subFilter, filters.sort]);
 
   // Group books for "All" view (using filtered list)
   const groupedBooks = useMemo(() => {
@@ -380,7 +373,9 @@ export default function Home() {
           <View style={[styles.filterTabsContainer, { borderBottomColor: colors.border }]}>
             {filterOptions.map((status) => {
               const isActive = statusFilter === status;
-              const count = statusCounts[status] || 0;
+              const count = status === ReadingStatus.Finished 
+                ? (statusCounts[ReadingStatus.Finished] + statusCounts[ReadingStatus.Dropped])
+                : statusCounts[status] || 0;
               return (
                 <TouchableOpacity 
                   key={status}
