@@ -18,6 +18,7 @@ import { useLocalSearchParams, useRouter, Stack, useNavigation } from "expo-rout
 import * as ImagePicker from 'expo-image-picker';
 import { useBookData, useUpdateBookReview, useDeleteBook } from "../../hooks/useBookData";
 import { UserBook, ReadingStatus, MemorableQuote, Memo } from "../../hooks/useBooks";
+import { useReadingSessions, useCreateReadingSession } from "../../hooks/useReadingSessions";
 import { ChevronLeftIcon, TrashIcon, CameraIcon, PhotoIcon } from "../../components/Icons";
 import { StarRating } from "../../components/StarRating";
 import { QuoteCard } from "../../components/QuoteCard";
@@ -44,6 +45,10 @@ export default function BookRecordScreen() {
   const { data: book, isLoading } = useBookData(id, user?.id);
   const updateReviewMutation = useUpdateBookReview();
   const deleteBookMutation = useDeleteBook();
+  
+  // Fetch reading sessions for this book
+  const { data: readingSessions } = useReadingSessions(book?.review?.id || "");
+  const createSessionMutation = useCreateReadingSession();
 
   const [review, setReview] = useState<Partial<UserBook>>({});
   const [isDirty, setIsDirty] = useState(false);
@@ -204,8 +209,10 @@ export default function BookRecordScreen() {
   
       let updates: Partial<UserBook> = { status: newStatus };
   
-      if (newStatus === ReadingStatus.Reading && oldStatus === ReadingStatus.WantToRead) {
-        updates.start_date = today;
+      if (newStatus === ReadingStatus.Reading) {
+        if (!review.start_date || oldStatus === ReadingStatus.WantToRead) {
+           updates.start_date = today;
+        }
       }
   
       if (newStatus === ReadingStatus.Finished) {
@@ -522,12 +529,90 @@ export default function BookRecordScreen() {
                   ))}
               </View>
 
-              {/* Date Fields - Show conditionally based on status */}
+              {/* Reading History Timeline - Combined Current + Past */}
+              <View>
+                <Text style={[styles.label, { color: colors.text }]}>독서 기록</Text>
+                <View style={styles.historyContainer}>
+                  {(() => {
+                    // Calculate current session number
+                    const archiveCount = readingSessions?.length || 0;
+                    const currentSessionNumber = archiveCount + 1;
+
+                    // Create current session object from review state
+                    // Only show if we have valid status
+                    const currentSession = (review.status === ReadingStatus.Reading || review.status === ReadingStatus.Finished || review.status === ReadingStatus.Dropped) ? {
+                      id: 'current',
+                      session_number: currentSessionNumber,
+                      status: review.status,
+                      start_date: review.start_date,
+                      end_date: review.end_date,
+                      rating: review.rating,
+                      isCurrent: true
+                    } : null;
+
+                    // Combine current + history
+                    const allSessions = [
+                      ...(currentSession ? [currentSession] : []),
+                      ...(readingSessions || [])
+                    ];
+
+                    if (allSessions.length === 0) return <Text style={{ color: colors.textMuted, marginTop: 8 }}>기록된 독서 활동이 없습니다.</Text>;
+
+                    return allSessions.map((session: any, index) => {
+                      const isFirst = index === 0;
+                      const statusLabel = 
+                        session.status === ReadingStatus.Reading ? "읽는 중" :
+                        session.status === ReadingStatus.Finished ? "완독" :
+                        session.status === ReadingStatus.Dropped ? "중단" : "";
+                      
+                      return (
+                        <View key={session.id} style={styles.historyItem}>
+                          <View style={styles.historyMarker}>
+                            <View style={[
+                              styles.historyDot, 
+                              { backgroundColor: isFirst ? colors.primary : colors.textMuted }
+                            ]} />
+                            {index < allSessions.length - 1 && (
+                              <View style={[styles.historyLine, { backgroundColor: colors.border }]} />
+                            )}
+                          </View>
+                          <View style={[
+                            styles.historyContent,
+                            { backgroundColor: isDark ? colors.border : '#F1F5F9' }
+                          ]}>
+                            <View style={styles.historyHeader}>
+                              <Text style={[styles.historySession, { color: colors.text }]}>
+                                {session.session_number}회차
+                                {session.isCurrent && <Text style={{fontSize: 12, fontWeight: 'normal', color: colors.primary}}> (현재)</Text>}
+                              </Text>
+                              <Text style={[styles.historyStatus, { 
+                                color: session.status === ReadingStatus.Finished ? colors.primary : colors.textMuted 
+                              }]}>
+                                {statusLabel}
+                              </Text>
+                            </View>
+                            <Text style={[styles.historyDate, { color: colors.textMuted }]}>
+                              {session.start_date || "시작일 미정"} ~ {session.end_date || (session.status === ReadingStatus.Reading ? "(진행 중)" : "")}
+                            </Text>
+                            {session.rating && session.rating > 0 && (
+                              <Text style={[styles.historyRating, { color: colors.text }]}>
+                                ★ {session.rating.toFixed(1)}
+                              </Text>
+                            )}
+                          </View>
+                        </View>
+                      );
+                    });
+                  })()}
+                </View>
+              </View>
+
+              {/* Current session date inputs (editable) */}
               {(review.status === ReadingStatus.Reading || 
                 review.status === ReadingStatus.Finished || 
                 review.status === ReadingStatus.Dropped) && (
                 <>
-                  <Text style={[styles.label, { color: colors.text }]}>독서 기간</Text>
+                  <Text style={[styles.label, { color: colors.text }]}>현재 독서 기간</Text>
                   <View style={styles.dateRow}>
                     <View style={styles.dateInputContainer}>
                       <Text style={[styles.dateLabel, { color: colors.textMuted }]}>시작일</Text>
@@ -553,6 +638,56 @@ export default function BookRecordScreen() {
                     )}
                   </View>
                 </>
+              )}
+
+              {/* Start Reread Button - Only show for finished books */}
+              {review.status === ReadingStatus.Finished && (
+                <TouchableOpacity 
+                  style={[styles.rereadButton, { backgroundColor: isDark ? '#064E3B' : '#ECFDF5', borderColor: colors.primary }]}
+                  onPress={() => {
+                    showConfirmModal(
+                      "다시 읽기 시작",
+                      "이 책을 다시 읽기 시작하시겠어요? 현재 기록은 히스토리에 저장됩니다.",
+                      async () => {
+                        // Implementation: Save current session and start new reading
+                        try {
+                          const archiveCount = readingSessions?.length || 0;
+                          // If current is 1st reading (0 archive), we save it as session #1.
+                          // If current is 2nd reading (1 archive), we save it as session #2.
+                          const sessionNumberToArchive = archiveCount + 1;
+                          const nextSessionNumber = sessionNumberToArchive + 1;
+                          
+                          // Save current session to history
+                          await createSessionMutation.mutateAsync({
+                            userBookId: book.review.id,
+                            sessionNumber: sessionNumberToArchive,
+                            startDate: review.start_date || null,
+                            endDate: review.end_date || null,
+                            rating: review.rating || null,
+                            status: ReadingStatus.Finished,
+                          });
+
+                          // Reset current session: new start date, clear end date, change status to Reading
+                          const today = new Date().toISOString().split("T")[0];
+                          setReview(prev => ({
+                            ...prev,
+                            status: ReadingStatus.Reading,
+                            start_date: today,
+                            end_date: null,
+                          }));
+
+                          Alert.alert("성공", `${nextSessionNumber}회차 독서를 시작합니다!`);
+                        } catch (e) {
+                          console.error("Error creating reading session:", e);
+                          Alert.alert("오류", "세션 생성 중 문제가 발생했습니다.");
+                        }
+                      },
+                      { confirmText: "시작하기" }
+                    );
+                  }}
+                >
+                  <Text style={[styles.rereadButtonText, { color: colors.primary }]}>📚 다시 읽기 시작</Text>
+                </TouchableOpacity>
               )}
 
               <Text style={[styles.label, { color: colors.text }]}>한 줄 평</Text>
@@ -849,6 +984,68 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     fontSize: 14,
+  },
+  // Reading History Timeline
+  historyContainer: {
+    marginBottom: 16,
+  },
+  historyItem: {
+    flexDirection: 'row',
+    marginBottom: 12,
+  },
+  historyMarker: {
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  historyDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  historyLine: {
+    width: 2,
+    flex: 1,
+    marginTop: 4,
+  },
+  historyContent: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 8,
+  },
+  historyHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  historySession: {
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  historyStatus: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  historyDate: {
+    fontSize: 12,
+    marginBottom: 4,
+  },
+  historyRating: {
+    fontSize: 13,
+    fontWeight: 'bold',
+  },
+  rereadButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  rereadButtonText: {
+    fontSize: 15,
+    fontWeight: 'bold',
   },
   
   // Lists
