@@ -522,6 +522,39 @@ export default function BookRecordScreen() {
                   ))}
               </View>
 
+              {/* Date Fields - Show conditionally based on status */}
+              {(review.status === ReadingStatus.Reading || 
+                review.status === ReadingStatus.Finished || 
+                review.status === ReadingStatus.Dropped) && (
+                <>
+                  <Text style={[styles.label, { color: colors.text }]}>독서 기간</Text>
+                  <View style={styles.dateRow}>
+                    <View style={styles.dateInputContainer}>
+                      <Text style={[styles.dateLabel, { color: colors.textMuted }]}>시작일</Text>
+                      <TextInput 
+                        style={[styles.dateInput, { backgroundColor: isDark ? colors.border : '#F1F5F9', color: colors.text }]}
+                        value={review.start_date || ""}
+                        onChangeText={(text) => updateReview('start_date', text)}
+                        placeholder="YYYY-MM-DD"
+                        placeholderTextColor={colors.textMuted}
+                      />
+                    </View>
+                    {review.status === ReadingStatus.Finished && (
+                      <View style={styles.dateInputContainer}>
+                        <Text style={[styles.dateLabel, { color: colors.textMuted }]}>완독일</Text>
+                        <TextInput 
+                          style={[styles.dateInput, { backgroundColor: isDark ? colors.border : '#F1F5F9', color: colors.text }]}
+                          value={review.end_date || ""}
+                          onChangeText={(text) => updateReview('end_date', text)}
+                          placeholder="YYYY-MM-DD"
+                          placeholderTextColor={colors.textMuted}
+                        />
+                      </View>
+                    )}
+                  </View>
+                </>
+              )}
+
               <Text style={[styles.label, { color: colors.text }]}>한 줄 평</Text>
               <TextInput 
                 style={[styles.input, { backgroundColor: isDark ? colors.border : '#F1F5F9', color: colors.text }]}
@@ -798,6 +831,23 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   checkboxLabel: {
+    fontSize: 14,
+  },
+  dateRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 8,
+  },
+  dateInputContainer: {
+    flex: 1,
+  },
+  dateLabel: {
+    fontSize: 12,
+    marginBottom: 4,
+  },
+  dateInput: {
+    borderRadius: 8,
+    padding: 12,
     fontSize: 14,
   },
   
