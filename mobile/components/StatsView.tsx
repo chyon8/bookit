@@ -54,7 +54,7 @@ const AnimatedNumber = ({ value, duration = 1500 }: { value: string | number, du
     
     animValue.setValue(0);
     const listener = animValue.addListener(({ value: v }) => {
-      const current = isFloat ? (v * targetValue).toFixed(1) : Math.floor(v * targetValue).toString();
+      const current = isFloat ? (v * targetValue).toFixed(1) : Math.round(v * targetValue).toString();
       setDisplayValue(current);
     });
 
@@ -63,7 +63,13 @@ const AnimatedNumber = ({ value, duration = 1500 }: { value: string | number, du
       duration,
       easing: Easing.out(Easing.exp),
       useNativeDriver: false,
-    }).start();
+    }).start(({ finished }) => {
+      if (finished) {
+        setDisplayValue(typeof value === 'number' ? 
+          (isFloat ? value.toFixed(1) : value.toString()) 
+          : value.toString());
+      }
+    });
 
     return () => animValue.removeListener(listener);
   }, [value]);
@@ -204,8 +210,16 @@ export default function StatsView({ books }: StatsViewProps) {
         }
 
         if (book.end_date) {
-            const date = new Date(book.end_date);
-            if (date.getMonth() === currentMonth && date.getFullYear() === currentYear) {
+            // Parse YYYY-MM-DD string directly to avoid timezone issues
+            const [yearStr, monthStr] = book.end_date.split('-');
+            const year = parseInt(yearStr, 10);
+            const month = parseInt(monthStr, 10);
+            
+            // Log for debugging
+            // console.log(`Book: ${book.books.title}, End: ${book.end_date}, Parsed: ${year}-${month}, Current: ${currentYear}-${currentMonth + 1}`);
+
+            // currentMonth is 0-indexed (Jan=0), month from string is 1-indexed (Jan=1)
+            if (year === currentYear && (month - 1) === currentMonth) {
                 stats.finishedThisMonth++;
             }
         }

@@ -64,14 +64,26 @@ export default function ReadingCalendar({ books }: ReadingCalendarProps) {
         book.status === ReadingStatus.Finished &&
         book.end_date
       ) {
-        const endDate = new Date(book.end_date);
-        if (!isNaN(endDate.getTime())) {
-          const dateKey = format(endDate, "yyyy-MM-dd");
-          if (!booksMap.has(dateKey)) {
+        // Use the date string directly to avoid timezone shifts
+        // book.end_date is YYYY-MM-DD
+        const dateKey = book.end_date;
+        
+        // Also ensure we only include books that actually belong to the currently viewed month?
+        // Actually, the map is used for displayed days.
+        // But we need to make sure the calendar builds dates correctly? 
+        // No, current logic iterates `books` and places them into `booksMap` by `dateKey`.
+        // Then the calendar grid renders days.
+        
+        // The issue: 
+        // book.end_date = "2024-05-01"
+        // Previous logic: new Date("2024-05-01") might be April 30th in some timezones if treated as UTC.
+        // format(endDate, "yyyy-MM-dd") might output "2024-04-30".
+        
+        // Fix: Use the string directly as the key.
+        if (!booksMap.has(dateKey)) {
             booksMap.set(dateKey, []);
-          }
-          booksMap.get(dateKey)!.push(book);
         }
+        booksMap.get(dateKey)!.push(book);
       }
     });
 

@@ -209,7 +209,11 @@ export default function BookRecordScreen() {
             try {
                 isDeleting.current = true;
                 await deleteBookMutation.mutateAsync(book.review.id);
-                router.replace('/'); // Go back to library
+                if (router.canGoBack()) {
+                  router.back();
+                } else {
+                  router.replace('/');
+                }
             } catch (e) {
                 isDeleting.current = false;
                 Alert.alert("오류", "삭제 중 문제가 발생했습니다.");
@@ -720,6 +724,7 @@ export default function BookRecordScreen() {
                   
                   {showDatePicker && (
                     <DateTimePicker
+                    locale="ko-KR" 
                       testID="dateTimePicker"
                       value={(() => {
                         const dateString = activeDateField === 'start_date' ? review.start_date : review.end_date;
@@ -742,7 +747,7 @@ export default function BookRecordScreen() {
                   onPress={() => {
                     showConfirmModal(
                       "다시 읽기 시작",
-                      "이 책을 다시 읽기 시작하시겠어요? 현재 기록은 히스토리에 저장됩니다.",
+                      "이 책을 다시 읽으시겠어요? 현재 기록은 히스토리에 저장됩니다.",
                       async () => {
                         // Implementation: Save current session and start new reading
                         try {
@@ -781,7 +786,7 @@ export default function BookRecordScreen() {
                     );
                   }}
                 >
-                  <Text style={[styles.rereadButtonText, { color: colors.primary }]}>📚 다시 읽기 시작</Text>
+                  <Text style={[styles.rereadButtonText, { color: colors.primary }]}>📚 다시 읽기</Text>
                 </TouchableOpacity>
               )}
 

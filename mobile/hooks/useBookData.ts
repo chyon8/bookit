@@ -58,6 +58,10 @@ export function useBookData(bookId: string | null, userId: string | undefined) {
         .single();
 
       if (error) {
+        if (error.code === 'PGRST116') {
+          // This happens when .single() returns 0 rows (e.g. book has been deleted)
+          return null;
+        }
         console.error("Error fetching book:", error);
         throw error;
       }

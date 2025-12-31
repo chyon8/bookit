@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, Modal, TouchableOpacity, ScrollView, StyleSheet, Dimensions } from 'react-native';
+import { useRouter } from "expo-router";
 import { UserBook } from '../hooks/useBooks';
 import { ChevronLeftIcon, ChevronRightIcon } from './Icons';
 
@@ -30,6 +31,7 @@ export function RandomNoteModal({
   totalNotes
 }: RandomNoteModalProps) {
   const { colors, isDark } = useTheme();
+  const router = useRouter();
 
   if (!currentNote) return null;
 
@@ -64,7 +66,13 @@ export function RandomNoteModal({
           </ScrollView>
 
           {/* Book Info */}
-          <TouchableOpacity style={[styles.bookInfoContainer, { borderTopColor: colors.border }]}>
+          <TouchableOpacity 
+            style={[styles.bookInfoContainer, { borderTopColor: colors.border }]}
+            onPress={() => {
+              onClose();
+              router.push(`/book-record/${book.book_id}`);
+            }}
+          >
             <Text style={[styles.bookTitle, { color: colors.text }]}>{book.books.title}</Text>
             <Text style={[styles.bookAuthor, { color: colors.textMuted }]}>
               저자: {book.books.author?.split("(지은이")[0].trim()}
