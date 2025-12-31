@@ -35,6 +35,7 @@ export default function Home() {
   const insets = useSafeAreaInsets();
   const { data: userBooks, isLoading, error } = useBooks();
   const deleteBookMutation = useDeleteBook();
+  const scrollViewRef = React.useRef<ScrollView>(null);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<ReadingStatus | "All">("All");
@@ -322,7 +323,10 @@ export default function Home() {
             {title} <Text style={[styles.sectionCount, { color: colors.textMuted }]}>{books.length}</Text>
           </Text>
           {books.length > 10 && (
-            <TouchableOpacity onPress={() => setStatusFilter(status)}>
+            <TouchableOpacity onPress={() => {
+              setStatusFilter(status);
+              scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+            }}>
               <Text style={styles.showAllButton}>전체보기</Text>
             </TouchableOpacity>
           )}
@@ -341,7 +345,11 @@ export default function Home() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <SafeAreaView style={styles.flex1}>
-        <ScrollView style={styles.flex1} contentContainerStyle={[styles.scrollContent, { paddingBottom: 100 + insets.bottom }]}>
+        <ScrollView 
+          ref={scrollViewRef}
+          style={styles.flex1} 
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: 100 + insets.bottom }]}
+        >
           
           {/* Search Bar & Random Button */}
           <View style={styles.searchContainer}>
