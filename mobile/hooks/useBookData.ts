@@ -102,7 +102,7 @@ export function useUpdateBookReview() {
       reviewId: string;
       reviewData: Partial<UserBook>;
     }) => {
-      console.log('Updating review:', reviewId, reviewData);
+
       
       const { error } = await supabase
         .from("user_books")
@@ -137,7 +137,7 @@ export function useAddBookToLibrary() {
       reviewData: Partial<UserBook>;
       userId: string;
     }) => {
-      console.log('Adding book to library:', bookData.title);
+
 
       const cleanedAuthor = bookData.author.split("(지은이")[0].trim();
       
@@ -229,7 +229,7 @@ export function useDeleteBook() {
 
   return useMutation({
     mutationFn: async (reviewId: string) => {
-      console.log('Deleting book record:', reviewId);
+
       const { error } = await supabase
         .from("user_books")
         .delete()

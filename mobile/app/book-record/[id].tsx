@@ -610,12 +610,10 @@ export default function BookRecordScreen() {
                       !isGenuineReread;
                     
                     // Determine what to show:
-                    // - No archives: show current as 1회차
-                    // - Archives exist but duplicate: show archive only (which is 1회차)
-                    // - Genuine re-read: show current (2회차) + archives
+                    // If the current status is Finished or Dropped, we want to show it in the history
+                    // so that users can see their changes immediately.
                     const shouldShowCurrentSession = 
-                      (review.status === ReadingStatus.Finished || review.status === ReadingStatus.Dropped) &&
-                      (archiveCount === 0 || isGenuineReread);
+                      (review.status === ReadingStatus.Finished || review.status === ReadingStatus.Dropped);
                     
                     const currentSessionNumber = isGenuineReread ? archiveCount + 1 : 1;
 
@@ -630,12 +628,19 @@ export default function BookRecordScreen() {
                       isCurrent: true
                     } : null;
 
-                    // Show archives only if:
-                    // - It's a duplicate from migration (show archive instead of current)
-                    // - Or it's a genuine re-read (show both)
+                    // If we are showing the current session and it's not a genuine new reread (i.e., we are editing 
+                    // the latest record), we should exclude the corresponding archive from the list 
+                    // to avoid duplication and show the live version.
+                    // If isGenuineReread is true, currentSession is NEW text to the archives.
+                    // If isGenuineReread is false, currentSession replaces the latest archive.
+                    const archivesToShow = (readingSessions || []).filter((_, index) => {
+                         if (shouldShowCurrentSession && !isGenuineReread && index === 0) return false;
+                         return true;
+                    });
+
                     const allSessions = [
                       ...(currentSession ? [currentSession] : []),
-                      ...(isDuplicateFromMigration || isGenuineReread ? (readingSessions || []) : [])
+                      ...archivesToShow
                     ].filter((s: any) => s.status === ReadingStatus.Finished || s.status === ReadingStatus.Dropped);
 
                     if (allSessions.length === 0) return <Text style={{ color: colors.textMuted, marginTop: 8 }}>기록된 독서 활동이 없습니다.</Text>;

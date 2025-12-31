@@ -13,7 +13,7 @@ export function useAladinSearch() {
   const [error, setError] = useState<string | null>(null);
 
   const searchBooks = useCallback(async (query: string) => {
-    console.log('[Search] Starting search for:', query);
+
     if (!query.trim()) return;
 
     setLoading(true);
@@ -22,7 +22,7 @@ export function useAladinSearch() {
     try {
       // Use the backend proxy instead of calling Aladin directly to avoid CORS
       const url = `${BASE_URL}/api/aladin-search?query=${encodeURIComponent(query)}`;
-      console.log('[Search] Fetching from:', url);
+
 
       const { data: { session } } = await import('../lib/supabase').then(m => m.supabase.auth.getSession());
       const token = session?.access_token;
@@ -46,8 +46,8 @@ export function useAladinSearch() {
       }
 
       // The backend now handles the merging of review data/bookshelf status
-      console.log('[Search API] Raw results count:', data.item.length);
-      console.log('[Search API] First result:', data.item[0]?.title, 'isInBookshelf:', data.item[0]?.isInBookshelf);
+
+
       setResults(data.item);
 
     } catch (err) {

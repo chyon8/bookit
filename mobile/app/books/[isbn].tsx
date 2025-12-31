@@ -40,13 +40,13 @@ export default function BookPreviewScreen() {
     const fetchBook = async () => {
       if (!isbn || !user) return;
       setIsLoading(true);
-      console.log("Fetching book info for ISBN:", isbn);
+
       try {
         // 1. Fetch from Aladin Proxy
         const apiUrl = `${BASE_URL}/api/aladin-detail?isbn=${encodeURIComponent(isbn)}`;
-        console.log("Fetching from API:", apiUrl);
+
         const response = await fetch(apiUrl);
-        console.log("Response status:", response.status);
+
         const data = await response.json();
         
         if (!data.book) {
@@ -54,7 +54,7 @@ export default function BookPreviewScreen() {
             throw new Error("책 정보를 찾을 수 없습니다.");
         }
         
-        console.log("Book data received:", data.book.title);
+
 
         // 2. Check overlap logic (already in library?)
         // Similar to web: check books table -> check user_books table
@@ -70,7 +70,7 @@ export default function BookPreviewScreen() {
 
         let foundUserBookId = null;
         if (bookInDb) {
-           console.log("Book found in DB, checking user_books...");
+
            const { data: userBookLink, error: userBookError } = await supabase
              .from("user_books")
              .select("book_id")
@@ -83,7 +83,7 @@ export default function BookPreviewScreen() {
            } 
 
            if (userBookLink) {
-               console.log("User has this book:", userBookLink.book_id);
+
                foundUserBookId = userBookLink.book_id;
            }
         }

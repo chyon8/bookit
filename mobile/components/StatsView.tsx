@@ -216,7 +216,7 @@ export default function StatsView({ books }: StatsViewProps) {
             const month = parseInt(monthStr, 10);
             
             // Log for debugging
-            // console.log(`Book: ${book.books.title}, End: ${book.end_date}, Parsed: ${year}-${month}, Current: ${currentYear}-${currentMonth + 1}`);
+
 
             // currentMonth is 0-indexed (Jan=0), month from string is 1-indexed (Jan=1)
             if (year === currentYear && (month - 1) === currentMonth) {

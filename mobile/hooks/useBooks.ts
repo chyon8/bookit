@@ -100,7 +100,7 @@ export function useBooks() {
         throw error;
       }
 
-      console.log("Fetched books:", data?.length || 0);
+
       return data as unknown as UserBook[];
     },
   });
