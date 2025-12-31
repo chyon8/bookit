@@ -22,6 +22,7 @@ export interface MemorableQuote {
   quote: string;
   page: string;
   thought: string;
+  date?: string;
 }
 
 export interface Memo {

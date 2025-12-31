@@ -99,10 +99,15 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({ quote, onDelete, onChange,
           </TouchableOpacity>
         </View>
       </View>
-      {(quote.page || quote.thought) && (
+      {(quote.page || quote.thought || quote.date) && (
         <View style={[styles.metaContainer, { borderTopColor: colors.border }]}>
-          {!!quote.page && <Text style={[styles.pageText, { color: colors.textMuted }]}>p. {quote.page}</Text>}
+          <View style={styles.metaHeader}>
+             {!!quote.page && <Text style={[styles.pageText, { color: colors.textMuted }]}>p. {quote.page}</Text>}
+          </View>
           {!!quote.thought && <Text style={[styles.thoughtText, { color: colors.text }]}>💭 {quote.thought}</Text>}
+          {!!quote.date && (
+            <Text style={[styles.dateText, { color: colors.textMuted }]}>{quote.date}</Text>
+          )}
         </View>
       )}
     </View>
@@ -164,6 +169,16 @@ const styles = StyleSheet.create({
     marginTop: 8,
     paddingTop: 8,
     borderTopWidth: 1,
+  },
+  metaHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  dateText: {
+    fontSize: 11,
+    marginTop: 4,
+    textAlign: 'right',
   },
   pageText: {
     fontSize: 12,

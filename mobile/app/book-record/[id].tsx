@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import { useTheme } from "../../context/ThemeContext";
 import { useLocalSearchParams, useRouter, Stack, useNavigation } from "expo-router";
+import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
 import { useBookData, useUpdateBookReview, useDeleteBook } from "../../hooks/useBookData";
 import { UserBook, ReadingStatus, MemorableQuote, Memo } from "../../hooks/useBooks";
@@ -77,6 +78,33 @@ export default function BookRecordScreen() {
   const [isScanning, setIsScanning] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
   const [newlyAddedQuoteIndex, setNewlyAddedQuoteIndex] = useState<number | null>(null);
+
+  // DatePicker State
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [activeDateField, setActiveDateField] = useState<'start_date' | 'end_date' | null>(null);
+  
+  const handleDatePress = (field: 'start_date' | 'end_date') => {
+    setActiveDateField(field);
+    setShowDatePicker(true);
+  };
+
+  const handleDateChange = (event: any, selectedDate?: Date) => {
+    if (Platform.OS === 'android') {
+      setShowDatePicker(false);
+    }
+    
+    if (event.type === 'set' && selectedDate && activeDateField) {
+      const formattedDate = selectedDate.toISOString().split('T')[0];
+      updateReview(activeDateField, formattedDate);
+      if (Platform.OS === 'ios') {
+         // iOS stays open until closed manually or tapped outside, but here we update on change
+         // Ideally for iOS we might want a 'Done' button or similar if it's a modal,
+         // but default inline/spinner acts immediately.
+      }
+    } else if (event.type === 'dismissed') {
+       setShowDatePicker(false);
+    }
+  };
 
   const showConfirmModal = (
     title: string, 
@@ -225,7 +253,17 @@ export default function BookRecordScreen() {
 
   // Quote Handlers
   const addQuote = () => {
-    const newQuote: MemorableQuote = { quote: "", page: "", thought: "" };
+    // Format date as YYYY-MM-DD HH:mm
+    const now = new Date();
+    const formattedDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    
+    const newQuote: MemorableQuote = { 
+      quote: "", 
+      page: "", 
+      thought: "",
+      date: formattedDate
+    };
+    
     setReview(prev => {
       const newQuotes = [...(prev.memorable_quotes || []), newQuote];
       setNewlyAddedQuoteIndex(newQuotes.length - 1);
@@ -532,15 +570,40 @@ export default function BookRecordScreen() {
               {/* Reading History Timeline - Combined Current + Past */}
               <View>
                 <Text style={[styles.label, { color: colors.text }]}>독서 기록</Text>
-                <View style={styles.historyContainer}>
+                <ScrollView 
+                  style={[styles.historyContainer, { maxHeight: 220 }]} 
+                  nestedScrollEnabled={true}
+                  showsVerticalScrollIndicator={true}
+                >
                   {(() => {
                     // Calculate current session number
                     const archiveCount = readingSessions?.length || 0;
-                    const currentSessionNumber = archiveCount + 1;
+                    const latestArchive = readingSessions?.[0];
+                    
+                    // Check if this is a genuine re-read or just duplicate from migration
+                    // A genuine re-read means: archives exist with Finished/Dropped status, and current is Reading
+                    const isGenuineReread = 
+                      archiveCount > 0 && 
+                      review.status === ReadingStatus.Reading && 
+                      latestArchive?.status !== ReadingStatus.Reading;
+                    
+                    // Check if archive is just a duplicate of current state (from migration)
+                    const isDuplicateFromMigration = 
+                      archiveCount > 0 && 
+                      !isGenuineReread;
+                    
+                    // Determine what to show:
+                    // - No archives: show current as 1회차
+                    // - Archives exist but duplicate: show archive only (which is 1회차)
+                    // - Genuine re-read: show current (2회차) + archives
+                    const shouldShowCurrentSession = 
+                      (review.status === ReadingStatus.Reading || review.status === ReadingStatus.Finished || review.status === ReadingStatus.Dropped) &&
+                      (archiveCount === 0 || isGenuineReread);
+                    
+                    const currentSessionNumber = isGenuineReread ? archiveCount + 1 : 1;
 
                     // Create current session object from review state
-                    // Only show if we have valid status
-                    const currentSession = (review.status === ReadingStatus.Reading || review.status === ReadingStatus.Finished || review.status === ReadingStatus.Dropped) ? {
+                    const currentSession = shouldShowCurrentSession ? {
                       id: 'current',
                       session_number: currentSessionNumber,
                       status: review.status,
@@ -550,10 +613,12 @@ export default function BookRecordScreen() {
                       isCurrent: true
                     } : null;
 
-                    // Combine current + history
+                    // Show archives only if:
+                    // - It's a duplicate from migration (show archive instead of current)
+                    // - Or it's a genuine re-read (show both)
                     const allSessions = [
                       ...(currentSession ? [currentSession] : []),
-                      ...(readingSessions || [])
+                      ...(isDuplicateFromMigration || isGenuineReread ? (readingSessions || []) : [])
                     ];
 
                     if (allSessions.length === 0) return <Text style={{ color: colors.textMuted, marginTop: 8 }}>기록된 독서 활동이 없습니다.</Text>;
@@ -604,7 +669,7 @@ export default function BookRecordScreen() {
                       );
                     });
                   })()}
-                </View>
+                </ScrollView>
               </View>
 
               {/* Current session date inputs (editable) */}
@@ -616,32 +681,49 @@ export default function BookRecordScreen() {
                   <View style={styles.dateRow}>
                     <View style={styles.dateInputContainer}>
                       <Text style={[styles.dateLabel, { color: colors.textMuted }]}>시작일</Text>
-                      <TextInput 
-                        style={[styles.dateInput, { backgroundColor: isDark ? colors.border : '#F1F5F9', color: colors.text }]}
-                        value={review.start_date || ""}
-                        onChangeText={(text) => updateReview('start_date', text)}
-                        placeholder="YYYY-MM-DD"
-                        placeholderTextColor={colors.textMuted}
-                      />
+                      <TouchableOpacity 
+                        style={[styles.dateInput, { backgroundColor: isDark ? colors.border : '#F1F5F9', justifyContent: 'center' }]}
+                        onPress={() => handleDatePress('start_date')}
+                      >
+                        <Text style={{ color: review.start_date ? colors.text : colors.textMuted }}>
+                          {review.start_date || "YYYY-MM-DD"}
+                        </Text>
+                      </TouchableOpacity>
                     </View>
                     {review.status === ReadingStatus.Finished && (
                       <View style={styles.dateInputContainer}>
                         <Text style={[styles.dateLabel, { color: colors.textMuted }]}>완독일</Text>
-                        <TextInput 
-                          style={[styles.dateInput, { backgroundColor: isDark ? colors.border : '#F1F5F9', color: colors.text }]}
-                          value={review.end_date || ""}
-                          onChangeText={(text) => updateReview('end_date', text)}
-                          placeholder="YYYY-MM-DD"
-                          placeholderTextColor={colors.textMuted}
-                        />
+                         <TouchableOpacity 
+                          style={[styles.dateInput, { backgroundColor: isDark ? colors.border : '#F1F5F9', justifyContent: 'center' }]}
+                          onPress={() => handleDatePress('end_date')}
+                        >
+                          <Text style={{ color: review.end_date ? colors.text : colors.textMuted }}>
+                            {review.end_date || "YYYY-MM-DD"}
+                          </Text>
+                        </TouchableOpacity>
                       </View>
                     )}
                   </View>
+                  
+                  {showDatePicker && (
+                    <DateTimePicker
+                      testID="dateTimePicker"
+                      value={(() => {
+                        const dateString = activeDateField === 'start_date' ? review.start_date : review.end_date;
+                        return dateString ? new Date(dateString) : new Date();
+                      })()}
+                      mode="date"
+                      display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                      onChange={handleDateChange}
+                      maximumDate={new Date()} // Future dates allowed? Maybe limit to today for reading records. Let's limit to today.
+                    />
+                  )}
+
                 </>
               )}
 
-              {/* Start Reread Button - Only show for finished books */}
-              {review.status === ReadingStatus.Finished && (
+              {/* Start Reread Button - Show for finished or dropped books */}
+              {(review.status === ReadingStatus.Finished || review.status === ReadingStatus.Dropped) && (
                 <TouchableOpacity 
                   style={[styles.rereadButton, { backgroundColor: isDark ? '#064E3B' : '#ECFDF5', borderColor: colors.primary }]}
                   onPress={() => {
@@ -664,7 +746,7 @@ export default function BookRecordScreen() {
                             startDate: review.start_date || null,
                             endDate: review.end_date || null,
                             rating: review.rating || null,
-                            status: ReadingStatus.Finished,
+                            status: review.status || null, // Save actual status (Finished or Dropped)
                           });
 
                           // Reset current session: new start date, clear end date, change status to Reading
