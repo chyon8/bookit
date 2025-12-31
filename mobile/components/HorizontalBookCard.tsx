@@ -48,7 +48,13 @@ export function HorizontalBookCard({ book, onPress, onDelete }: HorizontalBookCa
         )}
       </View>
       <View style={styles.cardTextContainer}>
-        <Text style={[styles.bookTitle, { color: colors.text }]} numberOfLines={2}>{book.books.title}</Text>
+        <Text 
+          style={[styles.bookTitle, { color: colors.text }]} 
+          numberOfLines={1}
+          ellipsizeMode="tail"
+        >
+          {book.books.title}
+        </Text>
         <Text style={[styles.bookAuthor, { color: colors.textMuted }]} numberOfLines={1}>
           {book.books.author?.split("(지은이")[0].trim()}
         </Text>
@@ -106,13 +112,13 @@ const styles = StyleSheet.create({
   bookTitle: {
     fontSize: 14,
     fontWeight: 'bold',
-    marginBottom: 4,
-    height: 40, // 2 lines * 20
+    marginBottom: 2, 
+    height: 20, 
     lineHeight: 20,
   },
   bookAuthor: {
     fontSize: 12,
-    height: 16, // 1 line * 16
+    height: 16,
     lineHeight: 16,
   },
   statusContainer: {

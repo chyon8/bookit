@@ -96,7 +96,11 @@ export function BookCard({ book, onSelect, onDelete, showStatusBadge }: BookCard
       
       {/* Text Container */}
       <View style={[styles.textContainer, { backgroundColor: colors.background }]}>
-        <Text style={[styles.bookTitle, { color: colors.text }]} numberOfLines={2}>
+        <Text 
+          style={[styles.bookTitle, { color: colors.text }]} 
+          numberOfLines={1} 
+          ellipsizeMode="tail"
+        >
           {book.books.title}
         </Text>
         <Text style={[styles.bookAuthor, { color: colors.textMuted }]} numberOfLines={1}>
@@ -142,16 +146,18 @@ const styles = StyleSheet.create({
   },
   textContainer: {
     padding: 8,
+    paddingBottom: 4, 
   },
   bookTitle: {
     fontSize: 14,
     fontWeight: 'bold',
-    marginBottom: 4,
-    height: 40,
+    marginBottom: 0, 
+    height: 20, 
     lineHeight: 20,
   },
   bookAuthor: {
     fontSize: 12,
+    marginTop: 0,
     marginBottom: 4,
     height: 16,
     lineHeight: 16,
@@ -159,12 +165,12 @@ const styles = StyleSheet.create({
   statusContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 4,
+    marginTop: 2,
     height: 20,
   },
   statusPlaceholder: {
     height: 20,
-    marginTop: 4,
+    marginTop: 2,
   },
   readingStatus: {
     fontSize: 13,

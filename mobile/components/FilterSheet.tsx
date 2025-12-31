@@ -107,7 +107,7 @@ export const FilterSheet = ({ visible, onClose, onApply, initialFilters, genres 
 
                 {/* Reread Section */}
                 <View style={styles.section}>
-                    <Text style={[styles.sectionTitle, { color: colors.text }]}>N회차 읽기 상태</Text>
+                    <Text style={[styles.sectionTitle, { color: colors.text }]}>다시 읽고 싶어요</Text>
                     <View style={styles.chipContainer}>
                         <TouchableOpacity
                             onPress={() => setReread(reread === true ? null : true)}
@@ -121,7 +121,7 @@ export const FilterSheet = ({ visible, onClose, onApply, initialFilters, genres 
                               styles.chipText, 
                               { color: colors.textMuted },
                               reread === true && { color: isDark ? colors.primary : '#15803D', fontWeight: '600' }
-                            ]}>N회차 읽기만</Text>
+                            ]}>다시 읽고 싶은 책</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
