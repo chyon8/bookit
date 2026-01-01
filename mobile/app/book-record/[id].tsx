@@ -19,7 +19,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
 import { useBookData, useUpdateBookReview, useDeleteBook } from "../../hooks/useBookData";
 import { UserBook, ReadingStatus, MemorableQuote, Memo } from "../../hooks/useBooks";
-import { useReadingSessions, useCreateReadingSession, useUpdateReadingSession, ReadingSession } from "../../hooks/useReadingSessions";
+import { useReadingSessions, useCreateReadingSession, useUpdateReadingSession, useDeleteReadingSession, ReadingSession } from "../../hooks/useReadingSessions";
 import { ChevronLeftIcon, TrashIcon, CameraIcon, PhotoIcon } from "../../components/Icons";
 import { StarRating } from "../../components/StarRating";
 import { QuoteCard } from "../../components/QuoteCard";
@@ -52,6 +52,7 @@ export default function BookRecordScreen() {
   const { data: readingSessions } = useReadingSessions(book?.review?.id || "");
   const createSessionMutation = useCreateReadingSession();
   const updateSessionMutation = useUpdateReadingSession();
+  const deleteSessionMutation = useDeleteReadingSession();
 
   const [review, setReview] = useState<Partial<UserBook>>({});
   const [isDirty, setIsDirty] = useState(false);
@@ -164,8 +165,8 @@ export default function BookRecordScreen() {
   // Handle all back navigation (swipe, system back, etc.)
   useEffect(() => {
     const unsubscribe = navigation.addListener('beforeRemove', (e) => {
-      // If no changes or we're saving, don't show alert
-      if (!isDirty || isSaving.current) {
+      // If no changes or we're saving/deleting, don't show alert
+      if (!isDirty || isSaving.current || isDeleting.current) {
         return;
       }
 
@@ -216,6 +217,7 @@ export default function BookRecordScreen() {
             try {
                 isDeleting.current = true;
                 await deleteBookMutation.mutateAsync(book.review.id);
+                // Navigate back to preserve scroll position and tab state
                 if (router.canGoBack()) {
                   router.back();
                 } else {
@@ -264,8 +266,8 @@ export default function BookRecordScreen() {
         return [ReadingStatus.Reading, ReadingStatus.Finished, ReadingStatus.Dropped];
       case ReadingStatus.Finished:
       case ReadingStatus.Dropped:
-        // 완독/중단에서는 현재 상태만 (다시읽기 버튼으로만 새 회차 시작)
-        return [currentStatus];
+        // 완독/중단에서도 읽는 중으로 변경 가능 (실수로 완독 누른 경우 되돌리기)
+        return [currentStatus, ReadingStatus.Reading];
       default:
         return [ReadingStatus.WantToRead, ReadingStatus.Reading];
     }
@@ -275,12 +277,24 @@ export default function BookRecordScreen() {
       const today = new Date().toISOString().split("T")[0];
       const oldStatus = review.status;
       
-      // 완독/중단 상태에서 읽는 중으로 직접 전환 시도 시 안내
+      // 완독/중단 상태에서 읽는 중으로 전환 시 확인 모달
       if ((oldStatus === ReadingStatus.Finished || oldStatus === ReadingStatus.Dropped) 
           && newStatus === ReadingStatus.Reading) {
-        Alert.alert(
-          "안내", 
-          "다시 읽으시려면 아래 '📚 다시 읽기' 버튼을 사용해주세요.\n현재 기록이 히스토리에 저장됩니다."
+        showConfirmModal(
+          "상태 변경 확인",
+          "완독/중단 상태를 읽는 중으로 변경하시겠습니까?\n\n새로운 회차로 다시 읽으시려면 '다시 읽기' 버튼을 이용해주세요.",
+          () => {
+            // Proceed with status change
+            const updates: Partial<UserBook> = { 
+              status: newStatus,
+              end_date: null // Clear end_date when reverting to Reading
+            };
+            if (!review.start_date) {
+              updates.start_date = today;
+            }
+            setReview(prev => ({ ...prev, ...updates }));
+          },
+          { confirmText: "변경", cancelText: "취소" }
         );
         return;
       }
@@ -294,6 +308,7 @@ export default function BookRecordScreen() {
       let updates: Partial<UserBook> = { status: newStatus };
   
       if (newStatus === ReadingStatus.Reading) {
+        // 시작일이 없거나 읽고싶은에서 전환하는 경우 시작일 설정
         if (!review.start_date || oldStatus === ReadingStatus.WantToRead) {
            updates.start_date = today;
         }
@@ -530,6 +545,33 @@ export default function BookRecordScreen() {
     }
   };
 
+  const handleDeleteSession = (sessionId: string) => {
+    if (!book || !editingSession) return;
+    
+    showConfirmModal(
+      "회차 삭제",
+      `${editingSession.session_number}회차 기록을 삭제하시겠습니까? 삭제된 기록은 복구할 수 없습니다.`,
+      async () => {
+        try {
+          await deleteSessionMutation.mutateAsync({
+            sessionId,
+            userBookId: book.review.id,
+            sessionNumber: editingSession.session_number
+          });
+          
+          setIsEditSessionModalVisible(false);
+          setEditingSession(null);
+          
+          Alert.alert('성공', '독서 기록이 삭제되었습니다.');
+        } catch (e) {
+          console.error(e);
+          Alert.alert('오류', '기록 삭제 중 문제가 발생했습니다.');
+        }
+      },
+      { confirmText: "삭제", isDestructive: true }
+    );
+  };
+
 
   const statusOptions = {
     [ReadingStatus.WantToRead]: "읽고 싶은",
@@ -577,6 +619,7 @@ export default function BookRecordScreen() {
           setEditingSession(null);
         }}
         onSave={handleUpdateSession}
+        onDelete={handleDeleteSession}
         session={editingSession}
         isSaving={isUpdatingSession.current}
       />

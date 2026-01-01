@@ -126,3 +126,67 @@ export function useUpdateReadingSession() {
     },
   });
 }
+
+/**
+ * Hook to delete a reading session and reorder remaining sessions
+ */
+export function useDeleteReadingSession() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      sessionId,
+      userBookId,
+      sessionNumber,
+    }: {
+      sessionId: string;
+      userBookId: string;
+      sessionNumber: number;
+    }) => {
+      // 1. Delete the session
+      const { error: deleteError } = await supabase
+        .from("reading_sessions")
+        .delete()
+        .eq("id", sessionId);
+
+      if (deleteError) {
+        console.error("Error deleting reading session:", deleteError);
+        throw deleteError;
+      }
+
+      // 2. Reorder remaining sessions (decrease session_number for all sessions after the deleted one)
+      const { data: sessionsToUpdate, error: fetchError } = await supabase
+        .from("reading_sessions")
+        .select("id, session_number")
+        .eq("user_book_id", userBookId)
+        .gt("session_number", sessionNumber);
+
+      if (fetchError) {
+        console.error("Error fetching sessions to reorder:", fetchError);
+        throw fetchError;
+      }
+
+      // Update each session's session_number
+      if (sessionsToUpdate && sessionsToUpdate.length > 0) {
+        for (const session of sessionsToUpdate) {
+          const { error: updateError } = await supabase
+            .from("reading_sessions")
+            .update({ session_number: session.session_number - 1 })
+            .eq("id", session.id);
+
+          if (updateError) {
+            console.error("Error reordering session:", updateError);
+            throw updateError;
+          }
+        }
+      }
+
+      return sessionId;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ["reading_sessions", variables.userBookId],
+      });
+    },
+  });
+}

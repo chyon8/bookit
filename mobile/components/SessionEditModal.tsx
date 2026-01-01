@@ -18,6 +18,7 @@ interface SessionEditModalProps {
   isVisible: boolean;
   onClose: () => void;
   onSave: (sessionId: string, updates: Partial<ReadingSession>) => void;
+  onDelete?: (sessionId: string) => void;
   session: ReadingSession | null;
   isSaving?: boolean;
 }
@@ -26,6 +27,7 @@ export function SessionEditModal({
   isVisible,
   onClose,
   onSave,
+  onDelete,
   session,
   isSaving = false
 }: SessionEditModalProps) {
@@ -147,6 +149,18 @@ export function SessionEditModal({
                 />
               </View>
 
+              {/* Delete Button - Only show if onDelete is provided */}
+              {onDelete && (
+                <View style={{ marginBottom: 12 }}>
+                  <TouchableOpacity 
+                    style={[styles.deleteButton, { backgroundColor: isDark ? '#7F1D1D' : '#FEE2E2', borderColor: '#DC2626' }]}
+                    onPress={() => onDelete(session.id)}
+                  >
+                    <Text style={{ color: '#DC2626', fontWeight: 'bold' }}>🗑️ 이 회차 기록 삭제</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
               {/* Action Buttons */}
               <View style={styles.buttonRow}>
                 <TouchableOpacity 
@@ -250,5 +264,11 @@ const styles = StyleSheet.create({
   },
   saveButton: {
    
+  },
+  deleteButton: {
+    padding: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: 'center',
   },
 });
