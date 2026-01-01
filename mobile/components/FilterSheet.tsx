@@ -21,6 +21,7 @@ interface FilterSheetProps {
     month: string | null;
     year: string | null;
     genre: string | null;
+    readingCount: number | null;
   }) => void;
   initialFilters: {
     sort: SortOption;
@@ -28,6 +29,7 @@ interface FilterSheetProps {
     month: string | null;
     year: string | null;
     genre: string | null;
+    readingCount: number | null;
   };
   genres: string[]; // Pass available genres
 }
@@ -41,13 +43,14 @@ export const FilterSheet = ({ visible, onClose, onApply, initialFilters, genres 
   const [month, setMonth] = useState<string | null>(initialFilters.month);
   const [year, setYear] = useState<string | null>(initialFilters.year);
   const [genre, setGenre] = useState<string | null>(initialFilters.genre);
+  const [readingCount, setReadingCount] = useState<number | null>(initialFilters.readingCount);
 
   const months = Array.from({ length: 12 }, (_, i) => `${i + 1}월`);
   const currentYearNum = new Date().getFullYear();
   const years = [currentYearNum, currentYearNum - 1, currentYearNum - 2].map(String);
 
   const handleApply = () => {
-    onApply({ sort, reread, month, year, genre });
+    onApply({ sort, reread, month, year, genre, readingCount });
     onClose();
   };
 
@@ -57,6 +60,7 @@ export const FilterSheet = ({ visible, onClose, onApply, initialFilters, genres 
     setMonth(null);
     setYear(null);
     setGenre(null);
+    setReadingCount(null);
   };
 
   return (
@@ -176,6 +180,32 @@ export const FilterSheet = ({ visible, onClose, onApply, initialFilters, genres 
                             </TouchableOpacity>
                         ))}
                      </View>
+                </View>
+
+                <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+                {/* Reading Count Section */}
+                <View style={styles.section}>
+                    <Text style={[styles.sectionTitle, { color: colors.text }]}>N회차</Text>
+                    <View style={styles.chipContainer}>
+                        {[1, 2, 3, 4, 5].map((count) => (
+                            <TouchableOpacity
+                                key={count}
+                                onPress={() => setReadingCount(readingCount === count ? null : count)}
+                                style={[
+                                  styles.chip, 
+                                  { backgroundColor: isDark ? colors.border : '#F1F5F9' },
+                                  readingCount === count && { backgroundColor: isDark ? '#064E3B' : '#ECFDF5', borderColor: colors.primary }
+                                ]}
+                            >
+                                <Text style={[
+                                  styles.chipText, 
+                                  { color: colors.textMuted },
+                                  readingCount === count && { color: isDark ? colors.primary : '#15803D', fontWeight: '600' }
+                                ]}>{count === 5 ? "5회차+" : `${count}회차`}</Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
                 </View>
 
                 {/* Genre Section - Optional, if available */}

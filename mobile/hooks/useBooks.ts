@@ -45,6 +45,7 @@ export interface UserBook {
   overall_impression: string | null;
   connected_thoughts: string | null;
   questions_from_book: string[] | null;
+  reading_sessions?: [{ count: number }];
   reread_will: boolean | null;
 }
 
@@ -90,9 +91,9 @@ export function useBooks() {
             description,
             isbn13,
             category
-          )
+          ),
+          reading_sessions(count)
         `)
-        .order("created_at", { ascending: false })
         .order("created_at", { ascending: false });
 
       if (error) {

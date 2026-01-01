@@ -6,7 +6,8 @@ import { StarIcon, TrashIcon } from "./Icons";
 interface BookCardProps {
   book: UserBook;
   onSelect?: (book: UserBook) => void;
-  onDelete?: (bookId: string, bookTitle: string) => void;
+  onDelete?: (id: string, title: string) => void;
+  debugInfo?: string;
   showStatusBadge?: boolean;
 }
 
@@ -63,7 +64,7 @@ export function BookCard({ book, onSelect, onDelete, showStatusBadge }: BookCard
   };
 
   return (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={styles.container}
       activeOpacity={0.7}
       onPress={handleSelect}
@@ -88,8 +89,8 @@ export function BookCard({ book, onSelect, onDelete, showStatusBadge }: BookCard
           resizeMode="cover"
         />
         {isHovered && (
-          <TouchableOpacity 
-            style={[styles.deleteIconButton, { backgroundColor: isDark ? 'rgba(30, 41, 59, 0.9)' : 'rgba(255, 255, 255, 0.9)' }]} 
+          <TouchableOpacity
+            style={[styles.deleteIconButton, { backgroundColor: isDark ? 'rgba(30, 41, 59, 0.9)' : 'rgba(255, 255, 255, 0.9)' }]}
             onPress={handleDelete}
             activeOpacity={0.6}
           >
@@ -97,18 +98,18 @@ export function BookCard({ book, onSelect, onDelete, showStatusBadge }: BookCard
           </TouchableOpacity>
         )}
       </View>
-      
+
       {/* Text Container */}
       <View style={[styles.textContainer, { backgroundColor: colors.background }]}>
-        <Text 
-          style={[styles.bookTitle, { color: colors.text }]} 
-          numberOfLines={1} 
+        <Text
+          style={[styles.bookTitle, { color: colors.text }]}
+          numberOfLines={1}
           ellipsizeMode="tail"
         >
           {book.books.title}
         </Text>
         <Text style={[styles.bookAuthor, { color: colors.textMuted }]} numberOfLines={1}>
-          {book.books.author?.split("(지은이")[0].trim()}
+          {book.books.author}
         </Text>
         {renderStatusInfo()}
       </View>

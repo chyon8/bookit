@@ -84,12 +84,14 @@ export default function Home() {
     month: string | null;
     year: string | null;
     genre: string | null;
+    readingCount: number | null;
   }>({
     sort: "date_desc",
     reread: null,
     month: null,
     year: null,
-    genre: null
+    genre: null,
+    readingCount: null
   });
 
   // Extract all available genres for filter sheet
@@ -102,6 +104,7 @@ export default function Home() {
     return Array.from(g);
   }, [userBooks]);
 
+  // 1. Global Filter (independent of tabs)
   // 1. Global Filter (independent of tabs)
   const globallyFilteredBooks = useMemo(() => {
     if (!userBooks) return [];
@@ -136,6 +139,20 @@ export default function Home() {
       if (filters.year && book.end_date) {
          const date = new Date(book.end_date);
          if (date.getFullYear().toString() !== filters.year) return false;
+      }
+
+      if (filters.readingCount !== null) {
+          // reading_sessions = 과거 완독 횟수 (아카이브)
+          // 현재 완독/중단 상태면 +1
+          const archiveCount = book.reading_sessions?.[0]?.count || 0;
+          const isCompleted = book.status === ReadingStatus.Finished || book.status === ReadingStatus.Dropped;
+          const currentReadingCount = archiveCount + (isCompleted ? 1 : 0);
+
+          if (filters.readingCount === 5) {
+              if (currentReadingCount < 5) return false;
+          } else {
+              if (currentReadingCount !== filters.readingCount) return false;
+          }
       }
 
       return true;
