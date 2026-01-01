@@ -88,3 +88,41 @@ export function useCreateReadingSession() {
     },
   });
 }
+
+/**
+ * Hook to update an existing reading session
+ */
+export function useUpdateReadingSession() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      sessionId,
+      userBookId,
+      updates,
+    }: {
+      sessionId: string;
+      userBookId: string;
+      updates: Partial<ReadingSession>;
+    }) => {
+      const { data, error } = await supabase
+        .from("reading_sessions")
+        .update(updates)
+        .eq("id", sessionId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Error updating reading session:", error);
+        throw error;
+      }
+
+      return data as ReadingSession;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ["reading_sessions", variables.userBookId],
+      });
+    },
+  });
+}

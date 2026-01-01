@@ -19,7 +19,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
 import { useBookData, useUpdateBookReview, useDeleteBook } from "../../hooks/useBookData";
 import { UserBook, ReadingStatus, MemorableQuote, Memo } from "../../hooks/useBooks";
-import { useReadingSessions, useCreateReadingSession } from "../../hooks/useReadingSessions";
+import { useReadingSessions, useCreateReadingSession, useUpdateReadingSession, ReadingSession } from "../../hooks/useReadingSessions";
 import { ChevronLeftIcon, TrashIcon, CameraIcon, PhotoIcon } from "../../components/Icons";
 import { StarRating } from "../../components/StarRating";
 import { QuoteCard } from "../../components/QuoteCard";
@@ -28,6 +28,7 @@ import { supabase } from "../../lib/supabase";
 import { BookRecordSkeleton } from "../../components/BookRecordSkeleton";
 import { ConfirmModal } from "../../components/ConfirmModal";
 import { ScanPreviewModal } from "../../components/ScanPreviewModal";
+import { SessionEditModal } from "../../components/SessionEditModal";
 import { performOCR } from "../../utils/ocr";
 
 export default function BookRecordScreen() {
@@ -50,6 +51,7 @@ export default function BookRecordScreen() {
   // Fetch reading sessions for this book
   const { data: readingSessions } = useReadingSessions(book?.review?.id || "");
   const createSessionMutation = useCreateReadingSession();
+  const updateSessionMutation = useUpdateReadingSession();
 
   const [review, setReview] = useState<Partial<UserBook>>({});
   const [isDirty, setIsDirty] = useState(false);
@@ -78,6 +80,11 @@ export default function BookRecordScreen() {
   const [isScanning, setIsScanning] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
   const [newlyAddedQuoteIndex, setNewlyAddedQuoteIndex] = useState<number | null>(null);
+
+  // Session Edit State
+  const [editingSession, setEditingSession] = useState<ReadingSession | null>(null);
+  const [isEditSessionModalVisible, setIsEditSessionModalVisible] = useState(false);
+  const isUpdatingSession = useRef(false);
 
   // DatePicker State
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -244,10 +251,45 @@ export default function BookRecordScreen() {
     setReview(prev => ({ ...prev, [field]: value }));
   };
 
-  // Status Logic
+  // Status Logic - 허용되는 상태 전환 정의
+  const getAllowedStatusTransitions = (currentStatus: ReadingStatus | null | undefined): ReadingStatus[] => {
+    switch (currentStatus) {
+      case ReadingStatus.WantToRead:
+      case null:
+      case undefined:
+        // 읽고 싶은 → 읽는 중만 가능
+        return [ReadingStatus.WantToRead, ReadingStatus.Reading];
+      case ReadingStatus.Reading:
+        // 읽는 중 → 완독, 중단, 읽는 중 (현재 상태 유지)
+        return [ReadingStatus.Reading, ReadingStatus.Finished, ReadingStatus.Dropped];
+      case ReadingStatus.Finished:
+      case ReadingStatus.Dropped:
+        // 완독/중단에서는 현재 상태만 (다시읽기 버튼으로만 새 회차 시작)
+        return [currentStatus];
+      default:
+        return [ReadingStatus.WantToRead, ReadingStatus.Reading];
+    }
+  };
+
   const handleStatusChange = (newStatus: ReadingStatus) => {
       const today = new Date().toISOString().split("T")[0];
       const oldStatus = review.status;
+      
+      // 완독/중단 상태에서 읽는 중으로 직접 전환 시도 시 안내
+      if ((oldStatus === ReadingStatus.Finished || oldStatus === ReadingStatus.Dropped) 
+          && newStatus === ReadingStatus.Reading) {
+        Alert.alert(
+          "안내", 
+          "다시 읽으시려면 아래 '📚 다시 읽기' 버튼을 사용해주세요.\n현재 기록이 히스토리에 저장됩니다."
+        );
+        return;
+      }
+      
+      // 허용되지 않는 전환 차단
+      const allowedStatuses = getAllowedStatusTransitions(oldStatus);
+      if (!allowedStatuses.includes(newStatus)) {
+        return;
+      }
   
       let updates: Partial<UserBook> = { status: newStatus };
   
@@ -454,6 +496,41 @@ export default function BookRecordScreen() {
     }, 500);
   };
 
+  const handleSessionClick = (session: any) => {
+    // Only allow editing for past sessions (have an ID)
+    if (session.id === 'current') {
+      Alert.alert('안내', '현재 진행 중인 독서는 위에서 직접 수정해주세요.');
+      return;
+    }
+    
+    setEditingSession(session);
+    setIsEditSessionModalVisible(true);
+  };
+
+  const handleUpdateSession = async (sessionId: string, updates: Partial<ReadingSession>) => {
+    try {
+      if (!book) return;
+      
+      isUpdatingSession.current = true;
+      await updateSessionMutation.mutateAsync({
+        sessionId,
+        userBookId: book.review.id,
+        updates
+      });
+      
+      setIsEditSessionModalVisible(false);
+      setEditingSession(null);
+      
+      Alert.alert('성공', '독서 기록이 수정되었습니다.');
+    } catch (e) {
+      console.error(e);
+      Alert.alert('오류', '기록 수정 중 문제가 발생했습니다.');
+    } finally {
+      isUpdatingSession.current = false;
+    }
+  };
+
+
   const statusOptions = {
     [ReadingStatus.WantToRead]: "읽고 싶은",
     [ReadingStatus.Reading]: "읽는 중",
@@ -491,6 +568,17 @@ export default function BookRecordScreen() {
         onUpdateImage={(uri, base64) => {
             setScanImageBase64(base64);
         }}
+      />
+
+      <SessionEditModal
+        isVisible={isEditSessionModalVisible}
+        onClose={() => {
+          setIsEditSessionModalVisible(false);
+          setEditingSession(null);
+        }}
+        onSave={handleUpdateSession}
+        session={editingSession}
+        isSaving={isUpdatingSession.current}
       />
       
       {/* Custom Header */}
@@ -565,23 +653,31 @@ export default function BookRecordScreen() {
               <Text style={[styles.label, { color: colors.text }]}>독서 상태</Text>
               {/* Simple dropdown simulation */}
               <View style={styles.statusRow}>
-                  {Object.entries(statusOptions).map(([key, label]) => (
-                      <TouchableOpacity 
-                        key={key} 
-                        onPress={() => handleStatusChange(key as ReadingStatus)}
-                        style={[
-                            styles.statusChip, 
-                            { backgroundColor: isDark ? colors.border : '#F1F5F9' },
-                            review.status === key && (isDark ? { backgroundColor: '#064E3B', borderColor: colors.primary, borderWidth: 1 } : styles.activeStatusChip)
-                        ]}
-                      >
-                          <Text style={[
-                              styles.statusText,
-                              { color: colors.textMuted },
-                              review.status === key && (isDark ? { color: colors.primary, fontWeight: 'bold' } : styles.activeStatusText)
-                          ]}>{label}</Text>
-                      </TouchableOpacity>
-                  ))}
+                  {Object.entries(statusOptions).map(([key, label]) => {
+                      const allowedStatuses = getAllowedStatusTransitions(review.status as ReadingStatus);
+                      const isDisabled = !allowedStatuses.includes(key as ReadingStatus);
+                      const isActive = review.status === key;
+                      
+                      return (
+                          <TouchableOpacity 
+                            key={key} 
+                            onPress={() => handleStatusChange(key as ReadingStatus)}
+                            disabled={isDisabled && !isActive}
+                            style={[
+                                styles.statusChip, 
+                                { backgroundColor: isDark ? colors.border : '#F1F5F9' },
+                                isDisabled && !isActive && { opacity: 0.4 },
+                                isActive && (isDark ? { backgroundColor: '#064E3B', borderColor: colors.primary, borderWidth: 1 } : styles.activeStatusChip)
+                            ]}
+                          >
+                              <Text style={[
+                                  styles.statusText,
+                                  { color: colors.textMuted },
+                                  isActive && (isDark ? { color: colors.primary, fontWeight: 'bold' } : styles.activeStatusText)
+                              ]}>{label}</Text>
+                          </TouchableOpacity>
+                      );
+                  })}
               </View>
 
               {/* Reading History Timeline - Combined Current + Past */}
@@ -597,26 +693,18 @@ export default function BookRecordScreen() {
                     const archiveCount = readingSessions?.length || 0;
                     const latestArchive = readingSessions?.[0];
                     
-                    // Check if this is a genuine re-read or just duplicate from migration
-                    // A genuine re-read means: archives exist with Finished/Dropped status, and current is Reading
-                    const isGenuineReread = 
-                      archiveCount > 0 && 
-                      review.status === ReadingStatus.Reading && 
-                      latestArchive?.status !== ReadingStatus.Reading;
-                    
-                    // Check if archive is just a duplicate of current state (from migration)
-                    const isDuplicateFromMigration = 
-                      archiveCount > 0 && 
-                      !isGenuineReread;
-                    
-                    // Determine what to show:
-                    // If the current status is Finished or Dropped, we want to show it in the history
-                    // so that users can see their changes immediately.
-                    const shouldShowCurrentSession = 
-                      (review.status === ReadingStatus.Finished || review.status === ReadingStatus.Dropped);
-                    
-                    const currentSessionNumber = isGenuineReread ? archiveCount + 1 : 1;
+                    // Current session number calculation:
+                    // - Always readingSessions count + 1 (archive stores past sessions)
+                    const currentSessionNumber = archiveCount + 1;
 
+                    // Show current session in history for:
+                    // 1. 읽는 중 (Reading)
+                    // 2. 완독 (Finished) or 중단 (Dropped)
+                    const shouldShowCurrentSession = 
+                      review.status === ReadingStatus.Reading ||
+                      review.status === ReadingStatus.Finished || 
+                      review.status === ReadingStatus.Dropped;
+                    
                     // Create current session object from review state
                     const currentSession = shouldShowCurrentSession ? {
                       id: 'current',
@@ -628,22 +716,17 @@ export default function BookRecordScreen() {
                       isCurrent: true
                     } : null;
 
-                    // If we are showing the current session and it's not a genuine new reread (i.e., we are editing 
-                    // the latest record), we should exclude the corresponding archive from the list 
-                    // to avoid duplication and show the live version.
-                    // If isGenuineReread is true, currentSession is NEW text to the archives.
-                    // If isGenuineReread is false, currentSession replaces the latest archive.
-                    const archivesToShow = (readingSessions || []).filter((_, index) => {
-                         if (shouldShowCurrentSession && !isGenuineReread && index === 0) return false;
-                         return true;
-                    });
+                    // Always show all archives as they represent past sessions
+                    const archivesToShow = readingSessions || [];
 
                     const allSessions = [
                       ...(currentSession ? [currentSession] : []),
                       ...archivesToShow
-                    ].filter((s: any) => s.status === ReadingStatus.Finished || s.status === ReadingStatus.Dropped);
+                    ];
 
-                    if (allSessions.length === 0) return <Text style={{ color: colors.textMuted, marginTop: 8 }}>기록된 독서 활동이 없습니다.</Text>;
+                    if (allSessions.length === 0) {
+                      return <Text style={{ color: colors.textMuted, marginTop: 8 }}>기록된 독서 활동이 없습니다.</Text>;
+                    }
 
                     return allSessions.map((session: any, index) => {
                       const isFirst = index === 0;
@@ -653,7 +736,11 @@ export default function BookRecordScreen() {
                         session.status === ReadingStatus.Dropped ? "중단" : "";
                       
                       return (
-                        <View key={session.id} style={styles.historyItem}>
+                        <TouchableOpacity 
+                          key={session.id} 
+                          style={styles.historyItem}
+                          onPress={() => handleSessionClick(session)}
+                        >
                           <View style={styles.historyMarker}>
                             <View style={[
                               styles.historyDot, 
@@ -673,7 +760,9 @@ export default function BookRecordScreen() {
                                 {session.isCurrent && <Text style={{fontSize: 12, fontWeight: 'normal', color: colors.primary}}> (현재)</Text>}
                               </Text>
                               <Text style={[styles.historyStatus, { 
-                                color: session.status === ReadingStatus.Finished ? colors.primary : colors.textMuted 
+                                color: (session.status === ReadingStatus.Finished || session.status === ReadingStatus.Reading) 
+                                  ? colors.primary 
+                                  : colors.textMuted 
                               }]}>
                                 {statusLabel}
                               </Text>
@@ -685,7 +774,7 @@ export default function BookRecordScreen() {
                               {session.rating && session.rating > 0 ? `★ ${session.rating.toFixed(1)}` : "평점 없음"}
                             </Text>
                           </View>
-                        </View>
+                        </TouchableOpacity>
                       );
                     });
                   })()}
@@ -747,52 +836,57 @@ export default function BookRecordScreen() {
 
               {/* Start Reread Button - Show for finished or dropped books */}
               {(review.status === ReadingStatus.Finished || review.status === ReadingStatus.Dropped) && (
-                <TouchableOpacity 
-                  style={[styles.rereadButton, { backgroundColor: isDark ? '#064E3B' : '#ECFDF5', borderColor: colors.primary }]}
-                  onPress={() => {
-                    showConfirmModal(
-                      "다시 읽기 시작",
-                      "이 책을 다시 읽으시겠어요? 현재 기록은 히스토리에 저장됩니다.",
-                      async () => {
-                        // Implementation: Save current session and start new reading
-                        try {
-                          const archiveCount = readingSessions?.length || 0;
-                          // If current is 1st reading (0 archive), we save it as session #1.
-                          // If current is 2nd reading (1 archive), we save it as session #2.
-                          const sessionNumberToArchive = archiveCount + 1;
-                          const nextSessionNumber = sessionNumberToArchive + 1;
-                          
-                          // Save current session to history
-                          await createSessionMutation.mutateAsync({
-                            userBookId: book.review.id,
-                            sessionNumber: sessionNumberToArchive,
-                            startDate: review.start_date || null,
-                            endDate: review.end_date || null,
-                            rating: review.rating || null,
-                            status: review.status || null, // Save actual status (Finished or Dropped)
-                          });
+                <View>
+                  <Text style={[styles.helperText, { color: colors.textMuted }]}>
+                    이 책을 다시 읽고 싶다면 아래 버튼을 눌러주세요
+                  </Text>
+                  <TouchableOpacity 
+                    style={[styles.rereadButton, { backgroundColor: isDark ? '#064E3B' : '#ECFDF5', borderColor: colors.primary }]}
+                    onPress={() => {
+                      showConfirmModal(
+                        "다시 읽기 시작",
+                        "이 책을 다시 읽으시겠어요? 현재 기록은 히스토리에 저장됩니다.",
+                        async () => {
+                          // Implementation: Save current session and start new reading
+                          try {
+                            const archiveCount = readingSessions?.length || 0;
+                            // If current is 1st reading (0 archive), we save it as session #1.
+                            // If current is 2nd reading (1 archive), we save it as session #2.
+                            const sessionNumberToArchive = archiveCount + 1;
+                            const nextSessionNumber = sessionNumberToArchive + 1;
+                            
+                            // Save current session to history
+                            await createSessionMutation.mutateAsync({
+                              userBookId: book.review.id,
+                              sessionNumber: sessionNumberToArchive,
+                              startDate: review.start_date || null,
+                              endDate: review.end_date || null,
+                              rating: review.rating || null,
+                              status: review.status || null, // Save actual status (Finished or Dropped)
+                            });
 
-                          // Reset current session: new start date, clear end date, change status to Reading
-                          const today = new Date().toISOString().split("T")[0];
-                          setReview(prev => ({
-                            ...prev,
-                            status: ReadingStatus.Reading,
-                            start_date: today,
-                            end_date: null,
-                          }));
+                            // Reset current session: new start date, clear end date, change status to Reading
+                            const today = new Date().toISOString().split("T")[0];
+                            setReview(prev => ({
+                              ...prev,
+                              status: ReadingStatus.Reading,
+                              start_date: today,
+                              end_date: null,
+                            }));
 
-                          Alert.alert("성공", `${nextSessionNumber}회차 독서를 시작합니다!`);
-                        } catch (e) {
-                          console.error("Error creating reading session:", e);
-                          Alert.alert("오류", "세션 생성 중 문제가 발생했습니다.");
-                        }
-                      },
-                      { confirmText: "시작하기" }
-                    );
-                  }}
-                >
-                  <Text style={[styles.rereadButtonText, { color: colors.primary }]}>📚 다시 읽기</Text>
-                </TouchableOpacity>
+                            Alert.alert("성공", `${nextSessionNumber}회차 독서를 시작합니다!`);
+                          } catch (e) {
+                            console.error("Error creating reading session:", e);
+                            Alert.alert("오류", "세션 생성 중 문제가 발생했습니다.");
+                          }
+                        },
+                        { confirmText: "시작하기" }
+                      );
+                    }}
+                  >
+                    <Text style={[styles.rereadButtonText, { color: colors.primary }]}>📚 다시 읽기</Text>
+                  </TouchableOpacity>
+                </View>
               )}
 
               <Text style={[styles.label, { color: colors.text }]}>한 줄 평</Text>
@@ -1153,6 +1247,12 @@ const styles = StyleSheet.create({
   rereadButtonText: {
     fontSize: 15,
     fontWeight: 'bold',
+  },
+  helperText: {
+    fontSize: 13,
+    textAlign: 'center',
+    marginTop: 16,
+    marginBottom: 8,
   },
   
   // Lists
