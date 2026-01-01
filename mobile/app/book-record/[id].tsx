@@ -797,11 +797,12 @@ export default function BookRecordScreen() {
 
               <Text style={[styles.label, { color: colors.text }]}>한 줄 평</Text>
               <TextInput 
-                style={[styles.input, { backgroundColor: isDark ? colors.border : '#F1F5F9', color: colors.text }]}
+                style={[styles.input, { backgroundColor: isDark ? colors.border : '#F1F5F9', color: colors.text, minHeight: 100, textAlignVertical: 'top' }]}
                 value={review.one_line_review || ""}
                 onChangeText={(text) => updateReview('one_line_review', text)}
-                placeholder="짧은 감상평을 남겨주세요"
+                placeholder="책에 대한 짧은 감상평이나 기억하고 싶은 내용을 남겨주세요"
                 placeholderTextColor={colors.textMuted}
+                multiline={true}
               />
 
               <TouchableOpacity 
@@ -1022,10 +1023,11 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   input: {
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 14,
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 15,
     marginBottom: 8,
+    lineHeight: 22,
   },
   statusRow: {
     flexDirection: 'row',
