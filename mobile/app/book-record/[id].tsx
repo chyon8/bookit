@@ -491,8 +491,12 @@ export default function BookRecordScreen() {
   };
 
   const handleApplyScan = (text: string) => {
+    // Format date as YYYY-MM-DD HH:mm
+    const now = new Date();
+    const formattedDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    
     // Add new quote
-    const newQuote: MemorableQuote = { quote: text, page: "", thought: "" };
+    const newQuote: MemorableQuote = { quote: text, page: "", thought: "", date: formattedDate };
     setReview(prev => {
       const newQuotes = [...(prev.memorable_quotes || []), newQuote];
       setNewlyAddedQuoteIndex(newQuotes.length - 1);
