@@ -106,7 +106,7 @@ export const performOCR = async (base64Image: string): Promise<OCRResult> => {
                                if (breakType === 'SPACE' || breakType === 'SURE_SPACE') {
                                   blockText += " ";
                                } else if (breakType === 'EOL_SURE_SPACE' || breakType === 'LINE_BREAK') {
-                                  blockText += "\n";
+                                  blockText += " ";
                                }
                             }
                          }
