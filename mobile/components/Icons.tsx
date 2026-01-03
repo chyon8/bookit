@@ -87,3 +87,7 @@ export const ListIcon = ({ className, size = 20, color = "black" }: { className?
 export const SparkleChatIcon = ({ className, size = 20, color = "black" }: { className?: string; size?: number; color?: string }) => (
   <FontAwesome name="magic" size={size} color={color} className={className} />
 );
+
+export const CheckIcon = ({ className, size = 20, color = "black" }: { className?: string; size?: number; color?: string }) => (
+  <Feather name="check" size={size} color={color} className={className} />
+);

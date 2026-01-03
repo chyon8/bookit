@@ -13,6 +13,7 @@ interface ThemeColors {
   primary: string;
   secondary: string;
   error: string;
+  success: string;
   surface: string;
 }
 
@@ -25,6 +26,7 @@ const lightColors: ThemeColors = {
   primary: '#4ADE80',
   secondary: '#F1F5F9',
   error: '#EF4444',
+  success: '#22C55E',
   surface: '#FFFFFF',
 };
 
@@ -37,6 +39,7 @@ const darkColors: ThemeColors = {
   primary: '#4ADE80',
   secondary: '#1E293B',
   error: '#F87171',
+  success: '#22C55E',
   surface: '#1E293B',
 };
 

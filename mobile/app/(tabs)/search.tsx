@@ -18,6 +18,7 @@ import { SearchIcon, XMarkIcon } from "../../components/Icons";
 import { useAladinSearch } from "../../hooks/useAladinSearch";
 import { BookSearchLoading } from "../../components/BookSearchLoading";
 import { SearchBookCard } from "../../components/SearchBookCard";
+import { InspirationView } from "../../components/InspirationView";
 import { BookWithReview, useBooks, UserBook } from "../../hooks/useBooks";
 
 import { useTheme } from "../../context/ThemeContext";
@@ -136,28 +137,33 @@ export default function Search() {
           )}
         </View>
 
-        {error ? (
-          <View style={styles.centerContainer}>
-            <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
-            <TouchableOpacity onPress={() => searchBooks(query)} style={[styles.retryButton, { backgroundColor: isDark ? colors.border : '#F1F5F9' }]}>
-               <Text style={[styles.retryText, { color: colors.text }]}>다시 시도</Text>
-            </TouchableOpacity>
-          </View>
-        ) : loading ? (
-          <BookSearchLoading />
+        {/* Content Section */}
+        {query.length === 0 ? (
+           <InspirationView />
         ) : (
-          <FlatList
-            data={results}
-            extraData={userBooks} // Force re-render when userBooks changes
-            keyExtractor={(item) => item.isbn13 || item.id}
-            renderItem={renderItem}
-            contentContainerStyle={[styles.listContent, { paddingBottom: 100 + insets.bottom }]}
-            ListEmptyComponent={
-              query.length > 0 ? (
-                <Text style={[styles.emptyText, { color: colors.textMuted }]}>검색 결과가 없습니다.</Text>
-              ) : null
-            }
-          />
+          <>
+            {error ? (
+              <View style={styles.centerContainer}>
+                <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
+                <TouchableOpacity onPress={() => searchBooks(query)} style={[styles.retryButton, { backgroundColor: isDark ? colors.border : '#F1F5F9' }]}>
+                   <Text style={[styles.retryText, { color: colors.text }]}>다시 시도</Text>
+                </TouchableOpacity>
+              </View>
+            ) : loading ? (
+              <BookSearchLoading />
+            ) : (
+              <FlatList
+                data={results}
+                extraData={userBooks} // Force re-render when userBooks changes
+                keyExtractor={(item) => item.isbn13 || item.id}
+                renderItem={renderItem}
+                contentContainerStyle={[styles.listContent, { paddingBottom: 100 + insets.bottom }]}
+                ListEmptyComponent={
+                   <Text style={[styles.emptyText, { color: colors.textMuted }]}>검색 결과가 없습니다.</Text>
+                }
+              />
+            )}
+          </>
         )}
       </View>
     </SafeAreaView>
