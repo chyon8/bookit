@@ -83,14 +83,14 @@ export default function Home() {
     reread: boolean | null;
     month: string | null;
     year: string | null;
-    genre: string | null;
+    genre: string[];
     readingCount: number | null;
   }>({
     sort: "date_desc",
     reread: null,
     month: null,
     year: null,
-    genre: null,
+    genre: [],
     readingCount: null
   });
 
@@ -131,7 +131,7 @@ export default function Home() {
 
       // Detailed filters
       if (filters.reread && !book.reread_will) return false;
-      if (filters.genre && book.books.category !== filters.genre) return false;
+      if (filters.genre.length > 0 && (!book.books.category || !filters.genre.includes(book.books.category))) return false;
       if (filters.month && book.end_date) {
          const date = new Date(book.end_date);
          if ((date.getMonth() + 1).toString() !== filters.month) return false;
@@ -460,13 +460,13 @@ export default function Home() {
                 style={[
                   styles.filterButton, 
                   { backgroundColor: isDark ? colors.border : '#F1F5F9' },
-                  (filters.month || filters.year || filters.reread || filters.genre) && { borderColor: colors.primary, borderWidth: 1 }
+                  (filters.month || filters.year || filters.reread || filters.genre.length > 0) && { borderColor: colors.primary, borderWidth: 1 }
                 ]}
                 onPress={() => setFilterSheetVisible(true)}
             >
               <Text style={[
                 styles.filterButtonText, 
-                { color: (filters.month || filters.year || filters.reread || filters.genre) ? colors.primary : colors.text }
+                { color: (filters.month || filters.year || filters.reread || filters.genre.length > 0) ? colors.primary : colors.text }
               ]}>
                 필터 및 정렬 · {
                   filters.sort === "date_desc" ? "최신순" : 
@@ -475,7 +475,7 @@ export default function Home() {
                   filters.sort === "rating_asc" ? "낮은별점순" : "제목순"
                 }
               </Text>
-              <ChevronDownIcon size={16} color={(filters.month || filters.year || filters.reread || filters.genre) ? colors.primary : colors.textMuted} />
+              <ChevronDownIcon size={16} color={(filters.month || filters.year || filters.reread || filters.genre.length > 0) ? colors.primary : colors.textMuted} />
             </TouchableOpacity>
           </View>
 

@@ -20,7 +20,7 @@ interface FilterSheetProps {
     reread: boolean | null;
     month: string | null;
     year: string | null;
-    genre: string | null;
+    genre: string[];
     readingCount: number | null;
   }) => void;
   initialFilters: {
@@ -28,7 +28,7 @@ interface FilterSheetProps {
     reread: boolean | null;
     month: string | null;
     year: string | null;
-    genre: string | null;
+    genre: string[];
     readingCount: number | null;
   };
   genres: string[]; // Pass available genres
@@ -42,7 +42,7 @@ export const FilterSheet = ({ visible, onClose, onApply, initialFilters, genres 
   const [reread, setReread] = useState<boolean | null>(initialFilters.reread);
   const [month, setMonth] = useState<string | null>(initialFilters.month);
   const [year, setYear] = useState<string | null>(initialFilters.year);
-  const [genre, setGenre] = useState<string | null>(initialFilters.genre);
+  const [genre, setGenre] = useState<string[]>(initialFilters.genre || []);
   const [readingCount, setReadingCount] = useState<number | null>(initialFilters.readingCount);
 
   const months = Array.from({ length: 12 }, (_, i) => `${i + 1}월`);
@@ -59,7 +59,7 @@ export const FilterSheet = ({ visible, onClose, onApply, initialFilters, genres 
     setReread(null);
     setMonth(null);
     setYear(null);
-    setGenre(null);
+    setGenre([]);
     setReadingCount(null);
   };
 
@@ -215,23 +215,32 @@ export const FilterSheet = ({ visible, onClose, onApply, initialFilters, genres 
                         <View style={styles.section}>
                             <Text style={[styles.sectionTitle, { color: colors.text }]}>장르</Text>
                             <View style={styles.chipContainer}>
-                                {genres.map((g) => (
-                                    <TouchableOpacity
-                                        key={g}
-                                        onPress={() => setGenre(genre === g ? null : g)}
-                                        style={[
-                                          styles.chip, 
-                                          { backgroundColor: isDark ? colors.border : '#F1F5F9' },
-                                          genre === g && { backgroundColor: isDark ? '#064E3B' : '#ECFDF5', borderColor: colors.primary }
-                                        ]}
-                                    >
-                                        <Text style={[
-                                          styles.chipText, 
-                                          { color: colors.textMuted },
-                                          genre === g && { color: isDark ? colors.primary : '#15803D', fontWeight: '600' }
-                                        ]}>{g}</Text>
-                                    </TouchableOpacity>
-                                ))}
+                                {genres.map((g) => {
+                                    const isSelected = genre.includes(g);
+                                    return (
+                                        <TouchableOpacity
+                                            key={g}
+                                            onPress={() => {
+                                                if (isSelected) {
+                                                    setGenre(genre.filter(item => item !== g));
+                                                } else {
+                                                    setGenre([...genre, g]);
+                                                }
+                                            }}
+                                            style={[
+                                            styles.chip, 
+                                            { backgroundColor: isDark ? colors.border : '#F1F5F9' },
+                                            isSelected && { backgroundColor: isDark ? '#064E3B' : '#ECFDF5', borderColor: colors.primary }
+                                            ]}
+                                        >
+                                            <Text style={[
+                                            styles.chipText, 
+                                            { color: colors.textMuted },
+                                            isSelected && { color: isDark ? colors.primary : '#15803D', fontWeight: '600' }
+                                            ]}>{g}</Text>
+                                        </TouchableOpacity>
+                                    );
+                                })}
                             </View>
                         </View>
                     </>
