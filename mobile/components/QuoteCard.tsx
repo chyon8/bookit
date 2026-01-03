@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
-import { TrashIcon, PencilIcon, XMarkIcon } from './Icons';
+import { SwipeableRow } from './SwipeableRow';
+import { TrashIcon, XMarkIcon } from './Icons';
 import { MemorableQuote } from '../hooks/useBooks';
 
 interface QuoteCardProps {
@@ -87,29 +88,25 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({ quote, onDelete, onChange,
   }
 
   return (
-    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-      <View style={styles.row}>
-        <Text style={[styles.quoteText, { color: colors.text }]}>{quote.quote}</Text>
-        <View style={styles.cardActions}>
-          <TouchableOpacity onPress={() => setIsEditing(true)} style={styles.iconButton}>
-            <PencilIcon size={18} color={colors.textMuted} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={onDelete} style={styles.iconButton}>
-            <TrashIcon size={18} color="#EF4444" />
-          </TouchableOpacity>
-        </View>
-      </View>
-      {(quote.page || quote.thought || quote.date) && (
-        <View style={[styles.metaContainer, { borderTopColor: colors.border }]}>
-          <View style={styles.metaHeader}>
-             {!!quote.page && <Text style={[styles.pageText, { color: colors.textMuted }]}>p. {quote.page}</Text>}
+    <View style={styles.cardWrapper}>
+      <SwipeableRow onEdit={() => setIsEditing(true)} onDelete={onDelete}>
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={styles.row}>
+            <Text style={[styles.quoteText, { color: colors.text }]}>{quote.quote}</Text>
           </View>
-          {!!quote.thought && <Text style={[styles.thoughtText, { color: colors.text }]}>💭 {quote.thought}</Text>}
-          {!!quote.date && (
-            <Text style={[styles.dateText, { color: colors.textMuted }]}>{quote.date}</Text>
+          {(quote.page || quote.thought || quote.date) && (
+            <View style={[styles.metaContainer, { borderTopColor: colors.border }]}>
+              <View style={styles.metaHeader}>
+                {!!quote.page && <Text style={[styles.pageText, { color: colors.textMuted }]}>p. {quote.page}</Text>}
+              </View>
+              {!!quote.thought && <Text style={[styles.thoughtText, { color: colors.text }]}>💭 {quote.thought}</Text>}
+              {!!quote.date && (
+                <Text style={[styles.dateText, { color: colors.textMuted }]}>{quote.date}</Text>
+              )}
+            </View>
           )}
         </View>
-      )}
+      </SwipeableRow>
     </View>
   );
 };
@@ -118,8 +115,10 @@ const styles = StyleSheet.create({
   card: {
     padding: 16,
     borderRadius: 12,
-    marginBottom: 12,
     borderWidth: 1,
+  },
+  cardWrapper: {
+    marginBottom: 12,
   },
   editCard: {
     padding: 16,

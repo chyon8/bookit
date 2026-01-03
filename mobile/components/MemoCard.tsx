@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
-import { TrashIcon, PencilIcon } from './Icons';
+import { SwipeableRow } from './SwipeableRow';
 import { Memo } from '../hooks/useBooks';
 
 interface MemoCardProps {
@@ -67,23 +67,19 @@ export const MemoCard: React.FC<MemoCardProps> = ({ memo, onDelete, onChange }) 
   }
 
   return (
-    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-      <View style={styles.memoHeader}>
-        <View style={styles.flex1}>
-          <Text style={[styles.memoText, { color: colors.text }]}>{memo.text}</Text>
+    <View style={styles.cardWrapper}>
+      <SwipeableRow onEdit={() => setIsEditing(true)} onDelete={onDelete}>
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={styles.memoHeader}>
+            <View style={styles.flex1}>
+              <Text style={[styles.memoText, { color: colors.text }]}>{memo.text}</Text>
+            </View>
+          </View>
+          {formattedDate && (
+            <Text style={[styles.footerDate, { color: colors.textMuted, borderTopColor: colors.border }]}>{formattedDate}</Text>
+          )}
         </View>
-        <View style={styles.cardActions}>
-          <TouchableOpacity onPress={() => setIsEditing(true)} style={styles.iconButton}>
-            <PencilIcon size={18} color={colors.textMuted} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={onDelete} style={styles.iconButton}>
-            <TrashIcon size={18} color="#EF4444" />
-          </TouchableOpacity>
-        </View>
-      </View>
-      {formattedDate && (
-        <Text style={[styles.footerDate, { color: colors.textMuted, borderTopColor: colors.border }]}>{formattedDate}</Text>
-      )}
+      </SwipeableRow>
     </View>
   );
 };
@@ -92,8 +88,10 @@ const styles = StyleSheet.create({
   card: {
     padding: 16,
     borderRadius: 12,
-    marginBottom: 12,
     borderWidth: 1,
+  },
+  cardWrapper: {
+    marginBottom: 12,
   },
   editCard: {
     padding: 16,
