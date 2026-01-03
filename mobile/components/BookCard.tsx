@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { View, Text, Image, TouchableOpacity, StyleSheet, Platform } from "react-native";
 import { UserBook, ReadingStatus } from "../hooks/useBooks";
-import { StarIcon, TrashIcon } from "./Icons";
+import { StarIcon } from "./Icons";
 
 interface BookCardProps {
   book: UserBook;
@@ -14,7 +14,6 @@ interface BookCardProps {
 import { useTheme } from "../context/ThemeContext";
 
 export function BookCard({ book, onSelect, onDelete, showStatusBadge }: BookCardProps) {
-  const [isHovered, setIsHovered] = useState(false);
   const { colors, isDark } = useTheme();
 
   const handleSelect = () => {
@@ -68,13 +67,6 @@ export function BookCard({ book, onSelect, onDelete, showStatusBadge }: BookCard
       style={styles.container}
       activeOpacity={0.7}
       onPress={handleSelect}
-      {...(Platform.OS === 'web' ? {
-        onMouseEnter: () => setIsHovered(true),
-        onMouseLeave: () => setIsHovered(false),
-      } : {
-        onPressIn: () => setIsHovered(true),
-        onPressOut: () => setIsHovered(false),
-      })}
     >
       {/* Image Container */}
       <View style={[styles.imageContainer, { backgroundColor: isDark ? colors.border : '#E5E7EB', borderColor: isDark ? colors.border : '#E5E7EB' }]}>
@@ -88,15 +80,6 @@ export function BookCard({ book, onSelect, onDelete, showStatusBadge }: BookCard
           style={styles.bookImage}
           resizeMode="cover"
         />
-        {isHovered && (
-          <TouchableOpacity
-            style={[styles.deleteIconButton, { backgroundColor: isDark ? 'rgba(30, 41, 59, 0.9)' : 'rgba(255, 255, 255, 0.9)' }]}
-            onPress={handleDelete}
-            activeOpacity={0.6}
-          >
-            <TrashIcon size={16} color="#EF4444" />
-          </TouchableOpacity>
-        )}
       </View>
 
       {/* Text Container */}
@@ -185,19 +168,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
     marginRight: 4,
-  },
-  deleteIconButton: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    padding: 6,
-    borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    zIndex: 20,
   },
 });

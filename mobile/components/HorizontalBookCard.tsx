@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { View, Text, Image, TouchableOpacity, StyleSheet, Platform } from "react-native";
 import { UserBook, ReadingStatus } from "../hooks/useBooks";
-import { TrashIcon, StarIcon } from "./Icons";
+import { StarIcon } from "./Icons";
 
 interface HorizontalBookCardProps {
   book: UserBook;
@@ -12,7 +12,6 @@ interface HorizontalBookCardProps {
 import { useTheme } from "../context/ThemeContext";
 
 export function HorizontalBookCard({ book, onPress, onDelete }: HorizontalBookCardProps) {
-  const [isHovered, setIsHovered] = useState(false);
   const { colors, isDark } = useTheme();
 
   return (
@@ -20,13 +19,6 @@ export function HorizontalBookCard({ book, onPress, onDelete }: HorizontalBookCa
       style={styles.horizontalCard}
       onPress={() => onPress(book)}
       activeOpacity={0.7}
-      {...(Platform.OS === 'web' ? {
-        onMouseEnter: () => setIsHovered(true),
-        onMouseLeave: () => setIsHovered(false),
-      } : {
-        onPressIn: () => setIsHovered(true),
-        onPressOut: () => setIsHovered(false),
-      })}
     >
       <View style={[styles.imageContainer, { backgroundColor: isDark ? colors.border : '#E5E7EB' }]}>
         <Image
@@ -34,18 +26,6 @@ export function HorizontalBookCard({ book, onPress, onDelete }: HorizontalBookCa
           style={styles.bookImage}
           resizeMode="cover"
         />
-        {isHovered && (
-          <TouchableOpacity 
-            style={[styles.deleteIconButtonSmall, { backgroundColor: isDark ? 'rgba(30, 41, 59, 0.9)' : 'rgba(255, 255, 255, 0.9)' }]} 
-            onPress={(e) => {
-              e.stopPropagation();
-              onDelete(book.id, book.books.title);
-            }}
-            activeOpacity={0.6}
-          >
-            <TrashIcon size={14} color="#EF4444" />
-          </TouchableOpacity>
-        )}
       </View>
       <View style={styles.cardTextContainer}>
         <Text 
@@ -95,20 +75,6 @@ const styles = StyleSheet.create({
   bookImage: {
     width: '100%',
     height: '100%',
-  },
-  deleteIconButtonSmall: {
-    position: 'absolute',
-    top: 4,
-    right: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    padding: 4,
-    borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-    zIndex: 20,
   },
   cardTextContainer: {
     paddingVertical: 8,
