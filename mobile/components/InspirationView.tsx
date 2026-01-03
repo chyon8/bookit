@@ -47,34 +47,63 @@ export function InspirationView() {
   };
 
 
-  const renderCategoryChips = () => (
-      <View style={styles.chipContainer}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipScroll}>
-              {CATEGORIES.map((cat) => (
-                  <TouchableOpacity
-                      key={cat.id}
-                      style={[
-                          styles.chip, 
-                          { 
-                              backgroundColor: selectedCategoryId === cat.id ? colors.primary : (isDark ? colors.border : '#F1F5F9'),
-                              borderColor: isDark ? colors.border : 'transparent',
-                          }
-                      ]}
-                      onPress={() => setSelectedCategoryId(cat.id)}
-                  >
-                      <Text style={[
-                          styles.chipText, 
-                          { 
-                              color: selectedCategoryId === cat.id ? '#fff' : colors.text 
-                          }
-                      ]}>
-                          {cat.name}
-                      </Text>
-                  </TouchableOpacity>
-              ))}
-          </ScrollView>
-      </View>
-  );
+  const renderCategoryChips = () => {
+      // If content is loading, show skeleton chips
+      if (editorChoice.isLoading) {
+          return (
+              <View style={styles.chipContainer}>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipScroll}>
+                      {[1, 2, 3, 4, 5].map((i) => (
+                          <View
+                              key={i}
+                              style={[
+                                  styles.chip,
+                                  {
+                                      backgroundColor: isDark ? colors.card : '#F8FAFC',
+                                      borderColor: 'transparent',
+                                      width: 80,
+                                      height: 36, // Approximate height of chip
+                                      justifyContent: 'center'
+                                  }
+                              ]}
+                          >
+                               <View style={{ width: '60%', height: 14, backgroundColor: isDark ? '#334155' : '#E2E8F0', borderRadius: 4, alignSelf: 'center' }} />
+                          </View>
+                      ))}
+                  </ScrollView>
+              </View>
+          );
+      }
+
+      return (
+        <View style={styles.chipContainer}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipScroll}>
+                {CATEGORIES.map((cat) => (
+                    <TouchableOpacity
+                        key={cat.id}
+                        style={[
+                            styles.chip, 
+                            { 
+                                backgroundColor: selectedCategoryId === cat.id ? colors.primary : (isDark ? colors.border : '#F1F5F9'),
+                                borderColor: isDark ? colors.border : 'transparent',
+                            }
+                        ]}
+                        onPress={() => setSelectedCategoryId(cat.id)}
+                    >
+                        <Text style={[
+                            styles.chipText, 
+                            { 
+                                color: selectedCategoryId === cat.id ? '#fff' : colors.text 
+                            }
+                        ]}>
+                            {cat.name}
+                        </Text>
+                    </TouchableOpacity>
+                ))}
+            </ScrollView>
+        </View>
+      );
+  };
 
   const renderHeroSection = () => {
     if (editorChoice.isLoading) return <HeroSkeleton />;
