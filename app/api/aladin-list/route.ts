@@ -1,19 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 
-export async function OPTIONS() {
-  return NextResponse.json(
-    {},
-    {
-      status: 200,
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization",
-      },
-    }
-  );
-}
+
 
 
 export async function GET(request: Request) {
@@ -21,18 +9,14 @@ export async function GET(request: Request) {
   const queryType = searchParams.get("queryType") || "ItemNewSpecial";
   const categoryId = searchParams.get("categoryId") || "1"; // Default to 1 (Domestic Books) if not specified, as EditorChoice often needs it.
   
-  const corsHeaders = {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
-  };
+
 
   const apiKey = process.env.NEXT_PUBLIC_ALADIN_API_KEY;
   if (!apiKey) {
     console.error("알라딘 API 키가 설정되지 않았습니다.");
     return NextResponse.json(
       { error: "서버 설정 오류: API 키가 없습니다." },
-      { status: 500, headers: corsHeaders }
+      { status: 500 }
     );
   }
 
@@ -125,10 +109,10 @@ export async function GET(request: Request) {
         };
       });
 
-      return NextResponse.json({ item: listResults }, { headers: corsHeaders });
+      return NextResponse.json({ item: listResults });
     }
 
-    return NextResponse.json(data, { headers: corsHeaders });
+    return NextResponse.json(data);
   } catch (error: any) {
     console.error("API 라우트 처리 중 오류 발생:", error);
     return NextResponse.json(
@@ -136,7 +120,7 @@ export async function GET(request: Request) {
         error: "API를 호출하는 동안 오류가 발생했습니다.",
         details: error.message,
       },
-      { status: 500, headers: corsHeaders }
+      { status: 500 }
     );
   }
 }

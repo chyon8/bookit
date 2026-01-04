@@ -1,18 +1,6 @@
 import { NextResponse } from "next/server";
 
-export async function OPTIONS() {
-  return NextResponse.json(
-    {},
-    {
-      status: 200,
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization",
-      },
-    }
-  );
-}
+
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -48,11 +36,7 @@ export async function GET(request: Request) {
   // Use ItemLookUp API for detailed book information
   const url = `http://www.aladin.co.kr/ttb/api/ItemLookUp.aspx?ttbkey=${apiKey}&itemIdType=${itemIdType}&ItemId=${isbn}&output=js&Version=20131101&OptResult=ebookList,usedList,reviewList`;
 
-  const corsHeaders = {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
-  };
+
 
   try {
     const aladinResponse = await fetch(url);
@@ -83,12 +67,12 @@ export async function GET(request: Request) {
         link: item.link,
       };
 
-      return NextResponse.json({ book: bookDetail }, { headers: corsHeaders });
+      return NextResponse.json({ book: bookDetail });
     }
 
     return NextResponse.json(
       { error: "책 정보를 찾을 수 없습니다." },
-      { status: 404, headers: corsHeaders }
+      { status: 404 }
     );
   } catch (error: any) {
     console.error("API 라우트 처리 중 오류 발생:", error);
@@ -97,7 +81,7 @@ export async function GET(request: Request) {
         error: "API를 호출하는 동안 오류가 발생했습니다.",
         details: error.message,
       },
-      { status: 500, headers: corsHeaders }
+      { status: 500 }
     );
   }
 }
