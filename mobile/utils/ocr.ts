@@ -77,7 +77,52 @@ export const performOCR = async (base64Image: string): Promise<OCRResult> => {
     let pageNumber = "";
 
     if (pageObj.blocks) {
-       for (const block of pageObj.blocks) {
+       // Sort blocks: Left Page -> Right Page
+       const midX = width / 2;
+       const leftBlocks: any[] = [];
+       const rightBlocks: any[] = [];
+
+       pageObj.blocks.forEach((block: any) => {
+          let minX = width;
+          let maxX = 0;
+          if (block.boundingBox && block.boundingBox.vertices) {
+             block.boundingBox.vertices.forEach((v: any) => {
+                const x = v.x || 0;
+                if (x < minX) minX = x;
+                if (x > maxX) maxX = x;
+             });
+          }
+          // If vertices are missing or invalid, default to 0
+          if (minX > maxX) { minX = 0; maxX = 0; }
+          
+          const centerX = (minX + maxX) / 2;
+          if (centerX < midX) {
+             leftBlocks.push(block);
+          } else {
+             rightBlocks.push(block);
+          }
+       });
+
+       const sortTopDown = (a: any, b: any) => {
+          const getMinY = (blk: any) => {
+             let minY = height;
+             if (blk.boundingBox && blk.boundingBox.vertices) {
+                blk.boundingBox.vertices.forEach((v: any) => {
+                   const y = v.y || 0;
+                   if (y < minY) minY = y;
+                });
+             }
+             return minY === height ? 0 : minY;
+          };
+          return getMinY(a) - getMinY(b);
+       };
+
+       leftBlocks.sort(sortTopDown);
+       rightBlocks.sort(sortTopDown);
+
+       const sortedBlocks = [...leftBlocks, ...rightBlocks];
+
+       for (const block of sortedBlocks) {
           // Get position
           let minX = width, maxX = 0, minY = height, maxY = 0;
           
