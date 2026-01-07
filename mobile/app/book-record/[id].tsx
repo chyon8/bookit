@@ -11,7 +11,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
-  ActivityIndicator
+  ActivityIndicator,
+  Dimensions
 } from "react-native";
 import { useTheme } from "../../context/ThemeContext";
 import { useLocalSearchParams, useRouter, Stack, useNavigation } from "expo-router";
@@ -30,6 +31,7 @@ import { ConfirmModal } from "../../components/ConfirmModal";
 import { ScanPreviewModal } from "../../components/ScanPreviewModal";
 import { SessionEditModal } from "../../components/SessionEditModal";
 import { performOCR } from "../../utils/ocr";
+import ConfettiCannon from 'react-native-confetti-cannon';
 
 export default function BookRecordScreen() {
   const router = useRouter();
@@ -87,6 +89,10 @@ export default function BookRecordScreen() {
   const [isEditSessionModalVisible, setIsEditSessionModalVisible] = useState(false);
   const isUpdatingSession = useRef(false);
 
+
+  // Celebration State
+  const [showConfetti, setShowConfetti] = useState(false);
+  
   // DatePicker State
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [activeDateField, setActiveDateField] = useState<'start_date' | 'end_date' | null>(null);
@@ -299,6 +305,32 @@ export default function BookRecordScreen() {
         return;
       }
       
+
+      // 완독으로 변경 시 축하 효과 및 확인
+      if (newStatus === ReadingStatus.Finished && oldStatus !== ReadingStatus.Finished) {
+          showConfirmModal(
+            "완독 축하!",
+            "이 책을 다 읽으셨나요? 완독 상태로 변경합니다.",
+            () => {
+               const updates: Partial<UserBook> = { 
+                   status: newStatus,
+                   end_date: today 
+               };
+               // Ensure start_date is not after end_date (today)
+               if (!review.start_date || review.start_date > today) {
+                   updates.start_date = today;
+               }
+               setReview(prev => ({ ...prev, ...updates }));
+               
+               // Trigger celebration
+               setShowConfetti(true);
+               // Haptic feedback could be added here
+            },
+            { confirmText: "완독 완료!", cancelText: "아직 읽는 중" }
+          );
+          return;
+      }
+
       // 허용되지 않는 전환 차단
       const allowedStatuses = getAllowedStatusTransitions(oldStatus);
       if (!allowedStatuses.includes(newStatus)) {
@@ -627,6 +659,31 @@ export default function BookRecordScreen() {
         session={editingSession}
         isSaving={isUpdatingSession.current}
       />
+      
+      {showConfetti && (
+        <View 
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 9999,
+          }}
+          pointerEvents="none"
+        >
+          <ConfettiCannon
+            count={200}
+            origin={{x: Dimensions.get('window').width / 2, y: 0}}
+            autoStart={true}
+            fadeOut={true}
+            fallSpeed={2500}
+            explosionSpeed={350}
+            colors={['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE']}
+            onAnimationEnd={() => setShowConfetti(false)}
+          />
+        </View>
+      )}
       
       {/* Custom Header */}
       <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
