@@ -872,7 +872,10 @@ export default function BookRecordScreen() {
                               </Text>
                             </View>
                             <Text style={[styles.historyDate, { color: colors.textMuted }]}>
-                              {session.start_date || "시작일 미정"} ~ {session.end_date || (session.status === ReadingStatus.Reading ? "(진행 중)" : "")}
+                              {session.status === ReadingStatus.Reading 
+                                ? `${session.start_date || "시작일 미정"}부터 읽는 중`
+                                : `${session.start_date || "시작일 미정"} ~ ${session.end_date || ""}`
+                              }
                             </Text>
                             <Text style={[styles.historyRating, { color: session.rating && session.rating > 0 ? colors.text : colors.textMuted, fontWeight: session.rating && session.rating > 0 ? 'bold' : 'normal' }]}>
                               {session.rating && session.rating > 0 ? `★ ${session.rating.toFixed(1)}` : "평점 없음"}
