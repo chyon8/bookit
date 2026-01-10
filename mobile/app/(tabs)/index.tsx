@@ -23,6 +23,7 @@ import { RandomNoteModal, Note } from "../../components/RandomNoteModal";
 import { FilterSheet, SortOption } from "../../components/FilterSheet";
 import { useDeleteBook } from "../../hooks/useBookData";
 import { ConfirmModal } from "../../components/ConfirmModal";
+import { SearchResultCard, SearchResultItem } from "../../components/SearchResultCard";
 
 const { width: screenWidth } = Dimensions.get('window');
 const CARD_WIDTH = (screenWidth - 44) / 2; // 2 columns: (Screen - 32px padding - 12px gap) / 2
@@ -39,6 +40,7 @@ export default function Home() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<ReadingStatus | "All">("All");
+  const [searchTab, setSearchTab] = useState<"books" | "memos" | "quotes">("books");
 
   const [isRandomNoteModalOpen, setRandomNoteModalOpen] = useState(false);
   const [shuffledNotes, setShuffledNotes] = useState<Note[]>([]);
@@ -231,6 +233,44 @@ export default function Home() {
      return filteredBooksAll.slice(0, visibleCount);
   }, [filteredBooksAll, visibleCount]);
 
+  // 검색 시 메모/인용구 개별 추출
+  const searchResults = useMemo(() => {
+    if (!searchQuery.trim() || !userBooks) return { memos: [], quotes: [] };
+    
+    const query = searchQuery.toLowerCase();
+    const memos: SearchResultItem[] = [];
+    const quotes: SearchResultItem[] = [];
+
+    userBooks.forEach(book => {
+      // 메모 검색
+      book.memos?.forEach(memo => {
+        if (memo.text?.toLowerCase().includes(query)) {
+          memos.push({
+            type: 'memo',
+            content: memo.text,
+            date: memo.createdAt ? new Date(memo.createdAt).toLocaleDateString('ko-KR') : undefined,
+            book,
+          });
+        }
+      });
+
+      // 인용구 검색
+      book.memorable_quotes?.forEach(mq => {
+        if (mq.quote?.toLowerCase().includes(query) || mq.thought?.toLowerCase().includes(query)) {
+          quotes.push({
+            type: 'quote',
+            content: mq.quote,
+            subContent: mq.thought,
+            page: mq.page,
+            book,
+          });
+        }
+      });
+    });
+
+    return { memos, quotes };
+  }, [userBooks, searchQuery]);
+
   if (isLoading) {
     return (
       <View style={[styles.centerContainer, { backgroundColor: colors.background }]}>
@@ -386,40 +426,127 @@ export default function Home() {
             </TouchableOpacity>
           </View>
 
-          {/* Filter Tabs */}
-          <View style={[styles.filterTabsContainer, { borderBottomColor: colors.border }]}>
-            {filterOptions.map((status) => {
-              const isActive = statusFilter === status;
-              const count = status === ReadingStatus.Finished 
-                ? (statusCounts[ReadingStatus.Finished] + statusCounts[ReadingStatus.Dropped])
-                : statusCounts[status] || 0;
-              return (
-                <TouchableOpacity 
-                  key={status}
-                  onPress={() => setStatusFilter(status)}
+          {/* Search Segment Tabs (검색어가 있을 때만 표시) */}
+          {searchQuery.trim() ? (
+            <>
+              <View style={[styles.searchSegmentContainer, { borderBottomColor: colors.border }]}>
+                <TouchableOpacity
+                  onPress={() => setSearchTab("books")}
                   style={[
-                    styles.filterTab,
-                    isActive && { borderBottomColor: colors.primary }
+                    styles.searchSegmentTab,
+                    searchTab === "books" && { borderBottomColor: colors.primary }
                   ]}
                 >
-                  <Text 
-                    style={[
-                      styles.filterTabText,
-                      { color: colors.textMuted },
-                      isActive && { color: colors.primary, fontWeight: 'bold' }
-                    ]}
-                    numberOfLines={1}
-                    adjustsFontSizeToFit
-                  >
-                    {readingStatusKorean[status]} ({count})
+                  <Text style={[
+                    styles.searchSegmentText,
+                    { color: colors.textMuted },
+                    searchTab === "books" && { color: colors.primary, fontWeight: 'bold' }
+                  ]}>
+                    📚 책 ({globallyFilteredBooks.length})
                   </Text>
                 </TouchableOpacity>
-              );
-            })}
-          </View>
+                <TouchableOpacity
+                  onPress={() => setSearchTab("memos")}
+                  style={[
+                    styles.searchSegmentTab,
+                    searchTab === "memos" && { borderBottomColor: colors.primary }
+                  ]}
+                >
+                  <Text style={[
+                    styles.searchSegmentText,
+                    { color: colors.textMuted },
+                    searchTab === "memos" && { color: colors.primary, fontWeight: 'bold' }
+                  ]}>
+                    📝 메모 ({searchResults.memos.length})
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => setSearchTab("quotes")}
+                  style={[
+                    styles.searchSegmentTab,
+                    searchTab === "quotes" && { borderBottomColor: colors.primary }
+                  ]}
+                >
+                  <Text style={[
+                    styles.searchSegmentText,
+                    { color: colors.textMuted },
+                    searchTab === "quotes" && { color: colors.primary, fontWeight: 'bold' }
+                  ]}>
+                    ✨ 인용구 ({searchResults.quotes.length})
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              
+              {/* 책 탭일 때만 상태 필터 표시 */}
+              {searchTab === "books" && (
+                <View style={[styles.filterTabsContainer, { borderBottomColor: colors.border }]}>
+                  {filterOptions.map((status) => {
+                    const isActive = statusFilter === status;
+                    const count = status === ReadingStatus.Finished 
+                      ? (statusCounts[ReadingStatus.Finished] + statusCounts[ReadingStatus.Dropped])
+                      : statusCounts[status] || 0;
+                    return (
+                      <TouchableOpacity 
+                        key={status}
+                        onPress={() => setStatusFilter(status)}
+                        style={[
+                          styles.filterTab,
+                          isActive && { borderBottomColor: colors.primary }
+                        ]}
+                      >
+                        <Text 
+                          style={[
+                            styles.filterTabText,
+                            { color: colors.textMuted },
+                            isActive && { color: colors.primary, fontWeight: 'bold' }
+                          ]}
+                          numberOfLines={1}
+                          adjustsFontSizeToFit
+                        >
+                          {readingStatusKorean[status]} ({count})
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              )}
+            </>
+          ) : (
+            /* Filter Tabs (검색어가 없을 때만 표시) */
+            <View style={[styles.filterTabsContainer, { borderBottomColor: colors.border }]}>
+              {filterOptions.map((status) => {
+                const isActive = statusFilter === status;
+                const count = status === ReadingStatus.Finished 
+                  ? (statusCounts[ReadingStatus.Finished] + statusCounts[ReadingStatus.Dropped])
+                  : statusCounts[status] || 0;
+                return (
+                  <TouchableOpacity 
+                    key={status}
+                    onPress={() => setStatusFilter(status)}
+                    style={[
+                      styles.filterTab,
+                      isActive && { borderBottomColor: colors.primary }
+                    ]}
+                  >
+                    <Text 
+                      style={[
+                        styles.filterTabText,
+                        { color: colors.textMuted },
+                        isActive && { color: colors.primary, fontWeight: 'bold' }
+                      ]}
+                      numberOfLines={1}
+                      adjustsFontSizeToFit
+                    >
+                      {readingStatusKorean[status]} ({count})
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
 
-          {/* Sub-Tabs for 완독 Tab (완독/중단) */}
-          {statusFilter === "Finished" && (
+          {/* Sub-Tabs for 완독 Tab (완독/중단) - 검색 책 탭 또는 일반 모드에서 표시 */}
+          {statusFilter === "Finished" && (!searchQuery.trim() || searchTab === "books") && (
             <View style={styles.subTabsContainer}>
               <TouchableOpacity 
                 onPress={() => setSubFilter("Finished")}
@@ -455,32 +582,103 @@ export default function Home() {
               </TouchableOpacity>
             </View>
           )}
-          <View style={styles.secondaryFilterContainer}>
-            <TouchableOpacity 
-                style={[
-                  styles.filterButton, 
-                  { backgroundColor: isDark ? colors.border : '#F1F5F9' },
-                  (filters.month || filters.year || filters.reread || filters.genre.length > 0) && { borderColor: colors.primary, borderWidth: 1 }
-                ]}
-                onPress={() => setFilterSheetVisible(true)}
-            >
-              <Text style={[
-                styles.filterButtonText, 
-                { color: (filters.month || filters.year || filters.reread || filters.genre.length > 0) ? colors.primary : colors.text }
-              ]}>
-                필터 및 정렬 · {
-                  filters.sort === "date_desc" ? "최신순" : 
-                  filters.sort === "date_asc" ? "오래된순" : 
-                  filters.sort === "rating_desc" ? "별점순" : 
-                  filters.sort === "rating_asc" ? "낮은별점순" : "제목순"
-                }
-              </Text>
-              <ChevronDownIcon size={16} color={(filters.month || filters.year || filters.reread || filters.genre.length > 0) ? colors.primary : colors.textMuted} />
-            </TouchableOpacity>
-          </View>
+          {/* 필터 버튼 - 메모/인용구 탭에서는 숨김 */}
+          {!(searchQuery.trim() && (searchTab === "memos" || searchTab === "quotes")) && (
+            <View style={styles.secondaryFilterContainer}>
+              <TouchableOpacity 
+                  style={[
+                    styles.filterButton, 
+                    { backgroundColor: isDark ? colors.border : '#F1F5F9' },
+                    (filters.month || filters.year || filters.reread || filters.genre.length > 0) && { borderColor: colors.primary, borderWidth: 1 }
+                  ]}
+                  onPress={() => setFilterSheetVisible(true)}
+              >
+                <Text style={[
+                  styles.filterButtonText, 
+                  { color: (filters.month || filters.year || filters.reread || filters.genre.length > 0) ? colors.primary : colors.text }
+                ]}>
+                  필터 및 정렬 · {
+                    filters.sort === "date_desc" ? "최신순" : 
+                    filters.sort === "date_asc" ? "오래된순" : 
+                    filters.sort === "rating_desc" ? "별점순" : 
+                    filters.sort === "rating_asc" ? "낮은별점순" : "제목순"
+                  }
+                </Text>
+                <ChevronDownIcon size={16} color={(filters.month || filters.year || filters.reread || filters.genre.length > 0) ? colors.primary : colors.textMuted} />
+              </TouchableOpacity>
+            </View>
+          )}
 
           {/* Content */}
-          {statusFilter === "All" && !searchQuery.trim() && groupedBooks ? (
+          {searchQuery.trim() ? (
+            /* 검색 결과 모드 */
+            searchTab === "books" ? (
+              <View>
+                <View style={styles.gridContainer}>
+                  {displayedBooks.map((book) => (
+                    <View key={book.id} style={styles.gridItem}>
+                      <BookCard 
+                        book={book} 
+                        showStatusBadge={false} 
+                        onSelect={handleBookPress}
+                        onDelete={handleDeleteBook}
+                      />
+                    </View>
+                  ))}
+                </View>
+                {filteredBooksAll.length > visibleCount && (
+                  <View style={styles.loadMoreContainer}>
+                    <TouchableOpacity 
+                      onPress={() => setVisibleCount(prev => prev + 12)}
+                      style={styles.loadMoreButton}
+                    >
+                      <Text style={styles.loadMoreText}>더보기</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+                {displayedBooks.length === 0 && (
+                  <View style={styles.emptyContainer}>
+                    <Text style={[styles.emptyTitle, { color: colors.text }]}>검색 결과가 없습니다</Text>
+                    <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>다른 키워드로 검색해보세요</Text>
+                  </View>
+                )}
+              </View>
+            ) : searchTab === "memos" ? (
+              <View>
+                {searchResults.memos.map((item, index) => (
+                  <SearchResultCard
+                    key={`memo-${index}`}
+                    item={item}
+                    query={searchQuery}
+                    onPress={() => handleBookPress(item.book)}
+                  />
+                ))}
+                {searchResults.memos.length === 0 && (
+                  <View style={styles.emptyContainer}>
+                    <Text style={[styles.emptyTitle, { color: colors.text }]}>메모를 찾을 수 없습니다</Text>
+                    <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>"{searchQuery}"가 포함된 메모가 없어요</Text>
+                  </View>
+                )}
+              </View>
+            ) : (
+              <View>
+                {searchResults.quotes.map((item, index) => (
+                  <SearchResultCard
+                    key={`quote-${index}`}
+                    item={item}
+                    query={searchQuery}
+                    onPress={() => handleBookPress(item.book)}
+                  />
+                ))}
+                {searchResults.quotes.length === 0 && (
+                  <View style={styles.emptyContainer}>
+                    <Text style={[styles.emptyTitle, { color: colors.text }]}>인용구를 찾을 수 없습니다</Text>
+                    <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>"{searchQuery}"가 포함된 인용구가 없어요</Text>
+                  </View>
+                )}
+              </View>
+            )
+          ) : statusFilter === "All" && groupedBooks ? (
             <View style={styles.sectionsContainer}>
               {renderBookSection("읽는 중", groupedBooks[ReadingStatus.Reading], ReadingStatus.Reading)}
               {renderBookSection("읽고 싶은", groupedBooks[ReadingStatus.WantToRead], ReadingStatus.WantToRead)}
@@ -733,5 +931,20 @@ const styles = StyleSheet.create({
   },
   emptySubtitle: {
     fontSize: 14,
+  },
+  searchSegmentContainer: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    marginBottom: 16,
+  },
+  searchSegmentTab: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  searchSegmentText: {
+    fontSize: 13,
   },
 });
