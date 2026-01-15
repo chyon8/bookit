@@ -2,11 +2,13 @@ import React from 'react';
 import { View, Text, Modal, TouchableOpacity, ScrollView, StyleSheet, Dimensions } from 'react-native';
 import { useRouter } from "expo-router";
 import { UserBook } from '../hooks/useBooks';
-import { ChevronLeftIcon, ChevronRightIcon } from './Icons';
+import { ChevronLeftIcon, ChevronRightIcon, HeartIcon, HeartFilledIcon } from './Icons';
 
 export type Note = {
   book: UserBook;
-  note: { title: string; content: string };
+  note: { title: string; content: string; isFavorite?: boolean };
+  noteType: 'quote' | 'memo';
+  noteIndex: number;
 };
 
 interface RandomNoteModalProps {
@@ -17,6 +19,7 @@ interface RandomNoteModalProps {
   onPrev: () => void;
   currentIndex: number;
   totalNotes: number;
+  onToggleFavorite?: (bookId: string, noteType: 'quote' | 'memo', noteIndex: number) => void;
 }
 
 import { useTheme } from '../context/ThemeContext';
@@ -28,14 +31,15 @@ export function RandomNoteModal({
   onNext,
   onPrev,
   currentIndex,
-  totalNotes
+  totalNotes,
+  onToggleFavorite
 }: RandomNoteModalProps) {
   const { colors, isDark } = useTheme();
   const router = useRouter();
 
   if (!currentNote) return null;
 
-  const { book, note } = currentNote;
+  const { book, note, noteType, noteIndex } = currentNote;
 
   return (
     <Modal
@@ -57,8 +61,22 @@ export function RandomNoteModal({
           activeOpacity={1}
           onPress={e => e.stopPropagation()}
         >
-          {/* Note Type Label */}
-          <Text style={[styles.noteLabel, { color: colors.textMuted }]}>{note.title}</Text>
+          {/* Header with Note Type Label and Favorite Button */}
+          <View style={styles.noteHeader}>
+            <Text style={[styles.noteLabel, { color: colors.textMuted }]}>{note.title}</Text>
+            {onToggleFavorite && (
+              <TouchableOpacity 
+                onPress={() => onToggleFavorite(book.book_id, noteType, noteIndex)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                {note.isFavorite ? (
+                  <HeartFilledIcon size={20} color="#EF4444" />
+                ) : (
+                  <HeartIcon size={20} color={colors.textMuted} />
+                )}
+              </TouchableOpacity>
+            )}
+          </View>
           
           {/* Note Content */}
           <ScrollView style={styles.contentScroll}>
@@ -130,6 +148,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 1,
+  },
+  noteHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 16,
   },
   contentScroll: {

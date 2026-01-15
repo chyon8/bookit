@@ -23,6 +23,7 @@ import GenreChart from "./statistics/GenreChart";
 import TopAuthorsList from "./statistics/TopAuthorsList";
 import WishlistGenreChart from "./statistics/WishlistGenreChart";
 import WishlistAuthorChart from "./statistics/WishlistAuthorChart";
+import { FavoritesSection } from "./statistics/FavoritesSection";
 
 if (
   Platform.OS === 'android' &&
@@ -33,7 +34,7 @@ if (
 
 const { width } = Dimensions.get("window");
 
-type Tab = "overview" | "habits" | "genres" | "wishlist";
+type Tab = "overview" | "habits" | "genres" | "wishlist" | "favorites";
 
 interface StatsViewProps {
   books: UserBook[];
@@ -266,6 +267,7 @@ export default function StatsView({ books }: StatsViewProps) {
               {renderTabButton("habits", "독서 습관")}
               {renderTabButton("genres", "장르 & 저자")}
               {renderTabButton("wishlist", "위시리스트")}
+              {renderTabButton("favorites", "즐겨찾기")}
           </ScrollView>
       </View>
 
@@ -321,6 +323,10 @@ export default function StatsView({ books }: StatsViewProps) {
                 <WishlistGenreChart books={books} />
                 <WishlistAuthorChart books={books} />
             </View>
+        )}
+
+        {activeTab === "favorites" && (
+            <FavoritesSection books={books} />
         )}
       </ScrollView>
     </View>

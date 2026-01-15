@@ -23,11 +23,13 @@ export interface MemorableQuote {
   page: string;
   thought: string;
   date?: string;
+  isFavorite?: boolean;
 }
 
 export interface Memo {
     text: string;
     createdAt: string;
+    isFavorite?: boolean;
 }
 
 export interface UserBook {

@@ -2,13 +2,13 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { SwipeableRow } from './SwipeableRow';
-import { TrashIcon, XMarkIcon } from './Icons';
+import { TrashIcon, HeartIcon, HeartFilledIcon } from './Icons';
 import { MemorableQuote } from '../hooks/useBooks';
 
 interface QuoteCardProps {
   quote: MemorableQuote;
   onDelete: () => void;
-  onChange: (field: keyof MemorableQuote, value: string) => void;
+  onChange: (field: keyof MemorableQuote, value: string | boolean) => void;
   initialIsEditing?: boolean;
 }
 
@@ -91,8 +91,21 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({ quote, onDelete, onChange,
     <View style={styles.cardWrapper}>
       <SwipeableRow onEdit={() => setIsEditing(true)} onDelete={onDelete}>
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={styles.row}>
-            <Text style={[styles.quoteText, { color: colors.text }]}>{quote.quote}</Text>
+          <View style={styles.cardHeader}>
+            <View style={styles.quoteContent}>
+              <Text style={[styles.quoteText, { color: colors.text }]}>{quote.quote}</Text>
+            </View>
+            <TouchableOpacity 
+              onPress={() => onChange('isFavorite', !quote.isFavorite)} 
+              style={styles.favoriteButton}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              {quote.isFavorite ? (
+                <HeartFilledIcon size={18} color="#EF4444" />
+              ) : (
+                <HeartIcon size={18} color={colors.textMuted} />
+              )}
+            </TouchableOpacity>
           </View>
           {(quote.page || quote.thought || quote.date) && (
             <View style={[styles.metaContainer, { borderTopColor: colors.border }]}>
@@ -190,5 +203,17 @@ const styles = StyleSheet.create({
   cardActions: {
     flexDirection: 'row',
     gap: 12,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 8,
+  },
+  quoteContent: {
+    flex: 1,
+  },
+  favoriteButton: {
+    padding: 4,
   },
 });

@@ -383,7 +383,7 @@ export default function BookRecordScreen() {
     }, 100);
   };
 
-  const updateQuote = (index: number, field: keyof MemorableQuote, value: string) => {
+  const updateQuote = (index: number, field: keyof MemorableQuote, value: string | boolean) => {
     setReview(prev => {
       const quotes = [...(prev.memorable_quotes || [])];
       quotes[index] = { ...quotes[index], [field]: value };
@@ -439,6 +439,14 @@ export default function BookRecordScreen() {
         },
         { confirmText: "삭제", isDestructive: true }
       );
+  };
+
+  const toggleMemoFavorite = (index: number) => {
+    setReview(prev => {
+      const memos = [...(prev.memos || [])];
+      memos[index] = { ...memos[index], isFavorite: !memos[index].isFavorite };
+      return { ...prev, memos };
+    });
   };
 
   // OCR Logic
@@ -1072,6 +1080,7 @@ export default function BookRecordScreen() {
                           memo={memo}
                           onChange={(val) => updateMemo(idx, val)}
                           onDelete={() => deleteMemo(idx)}
+                          onToggleFavorite={() => toggleMemoFavorite(idx)}
                       />
                   ))}
               </View>

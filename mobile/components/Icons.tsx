@@ -95,3 +95,11 @@ export const CheckIcon = ({ className, size = 20, color = "black" }: { className
 export const SendIcon = ({ className, size = 20, color = "black" }: { className?: string; size?: number; color?: string }) => (
   <Feather name="send" size={size} color={color} className={className} />
 );
+
+export const HeartIcon = ({ className, size = 20, color = "black" }: { className?: string; size?: number; color?: string }) => (
+  <Feather name="heart" size={size} color={color} className={className} />
+);
+
+export const HeartFilledIcon = ({ className, size = 20, color = "#EF4444" }: { className?: string; size?: number; color?: string }) => (
+  <FontAwesome name="heart" size={size} color={color} className={className} />
+);

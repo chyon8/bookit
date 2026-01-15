@@ -292,29 +292,42 @@ export default function Home() {
     if (!userBooks || userBooks.length === 0) return;
 
     const allNotes: Note[] = userBooks.flatMap((book) => {
-      const notes: { title: string; content: string }[] = [];
+      const notes: Note[] = [];
 
       if (book.one_line_review) {
-        notes.push({ title: "한줄평", content: book.one_line_review });
+        notes.push({ 
+          book, 
+          note: { title: "한줄평", content: book.one_line_review, isFavorite: false },
+          noteType: 'memo',
+          noteIndex: -1  // one_line_review는 특별 처리
+        });
       }
       if (book.memos && Array.isArray(book.memos)) {
         book.memos.forEach((memo, index) => {
-          if (memo) notes.push({ title: `메모 #${index + 1}`, content: memo.text });
+          if (memo) notes.push({ 
+            book, 
+            note: { title: `메모 #${index + 1}`, content: memo.text, isFavorite: memo.isFavorite },
+            noteType: 'memo',
+            noteIndex: index
+          });
         });
       }
       if (book.memorable_quotes && Array.isArray(book.memorable_quotes)) {
-        book.memorable_quotes.forEach((quoteObj) => {
+        book.memorable_quotes.forEach((quoteObj, index) => {
           if (quoteObj?.quote) {
             let content = `"${quoteObj.quote}"`;
             if (quoteObj.thought) content += `\n\n- 나의 생각: ${quoteObj.thought}`;
-            notes.push({ title: `인상 깊은 구절 (p.${quoteObj.page || "?"})`, content });
+            notes.push({ 
+              book, 
+              note: { title: `인상 깊은 구절 (p.${quoteObj.page || "?"})`, content, isFavorite: quoteObj.isFavorite },
+              noteType: 'quote',
+              noteIndex: index
+            });
           }
         });
       }
 
-      return notes
-        .filter(n => n.content?.trim())
-        .map(note => ({ book, note }));
+      return notes.filter(n => n.note.content?.trim());
     });
 
     if (allNotes.length === 0) return;

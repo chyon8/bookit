@@ -3,14 +3,16 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Platform } from 'r
 import { useTheme } from '../context/ThemeContext';
 import { SwipeableRow } from './SwipeableRow';
 import { Memo } from '../hooks/useBooks';
+import { HeartIcon, HeartFilledIcon } from './Icons';
 
 interface MemoCardProps {
   memo: Memo;
   onDelete: () => void;
   onChange: (value: string) => void;
+  onToggleFavorite?: () => void;
 }
 
-export const MemoCard: React.FC<MemoCardProps> = ({ memo, onDelete, onChange }) => {
+export const MemoCard: React.FC<MemoCardProps> = ({ memo, onDelete, onChange, onToggleFavorite }) => {
   const [isEditing, setIsEditing] = useState(memo.text === "");
   const { colors, isDark } = useTheme();
 
@@ -74,6 +76,19 @@ export const MemoCard: React.FC<MemoCardProps> = ({ memo, onDelete, onChange }) 
             <View style={styles.flex1}>
               <Text style={[styles.memoText, { color: colors.text }]}>{memo.text}</Text>
             </View>
+            {onToggleFavorite && (
+              <TouchableOpacity 
+                onPress={onToggleFavorite} 
+                style={styles.favoriteButton}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                {memo.isFavorite ? (
+                  <HeartFilledIcon size={18} color="#EF4444" />
+                ) : (
+                  <HeartIcon size={18} color={colors.textMuted} />
+                )}
+              </TouchableOpacity>
+            )}
           </View>
           {formattedDate && (
             <Text style={[styles.footerDate, { color: colors.textMuted, borderTopColor: colors.border }]}>{formattedDate}</Text>
@@ -155,5 +170,8 @@ const styles = StyleSheet.create({
   },
   flex1: {
     flex: 1,
+  },
+  favoriteButton: {
+    padding: 4,
   },
 });
