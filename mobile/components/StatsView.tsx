@@ -264,10 +264,10 @@ export default function StatsView({ books }: StatsViewProps) {
       <View style={[styles.tabContainerWrapper, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabContainer} contentContainerStyle={styles.tabContentContainer}>
               {renderTabButton("overview", "개요")}
-              {renderTabButton("habits", "독서 습관")}
-              {renderTabButton("genres", "장르 & 저자")}
-              {renderTabButton("wishlist", "위시리스트")}
-              {renderTabButton("favorites", "즐겨찾기")}
+              {renderTabButton("habits", "습관")}
+              {renderTabButton("genres", "장르")}
+              {renderTabButton("wishlist", "위시")}
+              {renderTabButton("favorites", "저장")}
           </ScrollView>
       </View>
 
