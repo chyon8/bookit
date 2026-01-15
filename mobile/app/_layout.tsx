@@ -11,6 +11,7 @@ import { supabase } from "../lib/supabase";
 import type { Session } from "@supabase/supabase-js";
 import { ThemeProvider, useTheme } from "../context/ThemeContext";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import Toast from "react-native-toast-message";
 
 function AppContent() {
   const [queryClient] = useState(() => new QueryClient());
@@ -68,6 +69,7 @@ export default function Layout() {
     <ThemeProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <AppContent />
+        <Toast />
       </GestureHandlerRootView>
     </ThemeProvider>
   );

@@ -32,6 +32,7 @@ import { ScanPreviewModal } from "../../components/ScanPreviewModal";
 import { SessionEditModal } from "../../components/SessionEditModal";
 import { performOCR } from "../../utils/ocr";
 import ConfettiCannon from 'react-native-confetti-cannon';
+import Toast from 'react-native-toast-message';
 
 export default function BookRecordScreen() {
   const router = useRouter();
@@ -202,11 +203,24 @@ export default function BookRecordScreen() {
         reviewId: book.review.id,
         reviewData: review,
       });
-      if (router.canGoBack()) {
-        router.back();
-      } else {
-        router.replace('/');
-      }
+      
+      // Show success toast
+      Toast.show({
+        type: 'success',
+        text1: '저장 완료',
+        text2: '독서 기록이 저장되었습니다.',
+        visibilityTime: 1500,
+        position: 'top',
+      });
+      
+      // Delay navigation to allow toast to be visible
+      setTimeout(() => {
+        if (router.canGoBack()) {
+          router.back();
+        } else {
+          router.replace('/');
+        }
+      }, 500);
     } catch (e) {
       isSaving.current = false;
       Alert.alert("오류", "저장 중 문제가 발생했습니다.");
