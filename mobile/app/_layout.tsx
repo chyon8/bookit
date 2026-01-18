@@ -69,7 +69,7 @@ export default function Layout() {
     <ThemeProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <AppContent />
-        <Toast />
+        <Toast position="bottom" bottomOffset={100} />
       </GestureHandlerRootView>
     </ThemeProvider>
   );

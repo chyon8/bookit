@@ -199,6 +199,8 @@ export default function Home() {
                 return new Date(a.start_date || a.books.id).getTime() - new Date(b.start_date || b.books.id).getTime();
             case "date_desc":
                 return new Date(b.start_date || b.books.id).getTime() - new Date(a.start_date || a.books.id).getTime();
+            case "end_date_desc":
+                return new Date(b.end_date || 0).getTime() - new Date(a.end_date || 0).getTime();
             case "rating_desc": 
                 return (b.rating || 0) - (a.rating || 0);
             case "rating_asc":
@@ -613,6 +615,7 @@ export default function Home() {
                   필터 및 정렬 · {
                     filters.sort === "date_desc" ? "최신순" : 
                     filters.sort === "date_asc" ? "오래된순" : 
+                    filters.sort === "end_date_desc" ? "완독일순" :
                     filters.sort === "rating_desc" ? "별점순" : 
                     filters.sort === "rating_asc" ? "낮은별점순" : "제목순"
                   }

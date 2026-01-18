@@ -210,7 +210,7 @@ export default function BookRecordScreen() {
         text1: '저장 완료',
         text2: '독서 기록이 저장되었습니다.',
         visibilityTime: 1500,
-        position: 'top',
+        position: 'bottom',
       });
       
       // Delay navigation to allow toast to be visible

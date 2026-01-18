@@ -15,6 +15,8 @@ interface QuoteCardProps {
 export const QuoteCard: React.FC<QuoteCardProps> = ({ quote, onDelete, onChange, initialIsEditing }) => {
   const [isEditing, setIsEditing] = useState(initialIsEditing !== undefined ? initialIsEditing : !quote.quote);
   const { colors, isDark } = useTheme();
+  const [quoteHeight, setQuoteHeight] = useState(60);
+  const [thoughtHeight, setThoughtHeight] = useState(40);
 
   if (isEditing) {
     return (
@@ -30,12 +32,13 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({ quote, onDelete, onChange,
               styles.input, 
               styles.quoteInput, 
               { 
-                minHeight: 60,
+                height: Math.max(60, quoteHeight),
                 backgroundColor: isDark ? colors.border : '#F8FAFC',
                 color: colors.text
               },
               Platform.OS === 'web' && ({ resize: 'vertical', overflow: 'hidden' } as any)
             ]}
+            onContentSizeChange={(e) => setQuoteHeight(e.nativeEvent.contentSize.height)}
             scrollEnabled={false}
             autoFocus={!quote.quote}
           />
@@ -69,12 +72,13 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({ quote, onDelete, onChange,
               styles.input, 
               styles.thoughtInput, 
               { 
-                minHeight: 40,
+                height: Math.max(40, thoughtHeight),
                 backgroundColor: isDark ? colors.border : '#F8FAFC',
                 color: colors.text
               },
               Platform.OS === 'web' && ({ resize: 'vertical', overflow: 'hidden' } as any)
             ]}
+            onContentSizeChange={(e) => setThoughtHeight(e.nativeEvent.contentSize.height)}
             scrollEnabled={false}
           />
         </View>
@@ -95,17 +99,6 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({ quote, onDelete, onChange,
             <View style={styles.quoteContent}>
               <Text style={[styles.quoteText, { color: colors.text }]}>{quote.quote}</Text>
             </View>
-            <TouchableOpacity 
-              onPress={() => onChange('isFavorite', !quote.isFavorite)} 
-              style={styles.favoriteButton}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              {quote.isFavorite ? (
-                <HeartFilledIcon size={18} color="#EF4444" />
-              ) : (
-                <HeartIcon size={18} color={colors.textMuted} />
-              )}
-            </TouchableOpacity>
           </View>
           {(quote.page || quote.thought || quote.date) && (
             <View style={[styles.metaContainer, { borderTopColor: colors.border }]}>
@@ -114,7 +107,20 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({ quote, onDelete, onChange,
               </View>
               {!!quote.thought && <Text style={[styles.thoughtText, { color: colors.text }]}>💭 {quote.thought}</Text>}
               {!!quote.date && (
-                <Text style={[styles.dateText, { color: colors.textMuted }]}>{quote.date}</Text>
+                <View style={styles.footerRow}>
+                  <Text style={[styles.dateText, { color: colors.textMuted }]}>{quote.date}</Text>
+                  <TouchableOpacity 
+                    onPress={() => onChange('isFavorite', !quote.isFavorite)} 
+                    style={styles.favoriteButton}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    {quote.isFavorite ? (
+                      <HeartFilledIcon size={18} color="#EF4444" />
+                    ) : (
+                      <HeartIcon size={18} color={colors.textMuted} />
+                    )}
+                  </TouchableOpacity>
+                </View>
               )}
             </View>
           )}
@@ -215,5 +221,11 @@ const styles = StyleSheet.create({
   },
   favoriteButton: {
     padding: 4,
+  },
+  footerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 4,
   },
 });

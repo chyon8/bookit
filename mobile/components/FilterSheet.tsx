@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { XMarkIcon } from "./Icons";
 
-export type SortOption = "date_desc" | "date_asc" | "rating_desc" | "rating_asc" | "title_asc";
+export type SortOption = "date_desc" | "date_asc" | "end_date_desc" | "rating_desc" | "rating_asc" | "title_asc";
 
 interface FilterSheetProps {
   visible: boolean;
@@ -84,6 +84,7 @@ export const FilterSheet = ({ visible, onClose, onApply, initialFilters, genres 
                         {[
                             { id: "date_desc", label: "최신순" },
                             { id: "date_asc", label: "오래된순" },
+                            { id: "end_date_desc", label: "완독일순" },
                             { id: "rating_desc", label: "별점 높은순" },
                             { id: "rating_asc", label: "별점 낮은순" },
                             { id: "title_asc", label: "제목순" },

@@ -15,6 +15,7 @@ interface MemoCardProps {
 export const MemoCard: React.FC<MemoCardProps> = ({ memo, onDelete, onChange, onToggleFavorite }) => {
   const [isEditing, setIsEditing] = useState(memo.text === "");
   const { colors, isDark } = useTheme();
+  const [memoHeight, setMemoHeight] = useState(80);
 
   const formattedDate = useMemo(() => {
     if (!memo.createdAt) return null;
@@ -44,12 +45,13 @@ export const MemoCard: React.FC<MemoCardProps> = ({ memo, onDelete, onChange, on
           style={[
             styles.input, 
             { 
-              minHeight: 80,
+              height: Math.max(80, memoHeight),
               backgroundColor: isDark ? colors.border : '#F8FAFC',
               color: colors.text
             },
             Platform.OS === 'web' && ({ resize: 'vertical', overflow: 'hidden' } as any)
           ]}
+          onContentSizeChange={(e) => setMemoHeight(e.nativeEvent.contentSize.height)}
           scrollEnabled={false}
           autoFocus
         />
@@ -76,22 +78,24 @@ export const MemoCard: React.FC<MemoCardProps> = ({ memo, onDelete, onChange, on
             <View style={styles.flex1}>
               <Text style={[styles.memoText, { color: colors.text }]}>{memo.text}</Text>
             </View>
-            {onToggleFavorite && (
-              <TouchableOpacity 
-                onPress={onToggleFavorite} 
-                style={styles.favoriteButton}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                {memo.isFavorite ? (
-                  <HeartFilledIcon size={18} color="#EF4444" />
-                ) : (
-                  <HeartIcon size={18} color={colors.textMuted} />
-                )}
-              </TouchableOpacity>
-            )}
           </View>
           {formattedDate && (
-            <Text style={[styles.footerDate, { color: colors.textMuted, borderTopColor: colors.border }]}>{formattedDate}</Text>
+            <View style={[styles.footerRow, { borderTopColor: colors.border }]}>
+              <Text style={[styles.footerDate, { color: colors.textMuted }]}>{formattedDate}</Text>
+              {onToggleFavorite && (
+                <TouchableOpacity 
+                  onPress={onToggleFavorite} 
+                  style={styles.favoriteButton}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  {memo.isFavorite ? (
+                    <HeartFilledIcon size={18} color="#EF4444" />
+                  ) : (
+                    <HeartIcon size={18} color={colors.textMuted} />
+                  )}
+                </TouchableOpacity>
+              )}
+            </View>
           )}
         </View>
       </SwipeableRow>
@@ -137,11 +141,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   footerDate: {
-    marginTop: 12,
     fontSize: 12,
-    textAlign: 'right',
-    borderTopWidth: 1,
-    paddingTop: 8,
   },
   deleteText: {
     fontSize: 14,
@@ -173,5 +173,13 @@ const styles = StyleSheet.create({
   },
   favoriteButton: {
     padding: 4,
+  },
+  footerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 12,
+    paddingTop: 8,
+    borderTopWidth: 1,
   },
 });
