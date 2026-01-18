@@ -14,6 +14,7 @@ interface ImageCropperProps {
     imageUri: string;
     onCancel: () => void;
     onCrop: (result: { uri: string; base64?: string }) => void;
+    extractButtonText?: string;
 }
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -21,7 +22,7 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 // Minimum crop size
 const MIN_CROP_SIZE = 50;
 
-export function ImageCropper({ imageUri, onCancel, onCrop }: ImageCropperProps) {
+export const ImageCropper = React.memo(({ imageUri, onCancel, onCrop, extractButtonText = '완료' }: ImageCropperProps) => {
     const { colors } = useTheme();
     const [imageSize, setImageSize] = useState<{ width: number; height: number } | null>(null);
     const [containerSize, setContainerSize] = useState<{ width: number; height: number } | null>(null);
@@ -45,22 +46,29 @@ export function ImageCropper({ imageUri, onCancel, onCrop }: ImageCropperProps) 
     const savedTranslateX = useSharedValue(0);
     const savedTranslateY = useSharedValue(0);
 
-    // Initial Setup
+    // Initial Setup - Fetch image dimensions
     useEffect(() => {
         Image.getSize(imageUri, (w, h) => {
             setImageSize({ width: w, height: h });
         }, (err) => console.error(err));
     }, [imageUri]);
 
+    const hasInitialized = React.useRef(false);
+
+    // Reset initialization flag only when imageUri actually changes
+    useEffect(() => {
+        hasInitialized.current = false;
+    }, [imageUri]);
+
     // Update initial crop size when container is ready
     useEffect(() => {
-        if (containerSize && imageSize) {
-            // Default: 80% of width, book ratio
+        if (containerSize && imageSize && !hasInitialized.current) {
             const initialWidth = containerSize.width * 0.8;
             const initialHeight = Math.min(containerSize.height * 0.8, initialWidth * 1.4);
             
             cropWidth.value = initialWidth;
             cropHeight.value = initialHeight;
+            hasInitialized.current = true;
         }
     }, [containerSize, imageSize]);
 
@@ -342,12 +350,12 @@ export function ImageCropper({ imageUri, onCancel, onCrop }: ImageCropperProps) 
                     </Text>
                 </View>
                 <TouchableOpacity onPress={handleCrop} disabled={isProcessing} style={styles.button}>
-                    {isProcessing ? <ActivityIndicator color={colors.primary} /> : <Text style={{ color: colors.primary, fontWeight: 'bold' }}>완료</Text>}
+                    {isProcessing ? <ActivityIndicator color={colors.primary} /> : <Text style={{ color: colors.primary, fontWeight: 'bold' }}>{extractButtonText}</Text>}
                 </TouchableOpacity>
             </View>
         </View>
     );
-}
+});
 
 const styles = StyleSheet.create({
     container: {

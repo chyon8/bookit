@@ -42,32 +42,41 @@ export function ScanPreviewModal({
   onUpdateImage
 }: ScanPreviewModalProps) {
   const [text, setText] = React.useState(scannedText);
-  const [isCropping, setIsCropping] = React.useState(false);
+  const [step, setStep] = React.useState<'crop' | 'edit'>('crop');
   const [displayImageUri, setDisplayImageUri] = React.useState<string | null>(null);
   const { colors, isDark } = useTheme();
 
   React.useEffect(() => {
     setText(scannedText);
+    // When text is extracted, move to edit step
+    if (scannedText) {
+      setStep('edit');
+    }
   }, [scannedText]);
 
   React.useEffect(() => {
-    // When imageUri changes (and is not null), start cropping mode
+    // When imageUri changes (and is not null), reset to crop step
     if (imageUri) {
         setDisplayImageUri(imageUri);
-        setIsCropping(true);
+        setStep('crop');
     }
   }, [imageUri]);
 
   const handleCropComplete = ({ uri, base64 }: { uri: string; base64?: string }) => {
-    setDisplayImageUri(uri);
-    setIsCropping(false);
+    // Don't update displayImageUri - keep original for re-cropping
+    // Just pass base64 to parent for OCR
     if (onUpdateImage && base64) {
         onUpdateImage(uri, base64);
+        // Parent will trigger OCR with the base64 directly
     }
   };
   
   const handleCropCancel = () => {
     onClose();
+  };
+
+  const handleBackToCrop = () => {
+    setStep('crop');
   };
 
   return (
@@ -80,55 +89,57 @@ export function ScanPreviewModal({
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
           <Text style={[styles.headerTitle, { color: colors.text }]}>
-            {isCropping ? "영역 선택" : (text ? "텍스트 확인 및 수정" : "이미지 확인")}
+            {step === 'crop' ? "영역 선택" : "텍스트 확인 및 수정"}
           </Text>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
             <XMarkIcon size={24} color={colors.textMuted} />
           </TouchableOpacity>
         </View>
 
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={styles.content}
-        >
-          <ScrollView 
-            contentContainerStyle={styles.scrollContent}
-            scrollEnabled={!isCropping}
-          >
-            {/* Image Preview */}
-            {isCropping && displayImageUri ? (
-              <View style={{ height: 500 }}>
-                <GestureHandlerRootView style={{ flex: 1 }}>
-                 <ImageCropper 
-                    imageUri={displayImageUri} 
-                    onCancel={handleCropCancel}
-                    onCrop={handleCropComplete}
-                 />
-                </GestureHandlerRootView>
-              </View>
-            ) : (
-                <>
-                {displayImageUri && (
-                <View style={[styles.imageContainer, { backgroundColor: isDark ? colors.border : '#F1F5F9', borderColor: colors.border }]}>
-                    <Image
-                    source={{ uri: displayImageUri }}
-                    style={styles.image}
-                    resizeMode="contain"
-                    />
-                </View>
-                )}
-                </>
+        {step === 'crop' ? (
+          // Step 1: Crop Mode - Full screen cropper
+          <View style={styles.content}>
+            {displayImageUri && (
+              <GestureHandlerRootView style={{ flex: 1 }}>
+                <ImageCropper 
+                  imageUri={displayImageUri} 
+                  onCancel={handleCropCancel}
+                  onCrop={handleCropComplete}
+                  extractButtonText={isScanning ? '추출 중...' : '텍스트 추출'}
+                />
+              </GestureHandlerRootView>
             )}
-
+            
+            {/* Loading Overlay during OCR */}
+            {isScanning && (
+              <View style={[styles.loadingOverlay, { backgroundColor: 'rgba(0,0,0,0.7)' }]}>
+                <ActivityIndicator size="large" color="#fff" />
+                <Text style={{ color: '#fff', marginTop: 12, fontSize: 16 }}>텍스트를 추출하고 있어요...</Text>
+              </View>
+            )}
+            
             {/* Error Message */}
             {error && (
               <View style={[styles.errorContainer, { backgroundColor: isDark ? '#451a1a' : '#FEF2F2', borderColor: isDark ? '#7f1d1d' : '#FECACA' }]}>
                 <Text style={styles.errorText}>{error}</Text>
               </View>
             )}
+          </View>
+        ) : (
+          // Step 2: Edit Mode - Text only, no image
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            style={styles.content}
+          >
+            <ScrollView contentContainerStyle={styles.scrollContent}>
+              {/* Error Message */}
+              {error && (
+                <View style={[styles.errorContainer, { backgroundColor: isDark ? '#451a1a' : '#FEF2F2', borderColor: isDark ? '#7f1d1d' : '#FECACA' }]}>
+                  <Text style={styles.errorText}>{error}</Text>
+                </View>
+              )}
 
-            {/* Text Area or Scan Button */}
-            {text ? (
+              {/* Text Editing Area */}
               <View style={styles.textContainer}>
                 <Text style={[styles.helperText, { color: colors.textMuted }]}>
                   필요한 부분을 선택하거나 수정하세요.
@@ -137,66 +148,41 @@ export function ScanPreviewModal({
                   value={text}
                   onChangeText={setText}
                   multiline
+                  autoFocus
                   style={[styles.textArea, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
                   textAlignVertical="top"
                   placeholder="텍스트가 여기에 표시됩니다."
                   placeholderTextColor={colors.textMuted}
                 />
-              </View>
-            ) : (
-              <View style={styles.actionContainer}>
-                <Text style={[styles.actionText, { color: colors.textMuted }]}>
-                  위 이미지에서 텍스트를 추출하시겠습니까?
-                </Text>
+
+                {/* Back to Crop Button */}
                 <TouchableOpacity
-                  onPress={() => {
-                        // Pass the cropped image base64 if possible, but ScanPreviewModal usually takes base64 
-                        // from props or we need to convert displayImageUri to base64?
-                        // The original logic relied on `scanImageBase64` from the parent.
-                        // Now we have cropped image URI. 
-                        // We must update the parent or handle it here. 
-                        // Since `onScan` is a void check, the parent `handleScan` uses `scanImageBase64`.
-                        // We need to pass the new image back to parent OR convert here.
-                        // Ideally: onApplyCrop should update parent state.
-                        // But wait, `onScan` is generic.
-                        // Let's modify logic: The ImageCropper returns a URI. 
-                        // We should probably convert that URI to base64 and call a new prop `onImageUpdate`?
-                        // Or, better: modify onScan to accept optional base64/uri?
-                        // For now, let's assume the existing flow needs adjustment.
-                        // We'll fix `book-record/[id].tsx` to accept the cropped image update.
-                        // Actually, we can just call `onScan` and let it fail? No.
-                        // We need `onScan` to work with the CROPPED image.
-                        // We'll add a prop `onUpdateImage` to ScanPreviewModal.
-                        onScan(); 
-                  }}
-                  disabled={isScanning || isCropping}
-                  style={[styles.scanButton, (isScanning || isCropping) && styles.disabledButton, { backgroundColor: colors.primary, shadowColor: colors.primary }]}
+                  onPress={handleBackToCrop}
+                  style={[styles.backToCropButton, { backgroundColor: isDark ? colors.border : '#F1F5F9' }]}
                 >
-                  {isScanning ? (
-                    <ActivityIndicator color="white" />
-                  ) : (
-                    <Text style={styles.scanButtonText}>텍스트 추출하기</Text>
-                  )}
+                  <Text style={[styles.backToCropButtonText, { color: colors.textMuted }]}>
+                    ← 영역 다시 선택
+                  </Text>
                 </TouchableOpacity>
               </View>
-            )}
-          </ScrollView>
+            </ScrollView>
+          </KeyboardAvoidingView>
+        )}
 
-          {/* Footer Actions */}
-          <View style={[styles.footer, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
-            <TouchableOpacity onPress={onClose} style={[styles.cancelButton, { backgroundColor: isDark ? colors.border : '#F1F5F9' }]}>
-              <Text style={[styles.cancelButtonText, { color: colors.textMuted }]}>취소</Text>
+        {/* Footer Actions */}
+        <View style={[styles.footer, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
+          <TouchableOpacity onPress={onClose} style={[styles.cancelButton, { backgroundColor: isDark ? colors.border : '#F1F5F9' }]}>
+            <Text style={[styles.cancelButtonText, { color: colors.textMuted }]}>취소</Text>
+          </TouchableOpacity>
+          {step === 'edit' && text ? (
+            <TouchableOpacity
+              onPress={() => onApply(text)}
+              style={[styles.applyButton, { backgroundColor: colors.primary }]}
+            >
+              <Text style={styles.applyButtonText}>인용구에 적용</Text>
             </TouchableOpacity>
-            {text ? (
-              <TouchableOpacity
-                onPress={() => onApply(text)}
-                style={[styles.applyButton, { backgroundColor: colors.primary }]}
-              >
-                <Text style={styles.applyButtonText}>인용구에 적용</Text>
-              </TouchableOpacity>
-            ) : null}
-          </View>
-        </KeyboardAvoidingView>
+          ) : null}
+        </View>
       </SafeAreaView>
     </Modal>
   );
@@ -319,5 +305,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#FFFFFF',
+  },
+  backToCropButton: {
+    marginTop: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  backToCropButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

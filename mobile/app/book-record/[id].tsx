@@ -519,8 +519,10 @@ export default function BookRecordScreen() {
     }
   };
 
-  const handleScan = async () => {
-    if (!scanImageBase64) {
+  const handleScan = async (base64Override?: string) => {
+    const imageBase64 = base64Override || scanImageBase64;
+    
+    if (!imageBase64) {
          setScanError("이미지 데이터를 불러올 수 없습니다.");
          return;
     }
@@ -529,7 +531,7 @@ export default function BookRecordScreen() {
     setScanError(null);
 
     try {
-      const result = await performOCR(scanImageBase64);
+      const result = await performOCR(imageBase64);
 
       if (result.error) {
         throw new Error(result.error);
@@ -667,6 +669,8 @@ export default function BookRecordScreen() {
         error={scanError}
         onUpdateImage={(uri, base64) => {
             setScanImageBase64(base64);
+            // Trigger OCR with the base64 directly to avoid race condition
+            handleScan(base64);
         }}
       />
 
