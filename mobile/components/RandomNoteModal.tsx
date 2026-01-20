@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, Modal, TouchableOpacity, ScrollView, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, Modal, TouchableOpacity, StyleSheet, Dimensions, Pressable } from 'react-native';
+import { ScrollView } from 'react-native-gesture-handler';
 import { useRouter } from "expo-router";
 import { UserBook } from '../hooks/useBooks';
 import { ChevronLeftIcon, ChevronRightIcon, HeartIcon, HeartFilledIcon } from './Icons';
@@ -48,78 +49,77 @@ export function RandomNoteModal({
       visible={isVisible}
       onRequestClose={onClose}
     >
-      <TouchableOpacity 
+      <Pressable 
         style={styles.overlay}
-        activeOpacity={1}
         onPress={onClose}
       >
-        <TouchableOpacity 
-          style={[
-            styles.modalCard, 
-            { backgroundColor: isDark ? colors.card : '#FDF1F1' }
-          ]}
-          activeOpacity={1}
-          onPress={e => e.stopPropagation()}
-        >
-          {/* Header with Note Type Label and Favorite Button */}
-          <View style={styles.noteHeader}>
-            <Text style={[styles.noteLabel, { color: colors.textMuted }]}>{note.title}</Text>
-            {onToggleFavorite && (
-              <TouchableOpacity 
-                onPress={() => onToggleFavorite(book.book_id, noteType, noteIndex)}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                {note.isFavorite ? (
-                  <HeartFilledIcon size={20} color="#EF4444" />
-                ) : (
-                  <HeartIcon size={20} color={colors.textMuted} />
-                )}
-              </TouchableOpacity>
-            )}
-          </View>
-          
-          {/* Note Content */}
-          <ScrollView style={styles.contentScroll}>
-            <Text style={[styles.noteContent, { color: colors.text }]}>{note.content}</Text>
-          </ScrollView>
-
-          {/* Book Info */}
-          <TouchableOpacity 
-            style={[styles.bookInfoContainer, { borderTopColor: colors.border }]}
-            onPress={() => {
-              onClose();
-              router.push(`/book-record/${book.book_id}`);
-            }}
+        <Pressable>
+          <View 
+            style={[
+              styles.modalCard, 
+              { backgroundColor: isDark ? colors.card : '#FDF1F1' }
+            ]}
           >
-            <Text style={[styles.bookTitle, { color: colors.text }]}>{book.books.title}</Text>
-            <Text style={[styles.bookAuthor, { color: colors.textMuted }]}>
-              저자: {book.books.author?.split("(지은이")[0].trim()}
-            </Text>
-            <Text style={[styles.viewDetailsLink, { color: colors.primary }]}>자세히 보기 →</Text>
-          </TouchableOpacity>
+            {/* Header with Note Type Label and Favorite Button */}
+            <View style={styles.noteHeader}>
+              <Text style={[styles.noteLabel, { color: colors.textMuted }]}>{note.title}</Text>
+              {onToggleFavorite && (
+                <TouchableOpacity 
+                  onPress={() => onToggleFavorite(book.book_id, noteType, noteIndex)}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  {note.isFavorite ? (
+                    <HeartFilledIcon size={20} color="#EF4444" />
+                  ) : (
+                    <HeartIcon size={20} color={colors.textMuted} />
+                  )}
+                </TouchableOpacity>
+              )}
+            </View>
+            
+            {/* Note Content */}
+            <ScrollView style={styles.contentScroll}>
+              <Text style={[styles.noteContent, { color: colors.text }]}>{note.content}</Text>
+            </ScrollView>
 
-          {/* Navigation Controls */}
-          <View style={[styles.navContainer, { borderTopColor: colors.border }]}>
-            <TouchableOpacity
-              onPress={(e) => { e.stopPropagation(); onPrev(); }}
-              style={[styles.navButton, { backgroundColor: isDark ? colors.border : 'rgba(0, 0, 0, 0.05)' }]}
+            {/* Book Info */}
+            <TouchableOpacity 
+              style={[styles.bookInfoContainer, { borderTopColor: colors.border }]}
+              onPress={() => {
+                onClose();
+                router.push(`/book-record/${book.book_id}`);
+              }}
             >
-              <ChevronLeftIcon size={24} color={colors.textMuted} />
+              <Text style={[styles.bookTitle, { color: colors.text }]}>{book.books.title}</Text>
+              <Text style={[styles.bookAuthor, { color: colors.textMuted }]}>
+                저자: {book.books.author?.split("(지은이")[0].trim()}
+              </Text>
+              <Text style={[styles.viewDetailsLink, { color: colors.primary }]}>자세히 보기 →</Text>
             </TouchableOpacity>
-            
-            <Text style={styles.navCounter}>
-              {currentIndex + 1} / {totalNotes}
-            </Text>
-            
-            <TouchableOpacity
-              onPress={(e) => { e.stopPropagation(); onNext(); }}
-              style={[styles.navButton, { backgroundColor: isDark ? colors.border : 'rgba(0, 0, 0, 0.05)' }]}
-            >
-              <ChevronRightIcon size={24} color={colors.textMuted} />
-            </TouchableOpacity>
+
+            {/* Navigation Controls */}
+            <View style={[styles.navContainer, { borderTopColor: colors.border }]}>
+              <TouchableOpacity
+                onPress={onPrev}
+                style={[styles.navButton, { backgroundColor: isDark ? colors.border : 'rgba(0, 0, 0, 0.05)' }]}
+              >
+                <ChevronLeftIcon size={24} color={colors.textMuted} />
+              </TouchableOpacity>
+              
+              <Text style={styles.navCounter}>
+                {currentIndex + 1} / {totalNotes}
+              </Text>
+              
+              <TouchableOpacity
+                onPress={onNext}
+                style={[styles.navButton, { backgroundColor: isDark ? colors.border : 'rgba(0, 0, 0, 0.05)' }]}
+              >
+                <ChevronRightIcon size={24} color={colors.textMuted} />
+              </TouchableOpacity>
+            </View>
           </View>
-        </TouchableOpacity>
-      </TouchableOpacity>
+        </Pressable>
+      </Pressable>
     </Modal>
   );
 }
