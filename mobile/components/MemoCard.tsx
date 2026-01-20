@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { SwipeableRow } from './SwipeableRow';
@@ -15,7 +15,14 @@ interface MemoCardProps {
 export const MemoCard: React.FC<MemoCardProps> = ({ memo, onDelete, onChange, onToggleFavorite }) => {
   const [isEditing, setIsEditing] = useState(memo.text === "");
   const { colors, isDark } = useTheme();
-  const [memoHeight, setMemoHeight] = useState(80);
+  const [memoHeight, setMemoHeight] = useState<number | undefined>(undefined);
+
+  // Reset height when entering edit mode to let onContentSizeChange recalculate
+  useEffect(() => {
+    if (isEditing) {
+      setMemoHeight(undefined);
+    }
+  }, [isEditing]);
 
   const formattedDate = useMemo(() => {
     if (!memo.createdAt) return null;
@@ -45,14 +52,17 @@ export const MemoCard: React.FC<MemoCardProps> = ({ memo, onDelete, onChange, on
           style={[
             styles.input, 
             { 
-              height: Math.max(80, memoHeight),
+              minHeight: 80,
+              height: memoHeight,
               backgroundColor: isDark ? colors.border : '#F8FAFC',
               color: colors.text
             },
             Platform.OS === 'web' && ({ resize: 'vertical', overflow: 'hidden' } as any)
           ]}
-          onContentSizeChange={(e) => setMemoHeight(e.nativeEvent.contentSize.height)}
-          scrollEnabled={false}
+          onContentSizeChange={(e) => {
+            const newHeight = e.nativeEvent.contentSize.height + 24;
+            setMemoHeight(Math.max(80, newHeight));
+          }}
           autoFocus
         />
         <View style={styles.footer}>
