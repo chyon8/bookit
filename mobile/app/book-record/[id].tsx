@@ -119,7 +119,9 @@ export default function BookRecordScreen() {
       }
       
       // Validation: start_date cannot be later than end_date
-      if (activeDateField === 'start_date' && review.end_date && formattedDate > review.end_date) {
+      // Only check if status is Finished or Dropped (ignore ghost end_date in Reading status)
+      const isEndedStatus = review.status === ReadingStatus.Finished || review.status === ReadingStatus.Dropped;
+      if (activeDateField === 'start_date' && review.end_date && isEndedStatus && formattedDate > review.end_date) {
         Alert.alert("날짜 확인", "시작일은 완료일보다 늦을 수 없습니다.");
         if (Platform.OS === 'ios') setShowDatePicker(false);
         return;
@@ -354,6 +356,7 @@ export default function BookRecordScreen() {
       let updates: Partial<UserBook> = { status: newStatus };
   
       if (newStatus === ReadingStatus.Reading) {
+        updates.end_date = null; // Clear end_date to avoid validation issues
         // 시작일이 없거나 읽고싶은에서 전환하는 경우 시작일 설정
         if (!review.start_date || oldStatus === ReadingStatus.WantToRead) {
            updates.start_date = today;
