@@ -112,23 +112,24 @@ export default function Home() {
     if (!userBooks) return [];
 
     return userBooks.filter(book => {
-      // Search logic
+      // Search logic - supports multi-word search (all words must match)
       if (searchQuery) {
-        const query = searchQuery.toLowerCase();
-        const basicMatch = 
-          book.books.title.toLowerCase().includes(query) || 
-          book.books.author?.toLowerCase().includes(query);
+        const searchWords = searchQuery.toLowerCase().split(/\s+/).filter(w => w.length > 0);
+        if (searchWords.length === 0) return true;
         
-        const reviewMatch = 
-          book.one_line_review?.toLowerCase().includes(query) ||
-          book.overall_impression?.toLowerCase().includes(query) ||
-          book.memos?.some(memo => memo.text.toLowerCase().includes(query)) ||
-          book.memorable_quotes?.some(mq => 
-            mq.quote.toLowerCase().includes(query) || 
-            mq.thought.toLowerCase().includes(query)
-          );
-
-        if (!basicMatch && !reviewMatch) return false;
+        // Build searchable text from all book fields
+        const searchableTexts = [
+          book.books.title,
+          book.books.author,
+          book.one_line_review,
+          book.overall_impression,
+          ...(book.memos?.map(m => m.text) || []),
+          ...(book.memorable_quotes?.map(mq => `${mq.quote || ''} ${mq.thought || ''}`) || [])
+        ].filter(Boolean).map(t => t!.toLowerCase()).join(' ');
+        
+        // All search words must be found somewhere in the book's content
+        const allWordsMatch = searchWords.every(word => searchableTexts.includes(word));
+        if (!allWordsMatch) return false;
       }
 
       // Detailed filters
@@ -236,17 +237,26 @@ export default function Home() {
   }, [filteredBooksAll, visibleCount]);
 
   // 검색 시 메모/인용구 개별 추출
+  // Helper function for multi-word search matching
+  const matchesSearch = (text: string | undefined | null, searchWords: string[]): boolean => {
+    if (!text) return false;
+    const lowerText = text.toLowerCase();
+    return searchWords.every(word => lowerText.includes(word));
+  };
+
   const searchResults = useMemo(() => {
     if (!searchQuery.trim() || !userBooks) return { memos: [], quotes: [] };
     
-    const query = searchQuery.toLowerCase();
+    const searchWords = searchQuery.toLowerCase().split(/\s+/).filter(w => w.length > 0);
+    if (searchWords.length === 0) return { memos: [], quotes: [] };
+    
     const memos: SearchResultItem[] = [];
     const quotes: SearchResultItem[] = [];
 
     userBooks.forEach(book => {
-      // 메모 검색
+      // 메모 검색 - 모든 검색어가 메모에 포함되어야 함
       book.memos?.forEach(memo => {
-        if (memo.text?.toLowerCase().includes(query)) {
+        if (matchesSearch(memo.text, searchWords)) {
           memos.push({
             type: 'memo',
             content: memo.text,
@@ -256,9 +266,10 @@ export default function Home() {
         }
       });
 
-      // 인용구 검색
+      // 인용구 검색 - quote와 thought를 합쳐서 모든 검색어가 포함되어야 함
       book.memorable_quotes?.forEach(mq => {
-        if (mq.quote?.toLowerCase().includes(query) || mq.thought?.toLowerCase().includes(query)) {
+        const combinedText = `${mq.quote || ''} ${mq.thought || ''}`;
+        if (matchesSearch(combinedText, searchWords)) {
           quotes.push({
             type: 'quote',
             content: mq.quote,
