@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "mobile",
+    "name": "Bookit",
     "slug": "mobile",
     "version": "1.0.0",
     "scheme": "bookshelf",
@@ -11,18 +11,32 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#1a1a2e"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.chyon8.bookit",
+      "infoPlist": {
+        "NSCameraUsageDescription": "책의 메모나 구절을 촬영하여 텍스트로 변환하기 위해 카메라 접근 권한이 필요합니다.",
+        "NSPhotoLibraryUsageDescription": "책의 메모나 구절 사진을 선택하여 텍스트로 변환하기 위해 사진 라이브러리 접근 권한이 필요합니다.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
+      "package": "com.chyon8.bookit",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -30,7 +44,14 @@
     "plugins": [
       "expo-router",
       "expo-web-browser",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "책의 메모나 구절 사진을 선택하여 텍스트로 변환하기 위해 사진 라이브러리 접근 권한이 필요합니다.",
+          "cameraPermission": "책의 메모나 구절을 촬영하여 텍스트로 변환하기 위해 카메라 접근 권한이 필요합니다."
+        }
+      ]
     ],
     "extra": {
       "router": {},
@@ -43,6 +64,7 @@
     },
     "updates": {
       "url": "https://u.expo.dev/c3b9cd4f-7689-4462-8360-6d50a114976c"
-    }
+    },
+    "owner": "sangmin030912"
   }
 }

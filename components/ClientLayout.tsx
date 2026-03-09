@@ -74,6 +74,12 @@ const ClientLayout: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  // Public pages that don't require authentication
+  const isPrivacyPage = pathname === '/privacy';
+  if (isPrivacyPage) {
+    return <>{children}</>;
+  }
+
   if (!user) {
     return (
       <div className="min-h-screen bg-light-gray dark:bg-dark-bg flex items-center justify-center p-4">
@@ -89,7 +95,7 @@ const ClientLayout: React.FC<{ children: React.ReactNode }> = ({
               supabaseClient={supabase}
               appearance={{ theme: ThemeSupa }}
               theme={theme}
-              providers={["google", "github"]}
+              providers={["google"]}
               socialLayout="horizontal"
               localization={{
                 variables: {
