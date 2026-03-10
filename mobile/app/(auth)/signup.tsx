@@ -8,12 +8,13 @@ import {
   ActivityIndicator, 
   KeyboardAvoidingView, 
   Platform, 
-  Alert
+  Alert,
+  ScrollView
 } from "react-native";
 import { useRouter, Link } from "expo-router";
 import { supabase } from "../../lib/supabase";
 import { useTheme } from "../../context/ThemeContext";
-import { BookshelfIcon, ChevronLeftIcon } from "../../components/Icons";
+import { ChevronLeftIcon, CheckIcon } from "../../components/Icons";
 
 export default function SignUp() {
   const { colors } = useTheme();
@@ -24,6 +25,8 @@ export default function SignUp() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isSigningUp, setIsSigningUp] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [privacyAgreed, setPrivacyAgreed] = useState(false);
+  const [marketingAgreed, setMarketingAgreed] = useState(false);
 
   const handleSignUp = async () => {
     if (!email || !password || !confirmPassword) {
@@ -41,13 +44,27 @@ export default function SignUp() {
       return;
     }
 
+    if (!privacyAgreed) {
+      setError("개인정보 수집·이용에 동의해주세요.");
+      return;
+    }
+
     setIsSigningUp(true);
     setError(null);
     
     try {
+      const now = new Date().toISOString();
       const { data, error: signUpError } = await supabase.auth.signUp({ 
         email, 
-        password 
+        password,
+        options: {
+          data: {
+            privacy_agreed: true,
+            privacy_agreed_at: now,
+            marketing_agreed: marketingAgreed,
+            marketing_agreed_at: marketingAgreed ? now : null,
+          }
+        }
       });
       
       if (signUpError) {
@@ -71,6 +88,11 @@ export default function SignUp() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={[styles.container, { backgroundColor: colors.background }]}
     >
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
       <View style={[styles.card, { backgroundColor: colors.card, shadowColor: colors.text }]}>
         
         <TouchableOpacity 
@@ -138,11 +160,40 @@ export default function SignUp() {
           secureTextEntry
         />
 
+        {/* Consent Checkboxes */}
+        <View style={styles.consentSection}>
+          <TouchableOpacity 
+            style={styles.consentRow}
+            onPress={() => setPrivacyAgreed(!privacyAgreed)}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.checkbox, { borderColor: colors.border }, privacyAgreed && { backgroundColor: colors.primary, borderColor: colors.primary }]}>
+              {privacyAgreed && <CheckIcon size={14} color="#fff" />}
+            </View>
+            <Text style={[styles.consentText, { color: colors.text }]}>
+              <Text style={styles.consentRequired}>(필수)</Text> 개인정보 수집·이용 동의
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.consentRow}
+            onPress={() => setMarketingAgreed(!marketingAgreed)}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.checkbox, { borderColor: colors.border }, marketingAgreed && { backgroundColor: colors.primary, borderColor: colors.primary }]}>
+              {marketingAgreed && <CheckIcon size={14} color="#fff" />}
+            </View>
+            <Text style={[styles.consentText, { color: colors.text }]}>
+              <Text style={styles.consentOptional}>(선택)</Text> 마케팅 정보 수신 동의
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Sign Up Button */}
         <TouchableOpacity
           onPress={handleSignUp}
-          disabled={isSigningUp}
-          style={[styles.button, { backgroundColor: colors.primary }, isSigningUp && styles.buttonDisabled]}
+          disabled={isSigningUp || !privacyAgreed}
+          style={[styles.button, { backgroundColor: colors.primary }, (isSigningUp || !privacyAgreed) && styles.buttonDisabled]}
         >
           {isSigningUp ? (
             <ActivityIndicator color="white" />
@@ -151,6 +202,7 @@ export default function SignUp() {
           )}
         </TouchableOpacity>
       </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
@@ -158,6 +210,9 @@ export default function SignUp() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 16,
@@ -217,6 +272,36 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 20,
     fontSize: 16,
+  },
+  consentSection: {
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  consentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+  consentText: {
+    fontSize: 14,
+    flex: 1,
+  },
+  consentRequired: {
+    color: '#EF4444',
+    fontWeight: '700',
+  },
+  consentOptional: {
+    color: '#9CA3AF',
+    fontWeight: '600',
   },
   button: {
     paddingVertical: 16,

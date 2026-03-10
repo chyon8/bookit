@@ -17,6 +17,7 @@ import { useTheme } from "../../context/ThemeContext";
 import Svg, { Path } from "react-native-svg";
 import * as WebBrowser from "expo-web-browser";
 import { makeRedirectUri } from "expo-auth-session";
+import Constants from "expo-constants";
 import * as QueryParams from "expo-auth-session/build/QueryParams";
 
 WebBrowser.maybeCompleteAuthSession();
@@ -64,7 +65,7 @@ export default function Login() {
       setAuthError(null);
       
       const redirectTo = makeRedirectUri({
-        scheme: 'bookshelf',
+        ...(Constants.appOwnership !== 'expo' && { scheme: 'bookshelf' }),
         path: 'auth/callback'
       });
 

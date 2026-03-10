@@ -39,12 +39,16 @@ function AppContent() {
     if (isLoading) return;
 
     const inAuthGroup = segments[0] === '(auth)';
+    const hasConsented = session?.user?.user_metadata?.privacy_agreed === true;
 
     if (!session && !inAuthGroup) {
       // Redirect to the sign-in page if not logged in and not in auth group
       router.replace('/(auth)/login');
-    } else if (session && inAuthGroup) {
-      // Redirect to home if logged in and trying to access auth pages
+    } else if (session && !hasConsented && (segments as string[])[1] !== 'consent') {
+      // Redirect to consent page if logged in but haven't agreed to privacy
+      router.replace('/(auth)/consent');
+    } else if (session && hasConsented && inAuthGroup) {
+      // Redirect to home if logged in, consented, and trying to access auth pages
       router.replace('/(tabs)');
     }
   }, [session, segments, isLoading]);
