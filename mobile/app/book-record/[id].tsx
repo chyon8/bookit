@@ -31,6 +31,7 @@ import { ConfirmModal } from "../../components/ConfirmModal";
 import { ScanPreviewModal } from "../../components/ScanPreviewModal";
 import { SessionEditModal } from "../../components/SessionEditModal";
 import { performOCR } from "../../utils/ocr";
+import { useOcrLimit } from "../../hooks/useOcrLimit";
 import ConfettiCannon from 'react-native-confetti-cannon';
 import Toast from 'react-native-toast-message';
 
@@ -93,6 +94,9 @@ export default function BookRecordScreen() {
 
   // Celebration State
   const [showConfetti, setShowConfetti] = useState(false);
+  
+  // OCR Limit Hook
+  const { canUseOcr, incrementUsage, checkUsage, maxLimit } = useOcrLimit();
   
   // DatePicker State
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -468,6 +472,12 @@ export default function BookRecordScreen() {
 
   // OCR Logic
   const handlePickImage = async () => {
+    const isUnderLimit = await checkUsage();
+    if (!isUnderLimit) {
+      Alert.alert('일일 사용량 초과', `하루 최대 텍스트 추출 횟수(${maxLimit}회)를 모두 사용했습니다.\n내일 다시 이용해주세요. 🙇‍♂️`);
+      return;
+    }
+
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
@@ -496,6 +506,12 @@ export default function BookRecordScreen() {
   };
 
   const handleCamera = async () => {
+    const isUnderLimit = await checkUsage();
+    if (!isUnderLimit) {
+      Alert.alert('일일 사용량 초과', `하루 최대 텍스트 추출 횟수(${maxLimit}회)를 모두 사용했습니다.\n내일 다시 이용해주세요. 🙇‍♂️`);
+      return;
+    }
+
     try {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') {
@@ -539,6 +555,8 @@ export default function BookRecordScreen() {
       if (result.error) {
         throw new Error(result.error);
       }
+
+      await incrementUsage();
 
       setScannedText(result.text);
     } catch (e: any) {
