@@ -83,17 +83,28 @@ export default function Login() {
         const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
         
         if (result.type === "success" && result.url) {
-          // Parse params from the callback URL to get the token or code if needed
-          // For Supabase, often just getting back to the app is enough if the session is handled automatically
-          // but we might need to handle the hash if implicit flow, or code if exchange flow.
-          // However, Supabase's `createClient` with suitable storage usually handles the session recovery
-          // from the URL if `detectSessionInUrl` is true or if we manually set it.
-          // Let's assume the root layout's `onAuthStateChange` or `getSession` will catch it 
-          // but strictly speaking for deep linking we might need `supabase.auth.getSession()` logic triggered by deep link.
+          // Parse params from the callback URL hash to get the token
+          const { params, errorCode } = QueryParams.getQueryParams(result.url);
           
-          // Note: createClient in supabase.ts has detectSessionInUrl: false. 
-          // We might need to manually handle the URL if it returns parameters.
-          // For now, let's rely on the session refresh or standard flow.
+          if (errorCode) {
+            setAuthError(errorCode);
+            return;
+          }
+          
+          const { access_token, refresh_token } = params;
+          
+          if (access_token && refresh_token) {
+            const { error: sessionError } = await supabase.auth.setSession({
+              access_token,
+              refresh_token,
+            });
+            
+            if (sessionError) {
+              setAuthError(sessionError.message);
+            }
+          } else {
+            setAuthError("구글 로그인 인증 정보를 받아오지 못했습니다.");
+          }
         }
       }
 
