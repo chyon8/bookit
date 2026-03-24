@@ -1,202 +1,39 @@
 
-import { Platform } from 'react-native';
-
-const GOOGLE_CLOUD_VISION_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_CLOUD_VISION_API_KEY;
-
 interface OCRResult {
   text: string;
   pageNumber?: string;
   error?: string;
 }
 
+const API_URL = process.env.EXPO_PUBLIC_API_URL;
+
 export const performOCR = async (base64Image: string): Promise<OCRResult> => {
   try {
-    if (!GOOGLE_CLOUD_VISION_API_KEY) {
-      throw new Error('API Configuration Error: API Key is missing.');
+    if (!API_URL) {
+      throw new Error('API Configuration Error: API URL is missing.');
     }
 
-    const apiUrl = `https://vision.googleapis.com/v1/images:annotate?key=${GOOGLE_CLOUD_VISION_API_KEY}`;
+    // Remove data:image/xxx;base64, prefix if present
+    const cleanBase64 = base64Image.replace(/^data:image\/\w+;base64,/, '');
 
-    const requestBody = {
-      requests: [
-        {
-          image: {
-            content: base64Image,
-          },
-          features: [
-            {
-              type: 'DOCUMENT_TEXT_DETECTION',
-            },
-          ],
-          imageContext: {
-            languageHints: ['ko', 'en'],
-          },
-        },
-      ],
-    };
-
-    const response = await fetch(apiUrl, {
+    const response = await fetch(`${API_URL}/api/ocr`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(requestBody),
+      body: JSON.stringify({ image: cleanBase64 }),
     });
 
     const data = await response.json();
 
     if (!response.ok) {
-        if (data.error?.message?.includes('billing to be enabled')) {
-            throw new Error('Google Cloud 결제 설정이 필요합니다. (월 1,000회 무료)');
-        }
-        throw new Error(data.error?.message || 'Failed to communicate with Google Vision API');
+      throw new Error(data.error || 'OCR 서버 요청에 실패했습니다.');
     }
 
-    // Advanced Filtering Logic (Ported from web route.ts)
-    const fullTextAnnotation = data.responses[0]?.fullTextAnnotation;
-    
-    if (!fullTextAnnotation) {
-       return { text: '' };
-    }
-
-    const pages = fullTextAnnotation.pages || [];
-    let finalString = "";
-
-    // 1. Get Image Dimensions (from the first page object)
-    const pageObj = pages[0];
-    const width = pageObj.width;
-    const height = pageObj.height;
-
-    // Thresholds
-    const rightMarginThreshold = width * 0.85; // Skip right 15%
-    const topMarginThreshold = height * 0.15; // Top 15% (Header)
-    const bottomMarginThreshold = height * 0.85; // Bottom 15% (Footer)
-    const confidenceThreshold = 0.5;
-
-    // 2. Iterate Blocks
-    let pageNumber = "";
-
-    if (pageObj.blocks) {
-       // Sort blocks: Left Page -> Right Page
-       const midX = width / 2;
-       const leftBlocks: any[] = [];
-       const rightBlocks: any[] = [];
-
-       pageObj.blocks.forEach((block: any) => {
-          let minX = width;
-          let maxX = 0;
-          if (block.boundingBox && block.boundingBox.vertices) {
-             block.boundingBox.vertices.forEach((v: any) => {
-                const x = v.x || 0;
-                if (x < minX) minX = x;
-                if (x > maxX) maxX = x;
-             });
-          }
-          // If vertices are missing or invalid, default to 0
-          if (minX > maxX) { minX = 0; maxX = 0; }
-          
-          const centerX = (minX + maxX) / 2;
-          if (centerX < midX) {
-             leftBlocks.push(block);
-          } else {
-             rightBlocks.push(block);
-          }
-       });
-
-       const sortTopDown = (a: any, b: any) => {
-          const getMinY = (blk: any) => {
-             let minY = height;
-             if (blk.boundingBox && blk.boundingBox.vertices) {
-                blk.boundingBox.vertices.forEach((v: any) => {
-                   const y = v.y || 0;
-                   if (y < minY) minY = y;
-                });
-             }
-             return minY === height ? 0 : minY;
-          };
-          return getMinY(a) - getMinY(b);
-       };
-
-       leftBlocks.sort(sortTopDown);
-       rightBlocks.sort(sortTopDown);
-
-       const sortedBlocks = [...leftBlocks, ...rightBlocks];
-
-       for (const block of sortedBlocks) {
-          // Get position
-          let minX = width, maxX = 0, minY = height, maxY = 0;
-          
-          if (block.boundingBox && block.boundingBox.vertices) {
-             for (const vertex of block.boundingBox.vertices) {
-                const x = vertex.x || 0;
-                const y = vertex.y || 0;
-                if (x < minX) minX = x;
-                if (x > maxX) maxX = x;
-                if (y < minY) minY = y;
-                if (y > maxY) maxY = y;
-             }
-          }
-
-          // Reconstruct text
-          let blockText = "";
-          if (block.paragraphs) {
-             for (const paragraph of block.paragraphs) {
-                if (paragraph.words) {
-                   for (const word of paragraph.words) {
-                      if (word.symbols) {
-                         for (const symbol of word.symbols) {
-                            blockText += symbol.text;
-                            if (symbol.property && symbol.property.detectedBreak) {
-                               const breakType = symbol.property.detectedBreak.type;
-                               if (breakType === 'SPACE' || breakType === 'SURE_SPACE') {
-                                  blockText += " ";
-                               } else if (breakType === 'EOL_SURE_SPACE' || breakType === 'LINE_BREAK') {
-                                  blockText += " ";
-                               }
-                            }
-                         }
-                      }
-                   }
-                }
-                blockText += "\n"; 
-             }
-          }
-          blockText = blockText.trim();
-
-          const isInTopMargin = maxY < topMarginThreshold;
-          const isInBottomMargin = minY > bottomMarginThreshold;
-          
-          const isLikelyPageNumber = (isInTopMargin || isInBottomMargin) && 
-                                      blockText.length < 15 && 
-                                      /[0-9]/.test(blockText);
-          
-          if (block.confidence < confidenceThreshold && !isLikelyPageNumber) {
-             continue;
-          }
-
-          // Filter Right Margin
-          if (minX > rightMarginThreshold) {
-             continue; 
-          }
-
-          // Check for Page Number
-          if (isInTopMargin || isInBottomMargin) {
-             if (blockText.length < 15 && /[0-9]/.test(blockText)) {
-                const match = blockText.match(/(\d+)/);
-                if (match) {
-                   pageNumber = match[1];
-                }
-             }
-             continue;
-          }
-
-          finalString += blockText + "\n\n";
-       }
-    }
-
-    const cleanedText = finalString.trim().replace(/\n{3,}/g, "\n\n");
-
-    return { text: cleanedText, pageNumber };
+    return {
+      text: data.text || '',
+      pageNumber: data.pageNumber || '',
+    };
 
   } catch (error: any) {
     console.error('OCR Error:', error);
