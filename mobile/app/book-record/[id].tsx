@@ -2,18 +2,18 @@ import React, { useState, useEffect, useRef } from "react";
 import { 
   View, 
   Text, 
-  ScrollView, 
+  ScrollView,
   StyleSheet, 
   Image, 
   SafeAreaView, 
   TouchableOpacity, 
   TextInput,
-  KeyboardAvoidingView,
   Platform,
   Alert,
   ActivityIndicator,
   Dimensions
 } from "react-native";
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useTheme } from "../../context/ThemeContext";
 import { useLocalSearchParams, useRouter, Stack, useNavigation } from "expo-router";
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -64,7 +64,7 @@ export default function BookRecordScreen() {
   const isSaving = useRef(false);
   const isDeleting = useRef(false);
   const navigation = useNavigation();
-  const scrollViewRef = useRef<ScrollView>(null);
+  const scrollViewRef = useRef<any>(null);
 
   // Modal State
   const [modalConfig, setModalConfig] = useState({
@@ -94,7 +94,7 @@ export default function BookRecordScreen() {
 
   // Celebration State
   const [showConfetti, setShowConfetti] = useState(false);
-  
+
   // OCR Limit Hook
   const { canUseOcr, incrementUsage, checkUsage, maxLimit } = useOcrLimit();
   
@@ -401,7 +401,7 @@ export default function BookRecordScreen() {
     });
     setTimeout(() => {
       scrollViewRef.current?.scrollToEnd({ animated: true });
-    }, 100);
+    }, 300);
   };
 
   const updateQuote = (index: number, field: keyof MemorableQuote, value: string | boolean) => {
@@ -436,7 +436,7 @@ export default function BookRecordScreen() {
     }));
     setTimeout(() => {
       scrollViewRef.current?.scrollToEnd({ animated: true });
-    }, 100);
+    }, 300);
   };
 
   const updateMemo = (index: number, text: string) => {
@@ -747,16 +747,15 @@ export default function BookRecordScreen() {
         </TouchableOpacity>
       </View>
 
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.flex1}
+      <KeyboardAwareScrollView
+        ref={scrollViewRef}
+        contentContainerStyle={styles.scrollContent}
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
+        enableOnAndroid={true}
+        extraScrollHeight={120}
+        enableAutomaticScroll={true}
       >
-        <ScrollView 
-          ref={scrollViewRef}
-          contentContainerStyle={styles.scrollContent}
-          keyboardDismissMode="on-drag"
-          keyboardShouldPersistTaps="handled"
-        >
           {/* Top Section with Blur Background */}
           <View style={styles.topSection}>
             <Image 
@@ -1138,8 +1137,7 @@ export default function BookRecordScreen() {
           </View>
           
           <View style={{ height: 40 }} /> 
-        </ScrollView>
-      </KeyboardAvoidingView>
+        </KeyboardAwareScrollView>
     </View>
   );
 }
