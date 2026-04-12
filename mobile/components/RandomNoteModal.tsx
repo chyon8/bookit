@@ -53,7 +53,7 @@ export function RandomNoteModal({
         style={styles.overlay}
         onPress={onClose}
       >
-        <Pressable>
+        <Pressable style={{ width: '100%', alignItems: 'center' }}>
           <View 
             style={[
               styles.modalCard, 
@@ -136,6 +136,7 @@ const styles = StyleSheet.create({
     padding: 24,
     borderRadius: 12,
     width: '100%',
+    minWidth: 300,
     maxWidth: 400,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
