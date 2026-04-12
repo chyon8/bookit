@@ -4,7 +4,7 @@ import { useTheme } from '../context/ThemeContext';
 import { UserBook } from '../hooks/useBooks';
 
 export interface SearchResultItem {
-  type: 'memo' | 'quote';
+  type: 'memo' | 'quote' | 'one_line_review';
   content: string;
   subContent?: string; // 인용구의 "나의 생각" 또는 페이지
   page?: string;
@@ -49,7 +49,8 @@ const HighlightText: React.FC<{ text: string; query: string; color: string; high
 export const SearchResultCard: React.FC<SearchResultCardProps> = ({ item, query, onPress }) => {
   const { colors, isDark } = useTheme();
 
-  const icon = item.type === 'memo' ? '📝' : '✨';
+  const icon = item.type === 'one_line_review' ? '💬' : item.type === 'memo' ? '📝' : '✨';
+  const label = item.type === 'one_line_review' ? '한줄평' : undefined;
   const highlightBg = isDark ? 'rgba(74, 222, 128, 0.3)' : 'rgba(74, 222, 128, 0.4)';
 
   return (
@@ -60,6 +61,11 @@ export const SearchResultCard: React.FC<SearchResultCardProps> = ({ item, query,
     >
       <View style={styles.header}>
         <Text style={styles.icon}>{icon}</Text>
+        {label && (
+          <Text style={[styles.label, { color: colors.primary, backgroundColor: isDark ? 'rgba(74, 222, 128, 0.15)' : 'rgba(74, 222, 128, 0.2)' }]}>
+            {label}
+          </Text>
+        )}
         <Text style={[styles.bookTitle, { color: colors.textMuted }]} numberOfLines={1}>
           {item.book.books.title}
         </Text>
@@ -105,6 +111,14 @@ const styles = StyleSheet.create({
   },
   icon: {
     fontSize: 14,
+  },
+  label: {
+    fontSize: 10,
+    fontWeight: '600',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    overflow: 'hidden',
   },
   bookTitle: {
     fontSize: 12,

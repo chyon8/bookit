@@ -254,6 +254,15 @@ export default function Home() {
     const quotes: SearchResultItem[] = [];
 
     userBooks.forEach(book => {
+      // 한줄평 검색 - 메모 탭에 포함 (구분을 위해 type: 'one_line_review')
+      if (book.one_line_review && matchesSearch(book.one_line_review, searchWords)) {
+        memos.push({
+          type: 'one_line_review',
+          content: book.one_line_review,
+          book,
+        });
+      }
+
       // 메모 검색 - 모든 검색어가 메모에 포함되어야 함
       book.memos?.forEach(memo => {
         if (matchesSearch(memo.text, searchWords)) {
