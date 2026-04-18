@@ -21,7 +21,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useBookData, useUpdateBookReview, useDeleteBook } from "../../hooks/useBookData";
 import { UserBook, ReadingStatus, MemorableQuote, Memo } from "../../hooks/useBooks";
 import { useReadingSessions, useCreateReadingSession, useUpdateReadingSession, useDeleteReadingSession, ReadingSession } from "../../hooks/useReadingSessions";
-import { ChevronLeftIcon, TrashIcon, CameraIcon, PhotoIcon } from "../../components/Icons";
+import { ChevronLeftIcon, TrashIcon, CameraIcon, PhotoIcon, ChatBubbleIcon } from "../../components/Icons";
 import { StarRating } from "../../components/StarRating";
 import { QuoteCard } from "../../components/QuoteCard";
 import { MemoCard } from "../../components/MemoCard";
@@ -1124,6 +1124,15 @@ export default function BookRecordScreen() {
               </View>
              </View>
 
+            {/* AI 대화 숏컷 버튼 */}
+            <TouchableOpacity 
+                onPress={() => router.push(`/chat/temp?bookId=${book.id}`)} 
+                style={[styles.aiButton, { backgroundColor: colors.primary }]}
+            >
+                <ChatBubbleIcon size={20} color="#FFFFFF" />
+                <Text style={styles.aiButtonText}>이 책에 대해 AI와 딥다이브 대화하기</Text>
+            </TouchableOpacity>
+
             {/* Delete Button */}
             <TouchableOpacity 
                 onPress={handleDelete} 
@@ -1456,6 +1465,25 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     marginBottom: 16,
+  },
+  aiButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    marginTop: 8,
+    borderRadius: 12,
+    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  aiButtonText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
   deleteButton: {
     flexDirection: 'row',
