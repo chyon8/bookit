@@ -13,3 +13,4 @@ export const OPENAI_MODELS = {
 
 // Default model for chat and search
 export const DEFAULT_AI_MODEL = OPENAI_MODELS.GPT_4O_MINI;
+export const DEFAULT_GEMINI_MODEL = GEMINI_MODELS.FLASH;
