@@ -87,14 +87,18 @@ export function ScanPreviewModal({
       onRequestClose={onClose}
     >
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>
-            {step === 'crop' ? "영역 선택" : "텍스트 확인 및 수정"}
-          </Text>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <XMarkIcon size={24} color={colors.textMuted} />
-          </TouchableOpacity>
-        </View>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={{ flex: 1 }}
+        >
+          <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+            <Text style={[styles.headerTitle, { color: colors.text }]}>
+              {step === 'crop' ? "영역 선택" : "텍스트 확인 및 수정"}
+            </Text>
+            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+              <XMarkIcon size={24} color={colors.textMuted} />
+            </TouchableOpacity>
+          </View>
 
         {step === 'crop' ? (
           // Step 1: Crop Mode - Full screen cropper
@@ -127,10 +131,7 @@ export function ScanPreviewModal({
           </View>
         ) : (
           // Step 2: Edit Mode - Text only, no image
-          <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
-            style={styles.content}
-          >
+          <View style={styles.content}>
             <ScrollView contentContainerStyle={styles.scrollContent}>
               {/* Error Message */}
               {error && (
@@ -154,35 +155,32 @@ export function ScanPreviewModal({
                   placeholder="텍스트가 여기에 표시됩니다."
                   placeholderTextColor={colors.textMuted}
                 />
-
-                {/* Back to Crop Button */}
-                <TouchableOpacity
-                  onPress={handleBackToCrop}
-                  style={[styles.backToCropButton, { backgroundColor: isDark ? colors.border : '#F1F5F9' }]}
-                >
-                  <Text style={[styles.backToCropButtonText, { color: colors.textMuted }]}>
-                    ← 영역 다시 선택
-                  </Text>
-                </TouchableOpacity>
               </View>
             </ScrollView>
-          </KeyboardAvoidingView>
+          </View>
         )}
 
         {/* Footer Actions */}
         <View style={[styles.footer, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
-          <TouchableOpacity onPress={onClose} style={[styles.cancelButton, { backgroundColor: isDark ? colors.border : '#F1F5F9' }]}>
-            <Text style={[styles.cancelButtonText, { color: colors.textMuted }]}>취소</Text>
-          </TouchableOpacity>
-          {step === 'edit' && text ? (
-            <TouchableOpacity
-              onPress={() => onApply(text)}
-              style={[styles.applyButton, { backgroundColor: colors.primary }]}
-            >
-              <Text style={styles.applyButtonText}>인용구에 적용</Text>
+          {step === 'crop' ? (
+            <TouchableOpacity onPress={onClose} style={[styles.cancelButton, { backgroundColor: isDark ? colors.border : '#F1F5F9' }]}>
+              <Text style={[styles.cancelButtonText, { color: colors.textMuted }]}>취소</Text>
             </TouchableOpacity>
-          ) : null}
+          ) : (
+            <>
+              <TouchableOpacity onPress={handleBackToCrop} style={[styles.cancelButton, { backgroundColor: isDark ? colors.border : '#F1F5F9' }]}>
+                <Text style={[styles.cancelButtonText, { color: colors.textMuted }]}>← 다시 선택</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => onApply(text)}
+                style={[styles.applyButton, { backgroundColor: colors.primary }]}
+              >
+                <Text style={styles.applyButtonText}>적용</Text>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     </Modal>
   );
