@@ -18,7 +18,7 @@ import { BookCard } from "../../components/BookCard";
 import { HorizontalBookCard } from "../../components/HorizontalBookCard";
 import { Stack, useRouter } from "expo-router";
 import { BookSearchLoading } from "../../components/BookSearchLoading";
-import { SearchIcon, XMarkIcon, SparklesIcon, ChevronDownIcon, TrashIcon } from "../../components/Icons";
+import { SearchIcon, XMarkIcon, SparklesIcon, ChevronDownIcon, TrashIcon, BookshelfIcon } from "../../components/Icons";
 import { RandomNoteModal, Note } from "../../components/RandomNoteModal";
 import { FilterSheet, SortOption } from "../../components/FilterSheet";
 import { useDeleteBook } from "../../hooks/useBookData";
@@ -714,6 +714,38 @@ export default function Home() {
                 )}
               </View>
             )
+          ) : filteredBooksAll.length === 0 ? (
+            <View style={styles.emptyBookshelfContainer}>
+              <View style={[styles.emptyIconWrapper, { backgroundColor: isDark ? colors.border : '#F1F5F9' }]}>
+                <BookshelfIcon size={40} color={colors.textMuted} />
+              </View>
+              <Text style={[styles.emptyBookshelfTitle, { color: colors.text }]}>
+                {statusFilter === "All" ? "아직 내 책장에 담긴 책이 없어요." :
+                 statusFilter === ReadingStatus.Reading ? "지금 읽고 있는 책이 없어요." :
+                 statusFilter === ReadingStatus.Finished ? "아직 다 읽은 책이 없네요." :
+                 statusFilter === ReadingStatus.WantToRead ? "아직 찜해둔 책이 없어요." :
+                 "중단한 책이 없어요."}
+              </Text>
+              <Text style={[styles.emptyBookshelfSubtitle, { color: colors.textMuted }]}>
+                {statusFilter === "All" ? "새로운 책을 검색하고 기록을 시작해보세요!" :
+                 statusFilter === ReadingStatus.Reading ? "어떤 책을 먼저 시작해 볼까요?" :
+                 statusFilter === ReadingStatus.Finished ? "꾸준히 읽고 첫 완독의 기쁨을 누려보세요!" :
+                 statusFilter === ReadingStatus.WantToRead ? "나중에 읽고 싶은 책을 미리 담아두세요." :
+                 "잘 읽고 계시네요!"}
+              </Text>
+              <TouchableOpacity
+                style={[styles.emptyBookshelfButton, { backgroundColor: colors.primary }]}
+                onPress={() => router.push('/search')}
+              >
+                <Text style={styles.emptyBookshelfButtonText}>
+                  {statusFilter === "All" ? "책 검색하러 가기" :
+                   statusFilter === ReadingStatus.Reading ? "새로운 책 담기" :
+                   statusFilter === ReadingStatus.Finished ? "책 찾아보기" :
+                   statusFilter === ReadingStatus.WantToRead ? "관심 도서 찾기" :
+                   "더 많은 책 보기"}
+                </Text>
+              </TouchableOpacity>
+            </View>
           ) : statusFilter === "All" && groupedBooks ? (
             <View style={styles.sectionsContainer}>
               {renderBookSection("읽는 중", groupedBooks[ReadingStatus.Reading], ReadingStatus.Reading)}
@@ -746,13 +778,6 @@ export default function Home() {
                    </TouchableOpacity>
                 </View>
               )}
-            </View>
-          )}
-
-          {filteredBooksAll.length === 0 && statusFilter !== "All" && (
-            <View style={styles.emptyContainer}>
-              <Text style={[styles.emptyTitle, { color: colors.text }]}>책장이 비어있습니다</Text>
-              <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>검색 탭을 이용해 첫 책을 추가해보세요!</Text>
             </View>
           )}
         </ScrollView>
@@ -982,5 +1007,41 @@ const styles = StyleSheet.create({
   },
   searchSegmentText: {
     fontSize: 13,
+  },
+  emptyBookshelfContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 100,
+    paddingHorizontal: 20,
+  },
+  emptyIconWrapper: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
+  },
+  emptyBookshelfTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  emptyBookshelfSubtitle: {
+    fontSize: 14,
+    marginBottom: 24,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  emptyBookshelfButton: {
+    paddingVertical: 14,
+    paddingHorizontal: 28,
+    borderRadius: 24,
+  },
+  emptyBookshelfButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
