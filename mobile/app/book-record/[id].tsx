@@ -8,12 +8,12 @@ import {
   SafeAreaView, 
   TouchableOpacity, 
   TextInput,
+  KeyboardAvoidingView,
   Platform,
   Alert,
   ActivityIndicator,
   Dimensions
 } from "react-native";
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useTheme } from "../../context/ThemeContext";
 import { useLocalSearchParams, useRouter, Stack, useNavigation } from "expo-router";
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -64,7 +64,7 @@ export default function BookRecordScreen() {
   const isSaving = useRef(false);
   const isDeleting = useRef(false);
   const navigation = useNavigation();
-  const scrollViewRef = useRef<any>(null);
+  const scrollViewRef = useRef<ScrollView>(null);
 
   // Modal State
   const [modalConfig, setModalConfig] = useState({
@@ -747,15 +747,18 @@ export default function BookRecordScreen() {
         </TouchableOpacity>
       </View>
 
-      <KeyboardAwareScrollView
-        ref={scrollViewRef}
-        contentContainerStyle={styles.scrollContent}
-        keyboardDismissMode="on-drag"
-        keyboardShouldPersistTaps="handled"
-        enableOnAndroid={true}
-        extraScrollHeight={120}
-        enableAutomaticScroll={true}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.flex1}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
+        <ScrollView 
+          ref={scrollViewRef}
+          contentContainerStyle={styles.scrollContent}
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={true}
+        >
           {/* Top Section with Blur Background */}
           <View style={styles.topSection}>
             <Image 
@@ -1146,7 +1149,8 @@ export default function BookRecordScreen() {
           </View>
           
           <View style={{ height: 40 }} /> 
-        </KeyboardAwareScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 }
