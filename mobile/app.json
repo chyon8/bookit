@@ -14,7 +14,7 @@
       "backgroundColor": "#1a1a2e"
     },
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "com.chyon8.bookit",
       "infoPlist": {
         "NSCameraUsageDescription": "책의 메모나 구절을 촬영하여 텍스트로 변환하기 위해 카메라 접근 권한이 필요합니다.",
