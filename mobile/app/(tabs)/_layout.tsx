@@ -1,5 +1,5 @@
 import { Tabs, useRouter } from "expo-router";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useTheme } from "../../context/ThemeContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -23,6 +23,8 @@ export default function TabLayout() {
   const tabBarHeight = 70 + insets.bottom;
 
   const [isLogoutModalVisible, setLogoutModalVisible] = useState(false);
+  const [isDeleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -31,6 +33,39 @@ export default function TabLayout() {
     } catch (error) {
       console.error("Error signing out:", error);
     }
+  };
+
+  const handleDeleteAccount = async () => {
+    try {
+      setIsDeleting(true);
+      // 1. Call the RPC to delete the user from auth.users (and cascade to user_books)
+      const { error } = await supabase.rpc('delete_my_account');
+      
+      if (error) {
+        throw error;
+      }
+      
+      // 2. Sign out the local session forcefully since the user is already deleted on the server
+      await supabase.auth.signOut({ scope: 'local' });
+      setDeleteModalVisible(false);
+    } catch (error: any) {
+      console.error("Error deleting account:", error);
+      Alert.alert("오류", "계정 삭제 중 문제가 발생했습니다: " + error.message);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const showAccountMenu = () => {
+    Alert.alert(
+      "계정 관리",
+      "원하시는 작업을 선택해주세요.",
+      [
+        { text: "취소", style: "cancel" },
+        { text: "로그아웃", onPress: () => setLogoutModalVisible(true) },
+        { text: "계정 탈퇴", style: "destructive", onPress: () => setDeleteModalVisible(true) }
+      ]
+    );
   };
 
   return (
@@ -64,7 +99,7 @@ export default function TabLayout() {
                   color={colors.textMuted} 
                 />
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => setLogoutModalVisible(true)}>
+              <TouchableOpacity onPress={showAccountMenu}>
                 <View style={[styles.avatar, { backgroundColor: isDark ? colors.border : '#E5E7EB' }]}>
                   <Text style={[styles.avatarText, { color: colors.textMuted }]}>S</Text>
                 </View>
@@ -133,6 +168,16 @@ export default function TabLayout() {
         onConfirm={handleLogout}
         onCancel={() => setLogoutModalVisible(false)}
         confirmText="로그아웃"
+        isDestructive={true}
+      />
+
+      <ConfirmModal
+        isVisible={isDeleteModalVisible}
+        title="계정 탈퇴"
+        message="정말 계정을 탈퇴하시겠습니까? 기록하신 모든 책과 메모가 영구적으로 삭제되며, 이 작업은 되돌릴 수 없습니다."
+        onConfirm={handleDeleteAccount}
+        onCancel={() => setDeleteModalVisible(false)}
+        confirmText={isDeleting ? "처리 중..." : "탈퇴하기"}
         isDestructive={true}
       />
     </>

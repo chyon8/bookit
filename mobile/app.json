@@ -16,6 +16,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.chyon8.bookit",
+      "usesAppleSignIn": true,
       "infoPlist": {
         "NSCameraUsageDescription": "책의 메모나 구절을 촬영하여 텍스트로 변환하기 위해 카메라 접근 권한이 필요합니다.",
         "NSPhotoLibraryUsageDescription": "책의 메모나 구절 사진을 선택하여 텍스트로 변환하기 위해 사진 라이브러리 접근 권한이 필요합니다.",
@@ -44,6 +45,7 @@
     "plugins": [
       "expo-router",
       "expo-web-browser",
+      "expo-apple-authentication",
       "@react-native-community/datetimepicker",
       [
         "expo-image-picker",
