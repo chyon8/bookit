@@ -19,6 +19,7 @@ import * as WebBrowser from "expo-web-browser";
 import { makeRedirectUri } from "expo-auth-session";
 import Constants from "expo-constants";
 import * as QueryParams from "expo-auth-session/build/QueryParams";
+import * as AppleAuthentication from 'expo-apple-authentication';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -29,7 +30,7 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSigningIn, setIsSigningIn] = useState(false);
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isOAuthLoading, setIsOAuthLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
 
   const handleLogin = async () => {
@@ -61,7 +62,7 @@ export default function Login() {
 
   const handleGoogleLogin = async () => {
     try {
-      setIsGoogleLoading(true);
+      setIsOAuthLoading(true);
       setAuthError(null);
       
       const redirectTo = makeRedirectUri({
@@ -111,7 +112,46 @@ export default function Login() {
     } catch (e: any) {
       setAuthError(e.message || "Google 로그인 중 오류가 발생했습니다.");
     } finally {
-      setIsGoogleLoading(false);
+      setIsOAuthLoading(false);
+    }
+  };
+
+  const handleAppleLogin = async () => {
+    try {
+      setIsOAuthLoading(true);
+      setAuthError(null);
+      
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+      
+      // Sign in via Supabase Auth
+      if (credential.identityToken) {
+        const {
+          error,
+          data: { user },
+        } = await supabase.auth.signInWithIdToken({
+          provider: 'apple',
+          token: credential.identityToken,
+        });
+        
+        if (error) {
+          setAuthError(error.message);
+        }
+      } else {
+        throw new Error("No identityToken returned from Apple.");
+      }
+    } catch (e: any) {
+      if (e.code === 'ERR_REQUEST_CANCELED') {
+        // User canceled the sign-in flow
+      } else {
+        setAuthError(e.message || "Apple 로그인 중 오류가 발생했습니다.");
+      }
+    } finally {
+      setIsOAuthLoading(false);
     }
   };
 
@@ -168,11 +208,10 @@ export default function Login() {
           secureTextEntry
         />
 
-        {/* Login Button */}
         <TouchableOpacity
           onPress={handleLogin}
-          disabled={isSigningIn || isGoogleLoading}
-          style={[styles.button, { backgroundColor: colors.primary }, (isSigningIn || isGoogleLoading) && styles.buttonDisabled]}
+          disabled={isSigningIn || isOAuthLoading}
+          style={[styles.button, { backgroundColor: colors.primary }, (isSigningIn || isOAuthLoading) && styles.buttonDisabled]}
         >
           {isSigningIn ? (
             <ActivityIndicator color="white" />
@@ -184,23 +223,39 @@ export default function Login() {
         {/* Google Login Button */}
         <TouchableOpacity
           onPress={handleGoogleLogin}
-          disabled={isSigningIn || isGoogleLoading}
-          style={[styles.googleButton, { borderColor: colors.border }, (isSigningIn || isGoogleLoading) && styles.buttonDisabled]}
+          disabled={isSigningIn || isOAuthLoading}
+          style={[styles.oauthButton, { borderColor: colors.border }, (isSigningIn || isOAuthLoading) && styles.buttonDisabled]}
         >
-          {isGoogleLoading ? (
+          {isOAuthLoading ? (
             <ActivityIndicator color={colors.text} />
           ) : (
-            <View style={styles.googleButtonContent}>
+            <View style={styles.oauthButtonContent}>
               <Svg width={20} height={20} viewBox="0 0 48 48">
                 <Path d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z" fill="#FFC107" />
                 <Path d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z" fill="#FF3D00" />
                 <Path d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0124 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z" fill="#4CAF50" />
                 <Path d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 01-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z" fill="#1976D2" />
               </Svg>
-              <Text style={[styles.googleButtonText, { color: colors.text }]}>Google로 계속하기</Text>
+              <Text style={[styles.oauthButtonText, { color: colors.text }]}>Google로 계속하기</Text>
             </View>
           )}
         </TouchableOpacity>
+
+        {/* Apple Login Button */}
+        {Platform.OS === 'ios' && (
+          <TouchableOpacity
+            onPress={handleAppleLogin}
+            disabled={isSigningIn || isOAuthLoading}
+            style={[styles.oauthButton, { borderColor: colors.border, backgroundColor: '#000000' }, (isSigningIn || isOAuthLoading) && styles.buttonDisabled]}
+          >
+            <View style={styles.oauthButtonContent}>
+              <Svg width={20} height={20} viewBox="0 0 384 512">
+                <Path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5c0 26.2 4.8 53.3 14.4 81.2 12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z" fill="#FFFFFF" />
+              </Svg>
+              <Text style={[styles.oauthButtonText, { color: '#FFFFFF' }]}>Apple로 계속하기</Text>
+            </View>
+          </TouchableOpacity>
+        )}
 
         {/* Sign Up Link */}
         <View style={styles.footer}>
@@ -287,7 +342,7 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     elevation: 5,
   },
-  googleButton: {
+  oauthButton: {
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
@@ -295,11 +350,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     backgroundColor: 'transparent',
   },
-  googleButtonContent: {
+  oauthButtonContent: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  googleButtonText: {
+  oauthButtonText: {
     fontWeight: '600',
     fontSize: 16,
     marginLeft: 10,
